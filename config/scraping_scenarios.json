@@ -1,0 +1,23 @@
+{
+  "defaults": {
+    "max_pages_per_seed": 3,
+    "max_follow_up_company_pages": 3,
+    "request_timeout_seconds": 20,
+    "browser_timeout_ms": 30000,
+    "max_scroll_steps": 6,
+    "low_confidence_threshold": 0.6,
+    "anti_bot_threshold": 0.7,
+    "request_delay_seconds": 1.0,
+    "evidence_char_limit": 8000,
+    "allow_paths": ["/", "/about", "/about-us", "/contact", "/contact-us", "/services", "/products"],
+    "deny_paths": ["/cart", "/checkout", "/login", "/account"]
+  },
+  "domain_overrides": {
+    "yellowpages.vn": {
+      "forced_scenario": "SIMPLE_DIRECTORY",
+      "pagination_selector": "a[rel='next'], a.next, .pagination a.next",
+      "allow_paths": ["/"],
+      "deny_paths": []
+    }
+  }
+}

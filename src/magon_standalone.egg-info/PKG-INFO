@@ -1,0 +1,100 @@
+Metadata-Version: 2.4
+Name: magon-standalone
+Version: 0.1.0
+Summary: Standalone supplier-intelligence slice extracted from MagonOS
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Provides-Extra: live
+Requires-Dist: beautifulsoup4>=4.12; extra == "live"
+Requires-Dist: requests>=2.32; extra == "live"
+Requires-Dist: playwright>=1.52; extra == "live"
+
+# MagonOS Standalone
+
+Standalone supplier-intelligence slice extracted from the MagonOS repository.
+
+Included:
+- supplier discovery pipeline
+- fixture-backed standalone runtime
+- standalone SQLite persistence
+- standalone HTTP API
+- narrow downstream feedback ingestion
+- simple browser-inspectable HTML pages
+
+Not included:
+- Odoo ORM/models/views
+- CRM / RFQ / quote / order / accounting ownership
+- Odoo admin UI
+- commercial side effects
+
+## Setup
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -U pip setuptools wheel
+pip install -e .
+# Optional only if you want live web crawling instead of fixture mode:
+pip install -e .[live]
+```
+
+## Run standalone pipeline against fixture
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+. .venv/bin/activate
+python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json
+```
+
+## Run standalone API
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+. .venv/bin/activate
+python scripts/run_api.py
+```
+
+Default URL:
+- [http://127.0.0.1:8091](http://127.0.0.1:8091)
+
+## Browser-inspectable pages
+- [http://127.0.0.1:8091/](http://127.0.0.1:8091/)
+- [http://127.0.0.1:8091/ui/raw-records](http://127.0.0.1:8091/ui/raw-records)
+- [http://127.0.0.1:8091/ui/companies](http://127.0.0.1:8091/ui/companies)
+- [http://127.0.0.1:8091/ui/scores](http://127.0.0.1:8091/ui/scores)
+- [http://127.0.0.1:8091/ui/review-queue](http://127.0.0.1:8091/ui/review-queue)
+- [http://127.0.0.1:8091/ui/feedback-status](http://127.0.0.1:8091/ui/feedback-status)
+
+## API endpoints
+- `GET /health`
+- `GET /status`
+- `GET /raw-records`
+- `GET /companies`
+- `GET /scores`
+- `GET /dedup-decisions`
+- `GET /review-queue`
+- `GET /feedback-events`
+- `GET /feedback-status`
+- `GET /feedback-status/{source_key}`
+- `POST /runs`
+- `POST /feedback-events`
+
+## Trigger a pipeline run through the API
+```bash
+curl -X POST http://127.0.0.1:8091/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"fixture":"tests/fixtures/vn_suppliers_raw.json"}'
+```
+
+## Inspect stored results from CLI
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+. .venv/bin/activate
+python scripts/inspect_results.py --table companies
+python scripts/inspect_results.py --table feedback-status
+```
+
+## Run tests
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+. .venv/bin/activate
+python -m unittest discover -s tests -p 'test_*.py'
+```

@@ -1,0 +1,50 @@
+[
+  {
+    "source_type": "directory",
+    "source_url": "https://www.yellowpages.vn/lgs/1187978875/minh-phat-packaging-co-ltd.html",
+    "external_id": "yp:1187978875",
+    "company_name": "Minh Phat Packaging Co., Ltd",
+    "address_text": "Lot B2, Tan Tao Industrial Park, Binh Tan District, Ho Chi Minh City",
+    "phone": "+84 28 3754 8899",
+    "email": "sales@minhphatpack.vn",
+    "website": "minhphatpack.vn",
+    "capabilities_text": "corrugated boxes; flexible packaging; offset printing",
+    "labels": ["packaging", "offset", "corrugated"],
+    "parser_confidence": 0.92,
+    "source_confidence": 0.88,
+    "source_fingerprint": "raw-minhphat-1",
+    "candidate_dedup_fingerprint": "cand-minhphat"
+  },
+  {
+    "source_type": "registry",
+    "source_url": "https://masothue.com/0312345678-cong-ty-tnhh-minh-phat-packaging",
+    "external_id": "mst:0312345678",
+    "company_name": "Cong Ty TNHH Minh Phat Packaging",
+    "legal_name": "CONG TY TNHH MINH PHAT PACKAGING",
+    "address_text": "KCN Tan Tao, Quan Binh Tan, TP Ho Chi Minh",
+    "phone": "02837548899",
+    "website": "https://www.minhphatpack.vn/",
+    "capabilities_text": "bao bi carton; in offset",
+    "labels": ["packaging", "carton"],
+    "parser_confidence": 0.83,
+    "source_confidence": 0.80,
+    "source_fingerprint": "raw-minhphat-2",
+    "candidate_dedup_fingerprint": "cand-minhphat"
+  },
+  {
+    "source_type": "directory",
+    "source_url": "https://www.yellowpages.vn/lgs/1188003142/saigon-label-print-jsc.html",
+    "external_id": "yp:1188003142",
+    "company_name": "Saigon Label Print JSC",
+    "address_text": "Thu Duc City, Ho Chi Minh City",
+    "phone": "+84 28 3897 1122",
+    "email": "contact@saigonlabel.vn",
+    "website": "https://saigonlabel.vn",
+    "capabilities_text": "self-adhesive labels; flexo label printing",
+    "labels": ["label", "flexo"],
+    "parser_confidence": 0.90,
+    "source_confidence": 0.85,
+    "source_fingerprint": "raw-saigonlabel-1",
+    "candidate_dedup_fingerprint": "cand-saigonlabel"
+  }
+]
