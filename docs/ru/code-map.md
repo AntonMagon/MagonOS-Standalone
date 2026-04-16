@@ -141,6 +141,15 @@ Versioned memory проекта.
 - теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
 - это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
 
+### `scripts/run_platform.sh`
+
+Backend-only entrypoint для standalone runtime.
+
+Важно:
+- локально он по-прежнему предпочитает repo-owned `.venv/bin/python`
+- если `.venv` нет, но пакет уже установлен в активный Python окружения, скрипт корректно падает назад на `python3`
+- это нужно для CI smoke-runtime, где editable install делается в runner Python без локальной `.venv`
+
 ### `Start_Platform.command`
 
 Desktop launcher-обёртка для локального старта с Finder/двойного клика.

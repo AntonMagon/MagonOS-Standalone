@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_PYTHON="$REPO_ROOT/.venv/bin/python"
+FALLBACK_PYTHON="$(command -v python3 || command -v python || true)"
 DEFAULT_DB="$REPO_ROOT/data/platform.sqlite3"
 DEFAULT_FIXTURE="$REPO_ROOT/tests/fixtures/vn_suppliers_raw.json"
 
@@ -68,8 +69,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! -x "$VENV_PYTHON" ]]; then
-  echo "Missing virtualenv Python: $VENV_PYTHON" >&2
+if [[ -x "$VENV_PYTHON" ]]; then
+  PYTHON_BIN="$VENV_PYTHON"
+elif [[ -n "$FALLBACK_PYTHON" ]]; then
+  # RU: В локальном repo по умолчанию предпочитаем versioned .venv, но в CI editable install идёт в runner Python без .venv, и runtime entrypoint не должен падать только из-за этого.
+  PYTHON_BIN="$FALLBACK_PYTHON"
+else
+  echo "Missing Python runtime: $VENV_PYTHON" >&2
   echo "Create it first: python3 -m venv .venv && ./.venv/bin/pip install -e ." >&2
   exit 1
 fi
@@ -98,7 +104,7 @@ if [[ "$should_seed" == "1" ]]; then
     exit 1
   fi
   echo "[magon-platform] seeding standalone DB from fixture"
-  "$VENV_PYTHON" "$REPO_ROOT/scripts/run_pipeline.py" \
+  "$PYTHON_BIN" "$REPO_ROOT/scripts/run_pipeline.py" \
     --db-path "$DB_PATH" \
     --fixture "$FIXTURE_PATH" \
     --query "$QUERY" \
@@ -114,7 +120,7 @@ if [[ "$OPEN_BROWSER" == "1" ]]; then
   (sleep 2; open "http://$HOST:$PORT/") >/dev/null 2>&1 &
 fi
 
-exec "$VENV_PYTHON" "$REPO_ROOT/scripts/run_api.py" \
+exec "$PYTHON_BIN" "$REPO_ROOT/scripts/run_api.py" \
   --host "$HOST" \
   --port "$PORT" \
   --db-path "$DB_PATH" \

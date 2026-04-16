@@ -60,15 +60,25 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 05:58 +07`
+- Updated at: `2026-04-17 06:08 +07`
 - Branch: `develop`
-- Current focus: Stable autosync, staggered automation cadence, and a verified path to promote develop to main
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
-- Biggest operational risk: Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
+- Current focus: Green PR checks and promotion of develop to main through the protected PR path
+- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 06:08 +07 | develop
+- Summary: Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent
+- Changed:
+  - scripts/run_platform.sh
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `bash -n scripts/run_platform.sh`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
 ### 2026-04-17 05:58 +07 | develop
 - Summary: Added periodic-run overlap lock and staggered Codex automation cadence
 - Changed:

@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 05:58 +07`
-- Current focus: Stable autosync, staggered automation cadence, and a verified path to promote develop to main
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
-- Biggest operational risk: Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
+- Auto-synced at: `2026-04-17 06:08 +07`
+- Current focus: Green PR checks and promotion of develop to main through the protected PR path
+- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
 - Validated contour:
   - company
   - commercial/customer context
