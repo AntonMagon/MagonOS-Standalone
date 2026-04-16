@@ -160,6 +160,39 @@ Versioned memory проекта.
 
 Локальный skill для pipeline/operator-контура, включая company -> opportunity -> quote intent -> handoff.
 
+### `skills/web-regression-pass/SKILL.md`
+
+Локальный skill для browser smoke/regression.
+Нужен, когда надо не "пощёлкать руками", а реально проверить web shell и операторские страницы через устойчивый regression-path.
+
+### `skills/ci-watch-fix/SKILL.md`
+
+Локальный skill для разбора красного CI или локального verification guard.
+Нужен, когда надо починить точную причину падения минимальным патчем.
+
+### `skills/verify-implementation/SKILL.md`
+
+Локальный skill для пост-implementation проверки.
+Нужен, когда код уже написан, но надо жёстко доказать, что задача действительно закрыта и ничего рядом не сломалось.
+
+### `skills/release-readiness-gate/SKILL.md`
+
+Локальный skill для финального verdict по готовности.
+Нужен перед merge, handoff, demo или release, когда требуется не "вроде ок", а явное `Ready / Ready with caveats / Not ready`.
+
+### `skills/docs-sync-curator/SKILL.md`
+
+Локальный skill для синхронизации `docs/`, `docs/ru/`, `AGENTS.md`, `.codex/config.toml` и script references с реальным runtime.
+
+### `skills/skill-pattern-scan/SKILL.md`
+
+Локальный skill для поиска повторяющихся проектных паттернов и предложения новых skills без дублирования существующих.
+
+### `skills/donor-boundary-audit/SKILL.md`
+
+Локальный skill для безопасного чтения donor/Odoo-репозитория.
+Нужен, когда надо достать бизнес-правила из legacy-кода, но не тащить donor-runtime обратно в standalone.
+
 ## Tests
 
 ### `tests/test_api.py`

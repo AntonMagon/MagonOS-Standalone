@@ -65,3 +65,21 @@
 3. пройти проверку
 4. обновить `.codex/project-memory.md`
 5. коммитить и пушить
+
+## Локальные project skills
+
+В репозитории есть локальные skills в `skills/*/SKILL.md`.
+Они нужны, чтобы не поднимать один и тот же рабочий контекст вручную на каждом проходе.
+
+Текущий набор:
+- `audit-docs-vs-runtime` — аудит истины проекта по коду, тестам и runtime
+- `git-safe-commit` — узкий безопасный commit/push path
+- `operate-platform` — запуск и проверка standalone-платформы
+- `operate-standalone-intelligence` — pipeline и operator contour
+- `web-regression-pass` — browser smoke/regression для web shell и operator pages
+- `ci-watch-fix` — разбор и починка CI/verification failures минимальным патчем
+- `verify-implementation` — жёсткий post-implementation verify pass
+- `release-readiness-gate` — финальный verdict по готовности к handoff/release
+- `docs-sync-curator` — синхронизация docs/ и docs/ru/ с реальным кодом
+- `skill-pattern-scan` — поиск повторяющихся workflow-паттернов под новые skills
+- `donor-boundary-audit` — безопасный аудит donor/Odoo-границы

@@ -60,15 +60,31 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:47 +07`
+- Updated at: `2026-04-17 02:57 +07`
 - Branch: `develop`
-- Current focus: Enforced Russian comment guard and completed hard repo workflow audit
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_russian_comment_contract`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Russian comment quality is now enforced by RU markers, but semantic usefulness still depends on disciplined review.
+- Current focus: Added project skills for regression, CI, verification, release gating, docs sync, skill scanning, and donor boundary audit
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: Existing older local skills still use the previous plain markdown format; the new skills already use explicit name/description frontmatter.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:57 +07 | develop
+- Summary: Added project skills for regression, CI, verification, release gating, docs sync, skill scanning, and donor boundary audit
+- Changed:
+  - skills/web-regression-pass/SKILL.md
+  - skills/ci-watch-fix/SKILL.md
+  - skills/verify-implementation/SKILL.md
+  - skills/release-readiness-gate/SKILL.md
+  - skills/docs-sync-curator/SKILL.md
+  - skills/skill-pattern-scan/SKILL.md
+  - skills/donor-boundary-audit/SKILL.md
+  - docs/ru/README.md
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - Existing older local skills still use the previous plain markdown format; the new skills already use explicit name/description frontmatter.
 ### 2026-04-17 02:47 +07 | develop
 - Summary: Enforced Russian comment guard and completed hard repo workflow audit
 - Changed:
