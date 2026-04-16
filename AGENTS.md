@@ -76,6 +76,7 @@ Canonical commands and local surfaces are defined in `docs/current-project-state
 - Russian repo documentation lives in `docs/ru/`.
 - Product-owned changes must update at least one relevant file in `docs/ru/` in the same commit.
 - Non-obvious business logic, routing logic, locale logic, persistence transitions, and workflow guards must have concise Russian comments or docstrings near the changed code.
+- For changed code files, at least one added Russian explanatory line with an explicit `RU:` marker must be present in the staged diff.
 - Do not add noise comments. Add Russian comments only where they explain purpose, boundary, or non-obvious behavior.
 - If the code changed and no Russian explanation was needed, that decision must still be justified by the code being trivial.
 

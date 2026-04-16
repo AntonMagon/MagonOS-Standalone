@@ -91,6 +91,7 @@ Purpose:
 
 - prevent commits that change product-owned files without also updating `.codex/project-memory.md`
 - prevent commits that change product-owned files without also updating the Russian documentation layer in `docs/ru/`
+- prevent commits that change code files without added Russian `RU:` explanations in the staged diff
 - ensure the memory file still contains the required markers
 
 Product-owned paths for this guard:
@@ -109,6 +110,14 @@ Russian-document requirement:
 
 - if product-owned files are staged, at least one staged file must be inside `docs/ru/`
 - this keeps the Russian explanation layer moving with the code, instead of becoming stale after the first setup
+
+Russian-comment requirement:
+
+- for changed code files, the staged diff must include at least one added line with `RU:` and Cyrillic text
+- accepted examples:
+  - `# RU: почему здесь нужен этот fallback`
+  - `// RU: зачем этот переход делается именно тут`
+  - `/* RU: почему это нельзя унести в ERP */`
 
 ### pre-push
 
@@ -157,7 +166,7 @@ Minimal disciplined path for a substantial task:
 1. `./scripts/restore_context.sh`
 2. implement the change
 3. update the relevant file in `docs/ru/`
-4. add concise Russian comments/docstrings in changed non-obvious logic when needed
+4. add concise Russian comments/docstrings in changed non-obvious logic with explicit `RU:` markers
 5. `./scripts/verify_workflow.sh`
 6. `./.venv/bin/python scripts/finalize_task.py ...`
 7. `git add ...`

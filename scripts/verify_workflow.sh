@@ -16,6 +16,7 @@ done
 
 cd "$REPO_ROOT"
 
+# RU: Проверяем не только shell/python синтаксис, но и то, что repo-level guard scripts вообще запускаемы.
 bash -n \
   scripts/run_platform.sh \
   scripts/run_unified_platform.sh \
@@ -31,7 +32,8 @@ bash -n \
   tests.test_operations \
   tests.test_workforce \
   tests.test_deploy \
-  tests.test_repo_workflow
+  tests.test_repo_workflow \
+  tests.test_russian_comment_contract
 
 if [[ "$WITH_WEB" == "1" ]]; then
   (cd apps/web && npm run typecheck)

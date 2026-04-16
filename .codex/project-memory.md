@@ -56,18 +56,37 @@ It exists so the project context survives across sessions instead of being re-ex
 - If product-owned files change, `.codex/project-memory.md` must be updated in the same commit.
 - If product-owned files change, at least one relevant file in `docs/ru/` must be updated in the same commit.
 - Non-obvious changed logic must get concise Russian comments or docstrings near the code.
+- Changed code files must include added `RU:` explanatory lines in the staged diff.
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:39 +07`
+- Updated at: `2026-04-17 02:47 +07`
 - Branch: `develop`
-- Current focus: keep repo guards, Russian docs, and local skills aligned so the workflow cannot silently drift again
-- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Russian comment quality is now required by policy, but still depends on human review rather than AST-level enforcement
+- Current focus: Enforced Russian comment guard and completed hard repo workflow audit
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_russian_comment_contract`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Russian comment quality is now enforced by RU markers, but semantic usefulness still depends on disciplined review.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:47 +07 | develop
+- Summary: Enforced Russian comment guard and completed hard repo workflow audit
+- Changed:
+  - src/magon_standalone/russian_comment_contract.py
+  - scripts/check_russian_comment_contract.py
+  - tests/test_russian_comment_contract.py
+  - .githooks/pre-commit
+  - scripts/verify_workflow.sh
+  - AGENTS.md
+  - docs/repo-workflow.md
+  - docs/ru/README.md
+  - docs/ru/repo-workflow.md
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_russian_comment_contract`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Russian comment quality is now enforced by RU markers, but semantic usefulness still depends on disciplined review.
 ### 2026-04-17 02:39 +07 | develop
 - Summary: audit repo guards, skills, and Russian documentation contract end-to-end
 - Changed:

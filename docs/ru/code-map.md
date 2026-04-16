@@ -129,10 +129,16 @@ Versioned memory проекта.
 Не даёт коммитить product-owned изменения без:
 - обновления `.codex/project-memory.md`
 - обновления хотя бы одного файла в `docs/ru/`
+- добавленного `RU:` пояснения в staged diff каждого изменённого кодового файла
 
 ### `.githooks/pre-push`
 
 Не даёт пушить без verify workflow.
+
+### `scripts/check_russian_comment_contract.py`
+
+Проверяет comment-contract по изменённому коду.
+Если кодовый файл меняется, а в staged diff нет добавленной строки с `RU:` и русским текстом, commit должен падать.
 
 ## Skills
 
