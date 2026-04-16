@@ -154,8 +154,9 @@ if [[ "$DETACH" == "1" ]]; then
   wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health" "backend"
 
   echo "[magon-restart] starting web on http://$WEB_HOST:$WEB_PORT"
+  # RU: Detach-ветка должна поднимать тот же устойчивый Next dev runtime, что и канонический run_unified_platform.sh, иначе на macOS снова всплывёт EMFILE.
   start_detached "$WEB_LOG" /tmp/magon-standalone-web.pid \
-    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
+    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
   wait_for_url "http://$WEB_HOST:$WEB_PORT/" "web"
 
   echo
@@ -177,6 +178,7 @@ if [[ "$OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
   (sleep 5; open "http://$WEB_HOST:$WEB_PORT/" >/dev/null 2>&1 || true) &
 fi
 
+# RU: Foreground-режим всегда идёт через канонический unified entrypoint; этот .command-файл только desktop-обёртка для жёсткого рестарта и автo-open браузера.
 unified_args=(
   --backend-port "$BACKEND_PORT"
   --web-port "$WEB_PORT"

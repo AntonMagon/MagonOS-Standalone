@@ -60,15 +60,39 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 03:33 +07`
+- Updated at: `2026-04-17 04:09 +07`
 - Branch: `develop`
-- Current focus: Keep the visual project map and recurring automations aligned with real repo/runtime truth
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Automations now exist in Codex, but their long-run value still depends on the project continuing to record true state in .codex/project-memory.md and docs/ru.
+- Current focus: Use project-safe browser automation and curated skills as the default UI debugging stack
+- Last verified workflow status: PASS `bash -n Start_Platform.command scripts/run_unified_platform.sh scripts/run_playwright_cli.sh`, PASS `./scripts/run_playwright_cli.sh --help`, PASS `python3 /Users/anton/.codex/skills/screenshot/scripts/take_screenshot.py --help`, PASS `./scripts/run_playwright_cli.sh open http://127.0.0.1:3000/ --headed`, PASS `cd apps/web && npm run typecheck`
+- Biggest operational risk: playwright-interactive is installed, but it still needs a new Codex session with js_repl enabled before it becomes usable as a persistent in-process browser debugger.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:09 +07 | develop
+- Summary: Integrated curated browser automation skills and project-safe Playwright wrapper
+- Changed:
+  - Installed curated skills: playwright-interactive, screenshot, cli-creator
+  - scripts/run_playwright_cli.sh and .gitignore browser artifact/cache rules
+  - Russian docs and homepage wording for live UI review workflow
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_unified_platform.sh scripts/run_playwright_cli.sh`
+  - PASS `./scripts/run_playwright_cli.sh --help`
+  - PASS `python3 /Users/anton/.codex/skills/screenshot/scripts/take_screenshot.py --help`
+  - PASS `./scripts/run_playwright_cli.sh open http://127.0.0.1:3000/ --headed`
+  - PASS `cd apps/web && npm run typecheck`
+- Risk:
+  - playwright-interactive is installed, but it still needs a new Codex session with js_repl enabled before it becomes usable as a persistent in-process browser debugger.
+### 2026-04-17 03:46 +07 | develop
+- Summary: Clarified and hardened Start_Platform desktop launcher semantics
+- Changed:
+  - Start_Platform.command detach path and canonical wrapper behavior
+  - docs/ru/code-map.md launcher documentation
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_unified_platform.sh`
+  - PASS `./Start_Platform.command --help`
+- Risk:
+  - Start_Platform.command is still a convenience launcher; canonical automation and docs should continue to target scripts/run_unified_platform.sh.
 ### 2026-04-17 03:33 +07 | develop
 - Summary: Added live project visual map and enabled recurring repo/platform/map automations
 - Changed:

@@ -114,6 +114,7 @@ App Router страницы Next.js:
 
 Словари интерфейса.
 Сейчас русский слой выступает базовым, а английский — override-слоем поверх него.
+Для пользовательских экранов русский текст должен звучать как нормальный деловой интерфейс, а не как внутренняя инженерная терминология вроде "runtime", "контур ради контура" или "сырые записи" без пояснения.
 
 ## Repo workflow
 
@@ -137,6 +138,19 @@ Versioned memory проекта.
 Важно:
 - теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
 - это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
+
+### `Start_Platform.command`
+
+Desktop launcher-обёртка для локального старта с Finder/двойного клика.
+Нужен для удобства:
+- жёстко освободить backend/web порты
+- при необходимости очистить локальную SQLite БД
+- открыть браузер автоматически
+
+Важно:
+- это не новый канонический runtime path
+- реальный all-in-one entrypoint всё равно `scripts/run_unified_platform.sh`
+- `Start_Platform.command` просто подготавливает окружение и в foreground передаёт управление туда
 
 ### `scripts/finalize_task.py`
 
@@ -167,6 +181,16 @@ Versioned memory проекта.
 - `docs/ru/visuals/project-map.json`
 - `docs/visuals/project-map.md`
 - `docs/visuals/project-map.json`
+
+### `scripts/run_playwright_cli.sh`
+
+Project-safe wrapper вокруг установленного `playwright` skill.
+Нужен для живой browser automation именно в этом репозитории:
+- использует `~/.codex/skills/playwright/scripts/playwright_cli.sh`
+- уводит `npx` cache в `.cache/npm-playwright`
+- обходит проблему с root-owned файлами в `~/.npm`
+
+Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
 ## Skills
 
