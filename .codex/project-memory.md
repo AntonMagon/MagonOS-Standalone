@@ -60,15 +60,24 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 03:01 +07`
+- Updated at: `2026-04-17 03:10 +07`
 - Branch: `develop`
-- Current focus: Activated project skills via CODEX_HOME symlinks and normalized skill metadata
-- Last verified workflow status: PASS `bash scripts/install_project_skills.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The current live Codex session still needs a restart before newly linked skills appear in the runtime-discovered skill list.
+- Current focus: Ran project skill smoke audit and hardened unified platform watch mode
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: Current skill execution is procedural: event-driven skills like ci-watch-fix and donor-boundary-audit still need a real failing CI or explicit donor task to be meaningfully exercised.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 03:10 +07 | develop
+- Summary: Ran project skill smoke audit and hardened unified platform watch mode
+- Changed:
+  - scripts/run_unified_platform.sh
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - Current skill execution is procedural: event-driven skills like ci-watch-fix and donor-boundary-audit still need a real failing CI or explicit donor task to be meaningfully exercised.
 ### 2026-04-17 03:01 +07 | develop
 - Summary: Activated project skills via CODEX_HOME symlinks and normalized skill metadata
 - Changed:

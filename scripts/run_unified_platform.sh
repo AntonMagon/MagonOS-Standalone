@@ -111,4 +111,8 @@ echo "[magon-unified] public shell: http://$WEB_HOST:$WEB_PORT/"
 echo "[magon-unified] operator surfaces: http://$WEB_HOST:$WEB_PORT/ops-workbench and http://$WEB_HOST:$WEB_PORT/ui/companies"
 
 cd "$WEB_DIR"
-MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
+# RU: На macOS watch limit часто роняет Next dev через EMFILE, поэтому unified shell запускаем с polling-mode по умолчанию.
+MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" \
+WATCHPACK_POLLING=true \
+WATCHPACK_POLLING_INTERVAL=1000 \
+npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"

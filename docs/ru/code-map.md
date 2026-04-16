@@ -119,6 +119,17 @@ Versioned memory проекта.
 Канонический restore context entrypoint.
 Проверяет обязательные repo files и печатает их в стабильном порядке.
 
+### `scripts/run_unified_platform.sh`
+
+Канонический entrypoint для полного standalone shell:
+- backend
+- public web shell
+- operator routes через web
+
+Важно:
+- теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
+- это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
+
 ### `scripts/finalize_task.py`
 
 Канонический finalize entrypoint.
