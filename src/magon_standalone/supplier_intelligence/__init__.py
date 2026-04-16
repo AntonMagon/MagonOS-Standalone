@@ -7,11 +7,14 @@ Live crawling helpers remain available behind optional dependencies.
 from .api import SupplierIntelligenceApiServer, SupplierIntelligenceApiService, create_wsgi_app
 from .runtime import build_standalone_pipeline, run_standalone_pipeline
 from .sqlite_persistence import SqliteSupplierIntelligenceStore
+from .workforce_estimation_service import WorkforceEstimationConfig, WorkforceEstimationEngine
 
 __all__ = [
     "SupplierIntelligenceApiServer",
     "SupplierIntelligenceApiService",
     "SqliteSupplierIntelligenceStore",
+    "WorkforceEstimationConfig",
+    "WorkforceEstimationEngine",
     "build_standalone_pipeline",
     "create_wsgi_app",
     "run_standalone_pipeline",

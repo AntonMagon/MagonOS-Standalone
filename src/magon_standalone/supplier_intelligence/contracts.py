@@ -254,12 +254,14 @@ class FeedbackStatusProjection(TypedDict, total=False):
     last_event_id: str | None
     last_event_type: str | None
     last_event_at: str | None
+    last_event_is_synthetic: bool
     routing_event_id: str | None
     routing_outcome: str | None
     manual_review_status: str | None
     routing_reason_code: str | None
     routing_notes: str | None
     routing_is_manual_override: bool
+    routing_is_synthetic: bool
     routing_occurred_at: str | None
     qualification_event_id: str | None
     qualification_decision_id: int | None
@@ -267,10 +269,12 @@ class FeedbackStatusProjection(TypedDict, total=False):
     qualification_reason_code: str | None
     qualification_notes: str | None
     qualification_is_manual_override: bool
+    qualification_is_synthetic: bool
     qualification_occurred_at: str | None
     partner_linkage_event_id: str | None
     partner_id: int | None
     partner_linked: bool
+    partner_is_synthetic: bool
     partner_occurred_at: str | None
     commercial_event_id: str | None
     crm_lead_id: int | None
@@ -280,6 +284,7 @@ class FeedbackStatusProjection(TypedDict, total=False):
     commercial_reason_code: str | None
     commercial_notes: str | None
     commercial_is_manual_override: bool
+    commercial_is_synthetic: bool
     commercial_occurred_at: str | None
     updated_at: str | None
 
@@ -327,6 +332,7 @@ class FeedbackEventPayload:
     reason_code: str | None = None
     notes: str | None = None
     is_manual_override: bool = False
+    is_synthetic: bool = False
     payload: dict[str, Any] | None = None
 
 
@@ -413,6 +419,7 @@ _BASE_FEEDBACK_FIELDS = frozenset(
         "occurred_at",
         "payload_hash",
         "payload",
+        "is_synthetic",
     }
 )
 

@@ -14,14 +14,25 @@ if str(SRC_ROOT) not in sys.path:
 from magon_standalone.supplier_intelligence.api import SupplierIntelligenceApiServer, SupplierIntelligenceApiService
 
 
+def _env(name: str, fallback: str, legacy: str | None = None) -> str:
+    value = os.environ.get(name)
+    if value:
+        return value
+    if legacy:
+        legacy_value = os.environ.get(legacy)
+        if legacy_value:
+            return legacy_value
+    return fallback
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description='Run MagonOS Standalone API')
-    parser.add_argument('--host', default='127.0.0.1')
-    parser.add_argument('--port', type=int, default=8091)
-    parser.add_argument('--db-path', default=str(REPO_ROOT / 'data' / 'supplier_intelligence.sqlite3'))
-    parser.add_argument('--default-query', default='printing packaging vietnam')
-    parser.add_argument('--default-country', default='VN')
-    parser.add_argument('--integration-token', default=os.environ.get('MAGON_STANDALONE_INTEGRATION_TOKEN'))
+    parser.add_argument('--host', default=_env('MAGON_STANDALONE_HOST', '127.0.0.1', 'SUPPLIER_INTELLIGENCE_API_HOST'))
+    parser.add_argument('--port', type=int, default=int(_env('MAGON_STANDALONE_PORT', '8091', 'SUPPLIER_INTELLIGENCE_API_PORT')))
+    parser.add_argument('--db-path', default=_env('MAGON_STANDALONE_DB_PATH', str(REPO_ROOT / 'data' / 'platform.sqlite3'), 'SUPPLIER_INTELLIGENCE_DB_PATH'))
+    parser.add_argument('--default-query', default=_env('MAGON_STANDALONE_DEFAULT_QUERY', 'printing packaging vietnam'))
+    parser.add_argument('--default-country', default=_env('MAGON_STANDALONE_DEFAULT_COUNTRY', 'VN'))
+    parser.add_argument('--integration-token', default=os.environ.get('MAGON_STANDALONE_INTEGRATION_TOKEN') or os.environ.get('SUPPLIER_INTELLIGENCE_SYNC_TOKEN'))
     args = parser.parse_args()
 
     service = SupplierIntelligenceApiService(
