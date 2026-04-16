@@ -37,6 +37,55 @@ jobs:
             tests.test_workforce \
             tests.test_deploy
 
+  smoke-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Start backend runtime
+        run: |
+          chmod +x scripts/run_platform.sh
+          scripts/run_platform.sh --host 127.0.0.1 --port 8091 --fresh --seed >/tmp/magon-runtime.log 2>&1 &
+          echo $! >/tmp/magon-runtime.pid
+
+      - name: Wait for health
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8091/health >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Runtime failed to become healthy" >&2
+          cat /tmp/magon-runtime.log >&2 || true
+          exit 1
+
+      - name: Verify key backend pages
+        run: |
+          curl -fsS http://127.0.0.1:8091/health >/dev/null
+          curl -fsS http://127.0.0.1:8091/ui/companies >/dev/null
+          curl -fsS http://127.0.0.1:8091/ui/review-queue >/dev/null
+
+      - name: Stop runtime
+        if: always()
+        run: |
+          if [ -f /tmp/magon-runtime.pid ]; then
+            kill "$(cat /tmp/magon-runtime.pid)" 2>/dev/null || true
+            wait "$(cat /tmp/magon-runtime.pid)" 2>/dev/null || true
+          fi
+          cat /tmp/magon-runtime.log || true
+
   web-build:
     runs-on: ubuntu-latest
     defaults:
