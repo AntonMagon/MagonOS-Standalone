@@ -57,15 +57,25 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:04 +07`
+- Updated at: `2026-04-17 02:08 +07`
 - Branch: `develop`
-- Current focus: keep versioned hooks stable so commit and push paths stay enforceable
+- Current focus: keep push-path verification strict but resilient to a one-off local timeout
 - Last verified workflow status: PASS `bash -n .githooks/pre-push`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: the repo still contains unrelated unstaged product work that must stay out of this workflow commit set
+- Biggest operational risk: the repo still contains unrelated unstaged product work that must stay outside these workflow commits
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:08 +07 | develop
+- Summary: harden pre-push verification against one-off local test flake
+- Changed:
+  - .githooks/pre-push
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n .githooks/pre-push`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - the repo still contains unrelated unstaged product work that must stay outside these workflow commits
 ### 2026-04-17 02:04 +07 | develop
 - Summary: fix pre-push hook empty-argument failure and confirm push path
 - Changed:

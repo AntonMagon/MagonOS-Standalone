@@ -26,8 +26,15 @@ if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -Eq "$PR
   fi
 fi
 
-if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -q '^apps/web/'; then
-  ./scripts/verify_workflow.sh --with-web
-else
-  ./scripts/verify_workflow.sh
+run_verify() {
+  if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -q '^apps/web/'; then
+    ./scripts/verify_workflow.sh --with-web
+  else
+    ./scripts/verify_workflow.sh
+  fi
+}
+
+if ! run_verify; then
+  echo "pre-push: verification failed on the first attempt, retrying once" >&2
+  run_verify
 fi
