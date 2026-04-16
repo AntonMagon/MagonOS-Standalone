@@ -60,15 +60,51 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:18 +07`
+- Updated at: `2026-04-17 04:33 +07`
 - Branch: `develop`
-- Current focus: Keep repo verification accurate while integrating automation and browser tooling
+- Current focus: Completed automatic root-doc sync for AGENTS.md and README.md
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The operating model is now stable again, but skill execution in Codex remains prompt-driven or schedule-driven rather than event-driven on every file save.
+- Biggest operational risk: The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:33 +07 | develop
+- Summary: Completed automatic root-doc sync for AGENTS.md and README.md
+- Changed:
+  - scripts/sync_operating_docs.py root-doc sync command
+  - src/magon_standalone/operating_docs_sync.py payload parsing and AGENTS/README rendering
+  - scripts/finalize_task.py scripts/verify_workflow.sh .githooks/pre-commit scripts/restore_context.sh sync enforcement
+  - docs/repo-workflow.md docs/ru/README.md docs/ru/repo-workflow.md docs/ru/code-map.md root-doc contract docs
+  - tests/test_operating_docs_sync.py sync tests
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
+### 2026-04-17 04:31 +07 | develop
+- Summary: Made root operating docs truly auto-synced with project memory and automations
+- Changed:
+  - scripts/sync_operating_docs.py root-doc sync entrypoint
+  - src/magon_standalone/operating_docs_sync.py canonical AGENTS/README renderer
+  - scripts/finalize_task.py scripts/verify_workflow.sh .githooks/pre-commit scripts/restore_context.sh sync enforcement
+  - AGENTS.md README.md docs/repo-workflow.md docs/ru/README.md docs/ru/repo-workflow.md docs/ru/code-map.md root-doc automation contract
+  - tests/test_operating_docs_sync.py sync coverage
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Codex still does not auto-run the right skill on every file save across chats; the strongest available automation path is now finalize, hooks, and scheduled automations.
+### 2026-04-17 04:29 +07 | develop
+- Summary: Automated root operating-doc sync and tightened repo guard automation
+- Changed:
+  - scripts/sync_operating_docs.py root-doc generator
+  - src/magon_standalone/operating_docs_sync.py sync payload and markers
+  - scripts/finalize_task.py scripts/verify_workflow.sh .githooks/pre-commit scripts/restore_context.sh workflow integration
+  - AGENTS.md README.md docs/repo-workflow.md docs/ru/* root-doc sync contract
+  - tests/test_operating_docs_sync.py automation-safe sync coverage
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Codex still does not provide true per-file event-driven skill execution across chats; the repo is now automated through hooks, finalize, and scheduled automations instead.
 ### 2026-04-17 04:18 +07 | develop
 - Summary: Fixed verify_workflow regression that broke pre-push after browser automation integration
 - Changed:

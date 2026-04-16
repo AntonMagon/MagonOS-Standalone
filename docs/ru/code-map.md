@@ -192,11 +192,21 @@ Project-safe wrapper вокруг установленного `playwright` skil
 
 Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
+### `scripts/sync_operating_docs.py`
+
+Канонический синхронизатор корневых operating docs.
+Собирает активный статус из `.codex/project-memory.md`, `docs/current-project-state.md`, repo-local skills и активных automation в `~/.codex/automations/`, после чего обновляет:
+- `AGENTS.md`
+- `README.md`
+
+Нужен, чтобы корневые файлы не жили отдельной устаревшей жизнью после реальной работы в репозитории.
+
 ### `scripts/verify_workflow.sh`
 
 Главная локальная verification-цепочка репозитория.
 Сейчас она обязана проверять:
 - shell syntax для канонических launcher- и guard-скриптов
+- синхронность `AGENTS.md` и `README.md`
 - backend/unit tests
 - web typecheck при `--with-web`
 

@@ -124,6 +124,40 @@ Canonical rules:
 
 Detailed workflow: `docs/repo-workflow.md`
 
+## Auto-synced operating status
+<!-- AUTO-SYNC:README:START -->
+- Auto-synced at: `2026-04-17 04:33 +07`
+- Current focus: Completed automatic root-doc sync for AGENTS.md and README.md
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
+- Validated contour:
+  - company
+  - commercial/customer context
+  - opportunity
+  - quote intent / RFQ boundary
+  - production handoff
+  - production board
+- Standalone-owned capabilities:
+  - supplier intelligence pipeline
+  - normalization / enrichment / dedup / scoring
+  - review queue
+  - routing / qualification decisions
+  - feedback ledger / projection
+  - workforce estimation
+- Active repo automations:
+  - Hourly Platform Smoke
+  - Hourly Repo Guard
+  - Hourly Visual Map
+  - Weekly Release Gate
+- Runtime surfaces:
+  - public shell: `http://127.0.0.1:3000/`
+  - dashboard: `http://127.0.0.1:3000/dashboard`
+  - ops workbench: `http://127.0.0.1:3000/ops-workbench`
+  - operator console: `http://127.0.0.1:3000/ops`
+  - operator pages: `http://127.0.0.1:3000/ui/*`
+  - direct backend debug: `http://127.0.0.1:8091/`
+<!-- AUTO-SYNC:README:END -->
+
 ## Deploy notes
 - This repo is the official product runtime.
 - The source Odoo repo is no longer the official startup path.

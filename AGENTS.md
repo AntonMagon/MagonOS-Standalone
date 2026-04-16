@@ -106,3 +106,36 @@ A task is done only when:
 - the relevant path is verified with a real command
 - ownership boundaries remain explicit
 - no accidental Odoo runtime dependency was introduced
+
+## Auto-Synced Repo State
+<!-- AUTO-SYNC:AGENTS:START -->
+- Auto-synced at: `2026-04-17 04:33 +07`
+- Current focus: Completed automatic root-doc sync for AGENTS.md and README.md
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
+- Validated contour:
+  - company
+  - commercial/customer context
+  - opportunity
+  - quote intent / RFQ boundary
+  - production handoff
+  - production board
+- Active repo automations:
+  - Hourly Platform Smoke
+  - Hourly Repo Guard
+  - Hourly Visual Map
+  - Weekly Release Gate
+- Repo-local operating skills:
+  - audit-docs-vs-runtime
+  - ci-watch-fix
+  - docs-sync-curator
+  - donor-boundary-audit
+  - git-safe-commit
+  - operate-platform
+  - operate-standalone-intelligence
+  - project-visual-map
+  - release-readiness-gate
+  - skill-pattern-scan
+  - verify-implementation
+  - web-regression-pass
+<!-- AUTO-SYNC:AGENTS:END -->

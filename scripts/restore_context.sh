@@ -4,6 +4,8 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REQUIRED_FILES=(
   "AGENTS.md"
+  # RU: README теперь тоже часть живого operating-layer и должен восстанавливаться вместе с остальным контекстом.
+  "README.md"
   "docs/current-project-state.md"
   "docs/ru/README.md"
   "docs/ru/current-project-state.md"

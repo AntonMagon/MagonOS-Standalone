@@ -18,6 +18,7 @@ This document defines the canonical workflow that closes that gap.
 ## Required files
 
 - `AGENTS.md`
+- `README.md`
 - `docs/current-project-state.md`
 - `docs/ru/README.md`
 - `docs/ru/current-project-state.md`
@@ -25,6 +26,7 @@ This document defines the canonical workflow that closes that gap.
 - `.codex/project-memory.md`
 
 These are the repo-level context files that must stay aligned.
+`AGENTS.md` and `README.md` are now root operating docs, not passive prose.
 
 ## Canonical startup
 
@@ -60,6 +62,7 @@ What it does:
 - runs the verification commands you pass in
 - refuses to write a success record if verification fails
 - updates `.codex/project-memory.md`
+- auto-syncs the root `AGENTS.md` and `README.md` operating-status blocks from current project memory, skills, and active automations
 - refreshes the `Active Context` block
 - prepends a new worklog entry with timestamp and branch
 
@@ -144,6 +147,7 @@ Canonical repo verification:
 This verifies:
 
 - repo workflow scripts and hooks parse cleanly
+- root `AGENTS.md` and `README.md` are in sync with canonical repo state
 - backend/unit workflow tests still pass
 - optional web typecheck when requested
 

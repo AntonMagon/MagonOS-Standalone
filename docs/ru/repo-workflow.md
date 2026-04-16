@@ -23,15 +23,20 @@
 ./.venv/bin/python scripts/finalize_task.py --summary "..." --changed "..." --verify "./scripts/verify_workflow.sh"
 ```
 
+Этот шаг теперь не только пишет `.codex/project-memory.md`, но и автоматически пересобирает корневые `AGENTS.md` и `README.md`.
+
 ## Что обязательно синхронизировать
 
 - `AGENTS.md`
+- `README.md`
 - `docs/current-project-state.md`
 - `docs/ru/README.md`
 - `docs/ru/current-project-state.md`
 - `.codex/config.toml`
 - `.codex/project-memory.md`
 - `docs/repo-workflow.md`
+
+Корневые `AGENTS.md` и `README.md` считаются живыми operating docs и должны совпадать с текущим состоянием репозитория.
 
 ## Что требуют git hooks
 
@@ -47,6 +52,8 @@
 Перед push обязательно проходит:
 - `./scripts/verify_workflow.sh`
 - `cd apps/web && npm run typecheck`, если в исходящем диапазоне есть `apps/web/`
+
+Внутри `verify_workflow` теперь дополнительно проверяется, что `AGENTS.md` и `README.md` не отстали от project memory, skills и automation state.
 
 ## Что считается обязательным русским слоем
 

@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from magon_standalone.operating_docs_sync import sync_operating_docs
 from magon_standalone.repo_workflow import FinalizeRecord, update_project_memory
 
 
@@ -72,6 +73,9 @@ def main() -> int:
         )
         updated = update_project_memory(memory_path.read_text(encoding="utf-8"), record)
         memory_path.write_text(updated, encoding="utf-8")
+        # RU: После обновления project-memory сразу пересобираем корневые operating docs, чтобы README и AGENTS не отставали от реального состояния.
+        for path, new_text in sync_operating_docs(repo_root).items():
+            path.write_text(new_text, encoding="utf-8")
     except RuntimeError as exc:
         print(f"finalize-task: {exc}", file=sys.stderr)
         return 1
