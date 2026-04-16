@@ -21,6 +21,8 @@ cd "$REPO_ROOT"
 bash -n \
   scripts/run_platform.sh \
   scripts/run_unified_platform.sh \
+  # RU: Browser automation wrapper тоже входит в канонический contract и не должен выпадать из syntax-check при repo verification.
+  scripts/run_playwright_cli.sh \
   scripts/restore_context.sh \
   scripts/install_project_skills.sh \
   scripts/install_repo_guards.sh \

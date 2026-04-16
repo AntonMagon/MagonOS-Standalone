@@ -60,15 +60,24 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:09 +07`
+- Updated at: `2026-04-17 04:16 +07`
 - Branch: `develop`
-- Current focus: Use project-safe browser automation and curated skills as the default UI debugging stack
-- Last verified workflow status: PASS `bash -n Start_Platform.command scripts/run_unified_platform.sh scripts/run_playwright_cli.sh`, PASS `./scripts/run_playwright_cli.sh --help`, PASS `python3 /Users/anton/.codex/skills/screenshot/scripts/take_screenshot.py --help`, PASS `./scripts/run_playwright_cli.sh open http://127.0.0.1:3000/ --headed`, PASS `cd apps/web && npm run typecheck`
-- Biggest operational risk: playwright-interactive is installed, but it still needs a new Codex session with js_repl enabled before it becomes usable as a persistent in-process browser debugger.
+- Current focus: Keep repo guards, automations, and browser automation aligned with the real Codex operating model
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Skills and cron automations are active, but Codex still does not provide event-driven per-file auto-skill triggering across chats; only hooks, scheduled automations, and explicit agent invocation are automatic.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:16 +07 | develop
+- Summary: Audited automation and skill operating contract and hardened verification for browser automation
+- Changed:
+  - docs/ru/README.md clarified curated skill activation and js_repl requirement
+  - scripts/verify_workflow.sh now syntax-checks scripts/run_playwright_cli.sh
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Skills and cron automations are active, but Codex still does not provide event-driven per-file auto-skill triggering across chats; only hooks, scheduled automations, and explicit agent invocation are automatic.
 ### 2026-04-17 04:09 +07 | develop
 - Summary: Integrated curated browser automation skills and project-safe Playwright wrapper
 - Changed:
