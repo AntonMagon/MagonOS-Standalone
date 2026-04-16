@@ -1,20 +1,30 @@
 # MagonOS Standalone
 
-Standalone supplier-intelligence slice extracted from the MagonOS repository.
+Standalone MagonOS platform.
+
+This repository is now the primary platform-of-record.
+The legacy Odoo repo at `/Users/anton/Desktop/MagonOS/MagonOS` remains a donor / bridge / legacy-shell repository only.
 
 Included:
 - supplier discovery pipeline
 - fixture-backed standalone runtime
 - standalone SQLite persistence
 - standalone HTTP API
+- operator console
+- unified public web shell (`apps/web`)
 - narrow downstream feedback ingestion
-- simple browser-inspectable HTML pages
+- company workbench
+- review queue and operator decision flow
+- commercial pipeline / commercial preparation state
+- quote intents
+- production handoffs
+- production board
 
 Not included:
 - Odoo ORM/models/views
-- CRM / RFQ / quote / order / accounting ownership
 - Odoo admin UI
-- commercial side effects
+- accounting / invoice / payment ERP ownership
+- full Odoo CRM / ERP replacement
 
 ## Setup
 ```bash
@@ -23,36 +33,57 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -U pip setuptools wheel
 pip install -e .
-# Optional only if you want live web crawling instead of fixture mode:
+# Optional only if you want live crawling instead of fixture mode:
 pip install -e .[live]
 ```
 
-## Run standalone pipeline against fixture
+## Local platform start
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
-. .venv/bin/activate
-python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json
+./scripts/run_platform.sh --fresh --port 8091
 ```
 
-## Run standalone API
+## Unified platform start
+One command starts:
+- public Next.js shell on `http://127.0.0.1:3000/`
+- operator/runtime surfaces under the same shell at `/ops`, `/ui/...`
+- standalone backend on `http://127.0.0.1:8091/`
+
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
-. .venv/bin/activate
-python scripts/run_api.py
+./scripts/run_unified_platform.sh --fresh
 ```
 
-Default URL:
-- [http://127.0.0.1:8091](http://127.0.0.1:8091)
+## Production/deploy start
+```bash
+cd /Users/anton/Desktop/MagonOS-Standalone
+PORT=8091 ./scripts/run_deploy.sh
+```
 
-## Browser-inspectable pages
-- [http://127.0.0.1:8091/](http://127.0.0.1:8091/)
-- [http://127.0.0.1:8091/ui/raw-records](http://127.0.0.1:8091/ui/raw-records)
-- [http://127.0.0.1:8091/ui/companies](http://127.0.0.1:8091/ui/companies)
-- [http://127.0.0.1:8091/ui/scores](http://127.0.0.1:8091/ui/scores)
-- [http://127.0.0.1:8091/ui/review-queue](http://127.0.0.1:8091/ui/review-queue)
-- [http://127.0.0.1:8091/ui/feedback-status](http://127.0.0.1:8091/ui/feedback-status)
+Optional staging bootstrap from fixture:
+```bash
+MAGON_STANDALONE_BOOTSTRAP_FIXTURE=tests/fixtures/vn_suppliers_raw.json PORT=8091 ./scripts/run_deploy.sh
+```
 
-## API endpoints
+## Local URLs
+- public shell: http://127.0.0.1:3000/
+- platform dashboard: http://127.0.0.1:3000/dashboard
+- ops workspace: http://127.0.0.1:3000/ops-workbench
+- operator console: http://127.0.0.1:3000/ops
+- company workbench: http://127.0.0.1:3000/ui/companies
+- commercial pipeline: http://127.0.0.1:3000/ui/commercial-pipeline
+- quote intents: http://127.0.0.1:3000/ui/quote-intents
+- production handoffs: http://127.0.0.1:3000/ui/production-handoffs
+- production board: http://127.0.0.1:3000/ui/production-board
+- review queue: http://127.0.0.1:3000/ui/review-queue
+- feedback status: http://127.0.0.1:3000/ui/feedback-status
+- feedback audit: http://127.0.0.1:3000/ui/feedback-events
+
+Direct backend URLs still exist for debugging:
+- http://127.0.0.1:8091/
+- http://127.0.0.1:8091/ui/companies
+
+## Core API endpoints
 - `GET /health`
 - `GET /status`
 - `GET /raw-records`
@@ -66,24 +97,19 @@ Default URL:
 - `POST /runs`
 - `POST /feedback-events`
 
-## Trigger a pipeline run through the API
+## Local CLI helpers
 ```bash
-curl -X POST http://127.0.0.1:8091/runs \
-  -H 'Content-Type: application/json' \
-  -d '{"fixture":"tests/fixtures/vn_suppliers_raw.json"}'
+./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json
+./.venv/bin/python scripts/inspect_results.py --table companies
+./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```
 
-## Inspect stored results from CLI
-```bash
-cd /Users/anton/Desktop/MagonOS-Standalone
-. .venv/bin/activate
-python scripts/inspect_results.py --table companies
-python scripts/inspect_results.py --table feedback-status
-```
-
-## Run tests
-```bash
-cd /Users/anton/Desktop/MagonOS-Standalone
-. .venv/bin/activate
-python -m unittest discover -s tests -p 'test_*.py'
-```
+## Deploy notes
+- This repo is the official product runtime.
+- The source Odoo repo is no longer the official startup path.
+- `scripts/run_platform.sh` is for local product use.
+- `scripts/run_unified_platform.sh` is the official local all-in-one startup path.
+- `scripts/run_deploy.sh` is the deploy/runtime entrypoint.
+- `Procfile` points at the production entrypoint.
+- The app is independent from Odoo runtime.
+- SQLite is still the production constraint; this setup is fine for one-node deployment, staging, and internal use.
