@@ -59,15 +59,26 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:31 +07`
+- Updated at: `2026-04-17 02:39 +07`
 - Branch: `develop`
-- Current focus: keep docs/ru and Russian explanatory comments mandatory for future product-owned changes
-- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `cd apps/web && npm run build`
-- Biggest operational risk: the Russian documentation requirement is enforced at commit level, but comment quality still depends on disciplined code review rather than semantic static analysis
+- Current focus: keep repo guards, Russian docs, and local skills aligned so the workflow cannot silently drift again
+- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Russian comment quality is now required by policy, but still depends on human review rather than AST-level enforcement
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:39 +07 | develop
+- Summary: audit repo guards, skills, and Russian documentation contract end-to-end
+- Changed:
+  - skills/audit-docs-vs-runtime/SKILL.md, skills/git-safe-commit/SKILL.md, skills/operate-platform/SKILL.md, skills/operate-standalone-intelligence/SKILL.md
+  - docs/ru/code-map.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/restore_context.sh --check`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Russian comment quality is now required by policy, but still depends on human review rather than AST-level enforcement
 ### 2026-04-17 02:31 +07 | develop
 - Summary: enforce Russian documentation layer and Russian code-comment contract
 - Changed:

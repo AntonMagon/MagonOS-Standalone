@@ -8,6 +8,12 @@ Run and verify the standalone supplier-intelligence and operator contour without
 - The user asks to inspect persisted standalone results.
 - The user asks to verify the current company -> opportunity -> quote intent -> handoff contour.
 
+## Read first
+- `./scripts/restore_context.sh`
+- `.codex/project-memory.md`
+- `docs/ru/current-project-state.md`
+- `docs/ru/code-map.md`
+
 ## Canonical commands
 - Fixture-backed pipeline seed:
   - `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
@@ -36,3 +42,4 @@ State exactly which path was verified:
 ## Failure note
 - Do not describe donor Odoo flows as active runtime behavior.
 - Do not claim full ERP/CRM parity if only the extracted contour was verified.
+- If the verified contour changed, update `.codex/project-memory.md` and at least one relevant file in `docs/ru/`.

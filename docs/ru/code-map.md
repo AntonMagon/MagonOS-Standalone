@@ -17,6 +17,8 @@
   Основная документация на английском.
 - `docs/ru/`
   Обязательный русскоязычный слой документации.
+- `skills/`
+  Локальные project-specific skills для типовых режимов работы по этому репозиторию.
 - `.codex/`
   Project memory и repo-level config для агентного workflow.
 - `.githooks/`
@@ -131,6 +133,26 @@ Versioned memory проекта.
 ### `.githooks/pre-push`
 
 Не даёт пушить без verify workflow.
+
+## Skills
+
+### `skills/audit-docs-vs-runtime/SKILL.md`
+
+Локальный skill для аудита того, что реально true в standalone-репозитории.
+Должен идти от кода и проверок, а не от устаревших текстов.
+
+### `skills/git-safe-commit/SKILL.md`
+
+Локальный skill для узкого и дисциплинированного commit/push-пути.
+Должен уважать `.codex/project-memory.md` и `docs/ru/`.
+
+### `skills/operate-platform/SKILL.md`
+
+Локальный skill для запуска и проверки активной standalone-платформы.
+
+### `skills/operate-standalone-intelligence/SKILL.md`
+
+Локальный skill для pipeline/operator-контура, включая company -> opportunity -> quote intent -> handoff.
 
 ## Tests
 

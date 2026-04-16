@@ -12,12 +12,17 @@ Audit the standalone repo for mismatches between code, tests, runtime, AGENTS ru
 ## Truth order
 - Trust `src/`, `apps/web/`, `scripts/`, and `tests/` first.
 - Then trust `AGENTS.md` and `.codex/config.toml`.
+- Then trust `.codex/project-memory.md` and `docs/ru/`.
 - Then compare `docs/`.
 - Use the source repo only as donor context, never as default runtime truth.
 
 ## Read first
+- `./scripts/restore_context.sh`
 - `AGENTS.md`
 - `.codex/config.toml`
+- `.codex/project-memory.md`
+- `docs/ru/README.md`
+- `docs/ru/current-project-state.md`
 - `docs/audit-context.md`
 - `docs/business-logic-parity-audit.md`
 - `docs/operating-layer-migration-audit.md`
@@ -34,13 +39,16 @@ Audit the standalone repo for mismatches between code, tests, runtime, AGENTS ru
 4. Compare docs claims against actual standalone behavior.
 5. If donor docs conflict with standalone code, mark them as donor-only or stale.
 6. Run the smallest command that proves the runtime claim.
-7. Report only concrete matches, drift, and required fixes.
+7. If the audit changes repo-owned truth, update `.codex/project-memory.md` and at least one relevant file in `docs/ru/`.
+8. Report only concrete matches, drift, and required fixes.
 
 ## Verification
-- `bash -n scripts/run_platform.sh scripts/run_unified_platform.sh`
-- `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
+- `./scripts/restore_context.sh --check`
+- `./scripts/verify_workflow.sh`
+- `./scripts/verify_workflow.sh --with-web` when the audit touched `apps/web/`
 
 ## Exit criteria
 - The audit states what is true now.
 - Every mismatch points to exact files.
 - Donor assumptions are separated from active standalone reality.
+- The Russian documentation layer is not left stale after the audit.
