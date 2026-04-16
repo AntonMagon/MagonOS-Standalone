@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "title": "MagonOS — web-layer и переходный контур платформы",
+    "description": "Веб-слой MagonOS, который честно показывает текущую границу между standalone core, внешним интерфейсом и внутренним Odoo back-office"
+  },
+  "nav": {
+    "overview": "Обзор",
+    "dashboard": "Панель",
+    "ops": "Операции",
+    "personalize": "Контур"
+  },
+  "header": {
+    "homeAria": "Главная страница MagonOS",
+    "shell": "Внешний web-layer и standalone core",
+    "mobileNavHint": "Навигация доступна на широких экранах"
+  },
+  "themeToggle": {
+    "toLight": "Включить светлую тему",
+    "toDark": "Включить тёмную тему"
+  },
+  "appearance": {
+    "openButton": "Открыть настройки оформления",
+    "title": "Палитры интерфейса",
+    "description": "Здесь подготовлен слой персонализации. Цвета меняются через дизайн‑токены и CSS‑переменные, а не через переписывание компонентов.",
+    "palettes": {
+      "ember-signal": {
+        "name": "Тёплый сигнал",
+        "description": "Тёплая рабочая палитра с янтарным акцентом"
+      },
+      "tidal-mint": {
+        "name": "Мятный поток",
+        "description": "Более холодное стекло и мягкий зелёный акцент"
+      },
+      "violet-ink": {
+        "name": "Чернильный фиолет",
+        "description": "Сдержанный контраст с более редакционным тоном"
+      }
+    },
+    "page": {
+      "eyebrow": "Контур платформы",
+      "title": "Граница между внешним веб‑слоем, standalone core и внутренним Odoo должна быть ясна и в коде, и в интерфейсе.",
+      "text": "Эта страница не про украшения. Она фиксирует, как сейчас должен читаться продукт: внешний слой для продаж и intake, standalone ядро для intelligence и собственного состояния, Odoo только как внутренний back-office и временный bridge.",
+      "contractTitle": "Текущий архитектурный контракт",
+      "contractText": "Внешний продукт не должен выглядеть и мыслить как Odoo. Всё, что относится к product-core и будущему operator UX, должно жить вне Odoo. Odoo допускается только там, где речь о внутренних ERP/CRM связях и переходном мосте.",
+      "openDialog": "Открыть состояние контура",
+      "rules": {
+        "one": "Внешний web-layer отвечает за подачу, приём заявок и понятный обзор текущего состояния продукта.",
+        "two": "Standalone core должен владеть supplier intelligence, feedback state и будущим product-owned workflow.",
+        "three": "Odoo остаётся внутренним ERP/back-office и временным bridge, а не местом, где рождается новая продуктовая логика.",
+        "four": "Если сущность нужна продукту постоянно, её нельзя оставлять только в Odoo-моделях и Odoo-UI."
+      }
+    }
+  },
+  "home": {
+    "badge": "Переходный runtime MagonOS",
+    "eyebrow": "Внешний слой продукта",
+    "title": "MagonOS собирает внешний web-layer, standalone supplier intelligence и внутренний Odoo back-office в один рабочий контур.",
+    "text": "Это не витрина про абстрактный UI. Это честное описание текущего продукта: внешний веб‑слой для продаж и обзора, standalone core для intelligence и собственного состояния, и Odoo как внутренний ERP/CRM слой, пока миграция не закрыта полностью.",
+    "openDashboard": "Смотреть состояние",
+    "openOps": "Открыть ops workspace",
+    "highlights": {
+      "one": "Внешний web-layer: главная, обзор состояния и объяснение текущей архитектуры без Odoo-терминологии на первом экране.",
+      "two": "Standalone supplier intelligence: discovery, dedup, scoring, feedback state, SQLite и HTTP API вне Odoo runtime.",
+      "three": "Bridge mode: sync и обратная связь между standalone слоем и внутренним Odoo-контуром во время перехода.",
+      "four": "Цель перехода: вытащить product-core из Odoo и оставить Odoo только там, где действительно нужен внутренний ERP/back-office."
+    },
+    "focusLabel": "Главный факт",
+    "focusTitle": "Платформа уже не равна Odoo, но ещё живёт в bridge-режиме.",
+    "focusText": "Supplier intelligence и web-layer уже выходят наружу. CRM/ERP write-path и часть коммерческих сущностей ещё не отрезаны окончательно, поэтому интерфейс должен показывать это прямо, а не маскировать декоративным текстом.",
+    "runtimeLabel": "Состояние runtime",
+    "runtimeOnline": "Standalone backend в онлайне",
+    "runtimeCompanies": "Канонических компаний: {count}",
+    "runtimeFeedback": "Feedback-событий: {count}",
+    "runtimeOffline": "Backend сейчас недоступен. Public shell поднят, но operator/runtime слой не ответил.",
+    "layers": {
+      "glass": {
+        "title": "Что уже вынесено",
+        "body": "Standalone runtime, SQLite persistence, HTTP API и feedback state уже живут вне Odoo и могут описываться как собственный слой продукта."
+      },
+      "progressive": {
+        "title": "Что ещё смешано",
+        "body": "crm.lead, res.partner и часть commercial write-path всё ещё упираются в Odoo. Это нужно отражать как переходный факт, а не как якобы уже решённую историю."
+      },
+      "motion": {
+        "title": "Куда идём дальше",
+        "body": "Внешний web-layer и standalone core должны стать основной product boundary. Odoo должен остаться только внутренним back-office или временным экспортным мостом."
+      }
+    },
+    "operatorEyebrow": "Operator contour",
+    "operatorTitle": "Operator console и company workbench теперь входят в ту же платформу, а не живут отдельным табличным сайтом.",
+    "operatorText": "Публичный shell остаётся на корне приложения, а все рабочие поверхности supplier intelligence, review, feedback и commercial flow доступны как встроенный ops-layer в этом же standalone-репозитории.",
+    "openOperatorConsole": "Открыть operator console",
+    "openCompanyWorkbench": "Открыть company workbench"
+  },
+  "dashboard": {
+    "eyebrow": "Текущее состояние",
+    "title": "Публичный shell и standalone operator/runtime теперь читаются как одна платформа, а не как две несвязанные витрины.",
+    "text": "Здесь показывается реальный standalone runtime: компании, review queue, feedback и вход в operator surfaces. Это уже не Odoo-front и не оторванный debug UI.",
+    "runtimeLabel": "Состояние backend",
+    "runtimeOnline": "Runtime доступен",
+    "runtimeOffline": "Runtime недоступен",
+    "runtimeDb": "SQLite хранилище: {path}",
+    "runtimeUnavailable": "Backend сейчас не ответил. Проверь запуск standalone runtime.",
+    "openConsole": "Открыть console",
+    "openBoard": "Открыть production board",
+    "workspaceLabel": "Operator workspace",
+    "workspaceTitle": "Основные рабочие поверхности standalone operator-контура",
+    "workspaceText": "Компании, review queue и feedback теперь доступны из того же продуктового shell. Это основной переход от отдельного табличного сайта к одной платформе.",
+    "surfaces": {
+      "companies": {
+        "title": "Company workbench",
+        "body": "Основная точка входа в supplier/company intelligence, commercial contour и related operator workflows."
+      },
+      "review": {
+        "title": "Review queue",
+        "body": "Очередь операторской проверки с переходом в company workbench и decision flow."
+      },
+      "feedback": {
+        "title": "Feedback status",
+        "body": "Отдельная проекция downstream outcomes без перезаписи standalone intelligence."
+      }
+    },
+    "metrics": {
+      "companies": {
+        "title": "Компании",
+        "detail": "Канонические standalone компании"
+      },
+      "queue": {
+        "title": "Review queue",
+        "detail": "Элементы в operator review"
+      },
+      "feedback": {
+        "title": "Feedback ledger",
+        "detail": "Downstream feedback events"
+      }
+    },
+    "recentLabel": "Недавние компании",
+    "recentTitle": "Быстрый вход в company workbench",
+    "recentUnknownCity": "Город не указан",
+    "recentNoEmail": "Email не указан",
+    "recentEmpty": "Компании пока не загружены в standalone runtime."
+  },
+  "opsWorkbench": {
+    "eyebrow": "Ops workspace",
+    "title": "Операционный контур встроен в ту же standalone-платформу и больше не висит отдельно от публичного shell.",
+    "text": "Эта страница соединяет public слой и реальные operator surfaces. Здесь вход в company workbench, review, feedback и production-подготовку без возврата в Odoo runtime.",
+    "runtimeLabel": "Состояние backend",
+    "runtimeOnline": "Standalone backend доступен",
+    "runtimeOffline": "Standalone backend недоступен",
+    "runtimeDb": "SQLite хранилище: {path}",
+    "runtimeUnavailable": "Проверь запуск backend runtime перед работой с operator surfaces.",
+    "openConsole": "Открыть backend console",
+    "openBoard": "Открыть production board",
+    "metrics": {
+      "companies": {
+        "title": "Компании",
+        "detail": "Канонические компании в standalone"
+      },
+      "review": {
+        "title": "Review queue",
+        "detail": "Элементы на операторской проверке"
+      },
+      "feedback": {
+        "title": "Feedback events",
+        "detail": "Downstream события в отдельном ledger"
+      }
+    },
+    "surfacesLabel": "Рабочие поверхности",
+    "surfacesTitle": "Куда оператор входит из единой платформы",
+    "surfacesText": "Это прямые входы в текущий standalone core. Здесь нет Odoo runtime и нет подмены public shell табличным debug UI.",
+    "surfaces": {
+      "companies": {
+        "href": "companies",
+        "title": "Company workbench",
+        "body": "Открыть supplier/company intelligence, scores, review, feedback и commercial linkage в одном месте."
+      },
+      "review": {
+        "href": "review-queue",
+        "title": "Review queue",
+        "body": "Открыть операторскую очередь и перейти в company-centric decision flow."
+      },
+      "feedback": {
+        "href": "feedback-status",
+        "title": "Feedback status",
+        "body": "Смотреть downstream outcomes отдельно от standalone intelligence."
+      },
+      "board": {
+        "href": "production-board",
+        "title": "Production board",
+        "body": "Открыть production-prep и handoff execution surfaces."
+      }
+    },
+    "recentLabel": "Недавние компании",
+    "recentTitle": "Быстрый переход в работу",
+    "recentText": "Последние standalone компании, доступные для operator drill-down.",
+    "recentUnknownCity": "Город не указан",
+    "recentNoEmail": "Email не указан",
+    "recentEmpty": "Компании ещё не загружены.",
+    "bridgeLabel": "Platform boundary",
+    "bridgeTitle": "Публичный shell и operator surfaces собраны в одном standalone-репозитории.",
+    "bridgeText": "Корень приложения теперь может быть внешним продуктовым слоем, а operator workbench остаётся рядом как встроенный ops contour. Это правильнее, чем подменять публичный сайт backend-таблицами.",
+    "backToPublic": "Вернуться в public shell",
+    "openBackendDashboard": "Открыть dashboard runtime"
+  },
+  "common": {
+    "brand": "MagonOS",
+    "live": "актуально"
+  }
+}

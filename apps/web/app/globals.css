@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 30 40% 98%;
+  --foreground: 222 47% 11%;
+  --surface: 0 0% 100%;
+  --surface-foreground: 222 47% 11%;
+  --primary: 20 86% 54%;
+  --primary-foreground: 24 100% 98%;
+  --secondary: 164 25% 92%;
+  --secondary-foreground: 171 51% 20%;
+  --muted: 40 33% 95%;
+  --muted-foreground: 215 16% 35%;
+  --accent: 171 41% 34%;
+  --accent-foreground: 160 30% 97%;
+  --danger: 356 75% 52%;
+  --danger-foreground: 0 0% 100%;
+  --border: 214 18% 85%;
+  --input: 214 18% 85%;
+  --ring: 20 86% 54%;
+  --brand-ink: 222 47% 11%;
+  --brand-glow: 20 86% 54%;
+  --brand-warm: 171 41% 34%;
+  --radius-xl: 1.75rem;
+  --radius-lg: 1.25rem;
+  --radius-md: 0.9rem;
+  --radius-sm: 0.65rem;
+}
+
+.dark {
+  --background: 222 47% 7%;
+  --foreground: 36 43% 96%;
+  --surface: 225 39% 11%;
+  --surface-foreground: 36 43% 96%;
+  --primary: 23 90% 61%;
+  --primary-foreground: 225 39% 11%;
+  --secondary: 168 30% 16%;
+  --secondary-foreground: 166 48% 86%;
+  --muted: 225 23% 16%;
+  --muted-foreground: 213 15% 71%;
+  --accent: 164 51% 42%;
+  --accent-foreground: 160 30% 97%;
+  --danger: 356 72% 60%;
+  --danger-foreground: 0 0% 100%;
+  --border: 223 20% 22%;
+  --input: 223 20% 22%;
+  --ring: 23 90% 61%;
+  --brand-ink: 36 43% 96%;
+  --brand-glow: 23 90% 61%;
+  --brand-warm: 164 51% 42%;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply min-h-screen bg-background text-foreground font-body antialiased;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.24), transparent 22%),
+    radial-gradient(circle at 78% 12%, hsl(var(--brand-glow) / 0.2), transparent 28%),
+    radial-gradient(circle at 85% 70%, hsl(var(--brand-warm) / 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%),
+    hsl(var(--background));
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.22);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight text-balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)),
+      linear-gradient(150deg, rgba(255, 255, 255, 0.08), transparent 45%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 30px 80px -34px rgba(15, 23, 42, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(26px) saturate(150%);
+  }
+
+  .hero-shell {
+    background:
+      linear-gradient(140deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 22%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 35px 100px -42px rgba(15, 23, 42, 0.46),
+      0 2px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(28px) saturate(160%);
+  }
+
+  .reveal-section {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .reveal-section {
+    opacity: 0.45;
+    transform: translateY(24px);
+    animation: reveal-in linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 28%;
+  }
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0.45;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
