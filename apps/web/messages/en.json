@@ -7,6 +7,7 @@
     "overview": "Home",
     "dashboard": "Runtime",
     "ops": "Ops",
+    "projectMap": "Map",
     "personalize": "Boundary"
   },
   "header": {
@@ -212,6 +213,36 @@
     "bridgeText": "The app root can now remain a product-facing shell while the ops workbench sits beside it as an embedded working layer. That is cleaner than replacing the product surface with backend tables.",
     "backToPublic": "Back to runtime view",
     "openBackendDashboard": "Open backend console"
+  },
+  "projectMap": {
+    "eyebrow": "Visual map",
+    "title": "The project map shows the product contour, risks, skills, and automated control loops in one place.",
+    "text": "This surface exists so the project reads as a living structure rather than a pile of chat history: what standalone already owns, where overlap remains, and which automated loops keep the system aligned.",
+    "statusLabel": "Current focus",
+    "fallbackFocus": "No active focus has been extracted yet",
+    "fallbackRisk": "The operational risk has not been extracted from project memory yet.",
+    "openRuntime": "Open runtime",
+    "openOps": "Open ops",
+    "flowLabel": "Flow contour",
+    "flowTitle": "How the working chain moves today",
+    "ownedLabel": "Native core",
+    "ownedTitle": "What standalone already owns",
+    "overlapLabel": "Danger zone",
+    "overlapTitle": "Where overlap still remains",
+    "scopeLabel": "Scope guard",
+    "scopeTitle": "What should not expand",
+    "automationLabel": "Automation loops",
+    "automationTitle": "Which recurring checks should keep the project aligned",
+    "recentLabel": "Recent movement",
+    "recentTitle": "What changed recently in the project",
+    "metrics": {
+      "skills": "Skills",
+      "skillsDetail": "Active project-specific skills",
+      "automations": "Automations",
+      "automationsDetail": "Recurring control loops",
+      "worklog": "Worklog",
+      "worklogDetail": "Recent recorded changes"
+    }
   },
   "common": {
     "brand": "MagonOS",

@@ -2,6 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import * as React from 'react';
+import type {Route} from 'next';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {useTranslations} from 'next-intl';
@@ -43,7 +44,8 @@ export function SiteHeader() {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  // RU: Каст держим на границе Link, чтобы shared nav-конфиг не тащил жёсткую Next Route-типизацию на весь shell.
+                  href={item.href as Route}
                   className={cn(
                     'rounded-full px-4 py-2 text-sm transition-colors',
                     active ? 'bg-white/14 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]' : 'text-muted-foreground hover:text-foreground'
@@ -95,7 +97,8 @@ export function SiteHeader() {
                       return (
                         <Dialog.Close asChild key={item.href}>
                           <Link
-                            href={item.href}
+                            // RU: В mobile nav используем тот же boundary-cast, иначе новый route ломает типизацию всего списка.
+                            href={item.href as Route}
                             className={cn(
                               'rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
                               active ? 'border-primary/40 bg-primary/12 text-foreground' : 'border-white/10 bg-black/10 text-foreground/88'

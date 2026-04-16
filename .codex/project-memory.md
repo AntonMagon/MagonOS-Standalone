@@ -60,15 +60,27 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 03:10 +07`
+- Updated at: `2026-04-17 03:33 +07`
 - Branch: `develop`
-- Current focus: Ran project skill smoke audit and hardened unified platform watch mode
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: Current skill execution is procedural: event-driven skills like ci-watch-fix and donor-boundary-audit still need a real failing CI or explicit donor task to be meaningfully exercised.
+- Current focus: Keep the visual project map and recurring automations aligned with real repo/runtime truth
+- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Automations now exist in Codex, but their long-run value still depends on the project continuing to record true state in .codex/project-memory.md and docs/ru.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 03:33 +07 | develop
+- Summary: Added live project visual map and enabled recurring repo/platform/map automations
+- Changed:
+  - apps/web/project-map route and visual map loader
+  - scripts/update_project_visual_map.py and generated docs/ru/visuals outputs
+  - Hourly Repo Guard, Hourly Platform Smoke, Hourly Visual Map, Weekly Release Gate automations
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Automations now exist in Codex, but their long-run value still depends on the project continuing to record true state in .codex/project-memory.md and docs/ru.
 ### 2026-04-17 03:10 +07 | develop
 - Summary: Ran project skill smoke audit and hardened unified platform watch mode
 - Changed:

@@ -17,6 +17,8 @@
   Основная документация на английском.
 - `docs/ru/`
   Обязательный русскоязычный слой документации.
+- `docs/ru/visuals/`
+  Визуальная папка проекта: сгенерированные графические карты и структурные схемы.
 - `skills/`
   Локальные project-specific skills для типовых режимов работы по этому репозиторию.
 - `.codex/`
@@ -81,6 +83,7 @@ App Router страницы Next.js:
 - `page.tsx` — главная витрина
 - `dashboard/page.tsx` — runtime/dashboard
 - `ops-workbench/page.tsx` — операторский вход
+- `project-map/page.tsx` — визуальная карта проекта: контур, риски, automation loops и последние verified changes
 - `personalize/page.tsx` — страница границ/контракта
 
 ### `apps/web/components/navigation/site-header.tsx`
@@ -101,6 +104,11 @@ App Router страницы Next.js:
 
 Точка выбора locale и сборки message tree.
 Сначала смотрит cookie, потом `Accept-Language`, затем fallback на default locale.
+
+### `apps/web/lib/project-visual-map.ts`
+
+Тонкий loader для визуальной карты проекта.
+Читает `docs/ru/visuals/project-map.json` от корня репозитория и отдаёт уже сгенерированный payload в web shell без пересборки project state на лету.
 
 ### `apps/web/messages/*.json`
 
@@ -150,6 +158,15 @@ Versioned memory проекта.
 
 Проверяет comment-contract по изменённому коду.
 Если кодовый файл меняется, а в staged diff нет добавленной строки с `RU:` и русским текстом, commit должен падать.
+
+### `scripts/update_project_visual_map.py`
+
+Генератор визуальной карты проекта.
+Собирает данные из `docs/current-project-state.md`, `docs/ru/current-project-state.md` и `.codex/project-memory.md`, затем обновляет:
+- `docs/ru/visuals/project-map.md`
+- `docs/ru/visuals/project-map.json`
+- `docs/visuals/project-map.md`
+- `docs/visuals/project-map.json`
 
 ## Skills
 
@@ -203,6 +220,11 @@ Versioned memory проекта.
 
 Локальный skill для безопасного чтения donor/Odoo-репозитория.
 Нужен, когда надо достать бизнес-правила из legacy-кода, но не тащить donor-runtime обратно в standalone.
+
+### `skills/project-visual-map/SKILL.md`
+
+Локальный skill для обновления и ревизии визуальной карты проекта.
+Нужен, когда надо быстро увидеть контур продукта, активный фокус, риски, skills и automation loops в графическом виде.
 
 ## Tests
 
