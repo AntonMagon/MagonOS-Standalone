@@ -26,9 +26,8 @@ if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -Eq "$PR
   fi
 fi
 
-verify_args=()
 if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -q '^apps/web/'; then
-  verify_args+=(--with-web)
+  ./scripts/verify_workflow.sh --with-web
+else
+  ./scripts/verify_workflow.sh
 fi
-
-./scripts/verify_workflow.sh "${verify_args[@]}"

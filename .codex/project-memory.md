@@ -57,15 +57,25 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 01:58 +07`
+- Updated at: `2026-04-17 02:04 +07`
 - Branch: `develop`
-- Current focus: use repo memory plus installed hooks as the default start/finish path for substantial work
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: repo still has unrelated unstaged product changes in apps/web and supplier_intelligence/api.py that must be staged intentionally
+- Current focus: keep versioned hooks stable so commit and push paths stay enforceable
+- Last verified workflow status: PASS `bash -n .githooks/pre-push`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: the repo still contains unrelated unstaged product work that must stay out of this workflow commit set
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:04 +07 | develop
+- Summary: fix pre-push hook empty-argument failure and confirm push path
+- Changed:
+  - .githooks/pre-push
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n .githooks/pre-push`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - the repo still contains unrelated unstaged product work that must stay out of this workflow commit set
 ### 2026-04-17 01:58 +07 | develop
 - Summary: confirm full repo workflow verification after guard installation
 - Changed:
