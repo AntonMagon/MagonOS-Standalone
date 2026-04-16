@@ -1,0 +1,110 @@
+{
+  "generated_at": "`2026-04-17 06:08 +07`",
+  "repo": {
+    "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
+    "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
+  },
+  "validated_contour_en": [
+    "company",
+    "commercial/customer context",
+    "opportunity",
+    "quote intent / RFQ boundary",
+    "production handoff",
+    "production board"
+  ],
+  "validated_contour_ru": [
+    "company",
+    "commercial/customer context",
+    "opportunity",
+    "quote intent / RFQ boundary",
+    "production handoff",
+    "production board"
+  ],
+  "owned_capabilities_en": [
+    "supplier intelligence pipeline",
+    "normalization / enrichment / dedup / scoring",
+    "review queue",
+    "routing / qualification decisions",
+    "feedback ledger / projection",
+    "workforce estimation"
+  ],
+  "owned_capabilities_ru": [
+    "supplier intelligence pipeline",
+    "normalization / enrichment / dedup / scoring",
+    "review queue",
+    "routing / qualification decisions",
+    "feedback ledger / projection",
+    "workforce estimation"
+  ],
+  "danger_overlap_en": [
+    "customer/account identity",
+    "opportunity/lead ownership",
+    "RFQ / quote boundary"
+  ],
+  "danger_overlap_ru": [
+    "customer/account identity",
+    "opportunity/lead ownership",
+    "RFQ / quote boundary"
+  ],
+  "out_of_scope_en": [
+    "accounting",
+    "invoice / payment",
+    "full ERP order management",
+    "giant generic CRM",
+    "broad Odoo entity mirroring",
+    "source repo feature growth"
+  ],
+  "out_of_scope_ru": [
+    "accounting",
+    "invoice / payment",
+    "full ERP order management",
+    "giant generic CRM",
+    "broad Odoo entity mirroring",
+    "source repo feature growth"
+  ],
+  "active_context": {
+    "updated_at": "`2026-04-17 06:08 +07`",
+    "branch": "`develop`",
+    "current_focus": "Green PR checks and promotion of develop to main through the protected PR path",
+    "last_verified_workflow_status": "PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`",
+    "biggest_operational_risk": "The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup."
+  },
+  "recent_worklog": [
+    {
+      "heading": "2026-04-17 06:08 +07 | develop",
+      "summary": "Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent",
+      "risk": "See worklog entry"
+    },
+    {
+      "heading": "2026-04-17 05:58 +07 | develop",
+      "summary": "Added periodic-run overlap lock and staggered Codex automation cadence",
+      "risk": "See worklog entry"
+    },
+    {
+      "heading": "2026-04-17 05:43 +07 | develop",
+      "summary": "Stabilized visual map timestamps for periodic checks",
+      "risk": "See worklog entry"
+    }
+  ],
+  "skills": [
+    "audit-docs-vs-runtime",
+    "ci-watch-fix",
+    "docs-sync-curator",
+    "donor-boundary-audit",
+    "git-safe-commit",
+    "operate-platform",
+    "operate-standalone-intelligence",
+    "project-visual-map",
+    "release-readiness-gate",
+    "skill-pattern-scan",
+    "verify-implementation",
+    "web-regression-pass"
+  ],
+  "automations": [
+    "Hourly Repo Guard",
+    "Hourly Platform Smoke",
+    "Hourly Visual Map",
+    "Weekly Release Gate",
+    "Launchd Periodic Checks"
+  ]
+}

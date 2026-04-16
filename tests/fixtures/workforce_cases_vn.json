@@ -1,0 +1,191 @@
+{
+  "normal_shift": {
+    "input": {
+      "specification_id": 101,
+      "process_type": "offset_printing",
+      "quantity": 1000,
+      "complexity_level": "medium",
+      "target_completion_hours": 16,
+      "role_demands": [
+        {
+          "role_code": "PRINT_OPERATOR",
+          "required_skill_codes": ["OFFSET"],
+          "hours_per_unit": 0.01,
+          "quantity_factor": 1.0
+        }
+      ],
+      "shift_capacities": [
+        {
+          "role_code": "PRINT_OPERATOR",
+          "shift_hours": 8,
+          "worker_count": 2,
+          "absence_count": 0,
+          "available_skill_codes": ["OFFSET"],
+          "slot_available_hours": 16
+        }
+      ],
+      "labor_rates": [
+        {
+          "role_code": "PRINT_OPERATOR",
+          "base_hourly_rate": 120000,
+          "overtime_multiplier": 1.5,
+          "overtime_threshold_hours": 8,
+          "currency_code": "VND"
+        }
+      ],
+      "policies": [
+        {"code": "default_shift_hours", "country_code": "VN", "value_float": 8.0},
+        {"code": "default_overtime_threshold_hours", "country_code": "VN", "value_float": 8.0},
+        {"code": "default_overtime_multiplier", "country_code": "VN", "value_float": 1.5}
+      ]
+    }
+  },
+  "overloaded_shift": {
+    "input": {
+      "specification_id": 102,
+      "process_type": "label_printing",
+      "quantity": 2400,
+      "complexity_level": "medium",
+      "target_completion_hours": 16,
+      "role_demands": [
+        {
+          "role_code": "LABEL_OPERATOR",
+          "required_skill_codes": ["FLEXO"],
+          "hours_per_unit": 0.01,
+          "quantity_factor": 1.0
+        }
+      ],
+      "shift_capacities": [
+        {
+          "role_code": "LABEL_OPERATOR",
+          "shift_hours": 8,
+          "worker_count": 2,
+          "absence_count": 0,
+          "available_skill_codes": ["FLEXO"],
+          "slot_available_hours": 16
+        }
+      ],
+      "labor_rates": [
+        {
+          "role_code": "LABEL_OPERATOR",
+          "base_hourly_rate": 110000,
+          "overtime_multiplier": 1.5,
+          "overtime_threshold_hours": 8,
+          "currency_code": "VND"
+        }
+      ],
+      "policies": []
+    }
+  },
+  "missing_skill": {
+    "input": {
+      "specification_id": 103,
+      "process_type": "packaging",
+      "quantity": 800,
+      "complexity_level": "high",
+      "target_completion_hours": 16,
+      "role_demands": [
+        {
+          "role_code": "PACK_OPERATOR",
+          "required_skill_codes": ["LAMINATION"],
+          "hours_per_unit": 0.01,
+          "quantity_factor": 1.0
+        }
+      ],
+      "shift_capacities": [
+        {
+          "role_code": "PACK_OPERATOR",
+          "shift_hours": 8,
+          "worker_count": 2,
+          "absence_count": 0,
+          "available_skill_codes": ["DIECUT"],
+          "slot_available_hours": 16
+        }
+      ],
+      "labor_rates": [
+        {
+          "role_code": "PACK_OPERATOR",
+          "base_hourly_rate": 95000,
+          "overtime_multiplier": 1.5,
+          "overtime_threshold_hours": 8,
+          "currency_code": "VND"
+        }
+      ],
+      "policies": []
+    }
+  },
+  "overtime_case": {
+    "input": {
+      "specification_id": 104,
+      "process_type": "wide_format",
+      "quantity": 1200,
+      "complexity_level": "medium",
+      "target_completion_hours": 12,
+      "role_demands": [
+        {
+          "role_code": "WIDE_FORMAT_OPERATOR",
+          "required_skill_codes": ["WIDE_FORMAT"],
+          "hours_per_unit": 0.01,
+          "quantity_factor": 1.0
+        }
+      ],
+      "shift_capacities": [
+        {
+          "role_code": "WIDE_FORMAT_OPERATOR",
+          "shift_hours": 12,
+          "worker_count": 1,
+          "absence_count": 0,
+          "available_skill_codes": ["WIDE_FORMAT"],
+          "slot_available_hours": 12
+        }
+      ],
+      "labor_rates": [
+        {
+          "role_code": "WIDE_FORMAT_OPERATOR",
+          "base_hourly_rate": 130000,
+          "overtime_multiplier": 1.8,
+          "overtime_threshold_hours": 8,
+          "currency_code": "VND"
+        }
+      ],
+      "policies": []
+    }
+  },
+  "absence_impact": {
+    "input": {
+      "specification_id": 105,
+      "process_type": "promo_items",
+      "quantity": 1200,
+      "complexity_level": "medium",
+      "target_completion_hours": 16,
+      "role_demands": [
+        {
+          "role_code": "PROMO_OPERATOR",
+          "required_skill_codes": ["UV_PRINT"],
+          "hours_per_unit": 0.01,
+          "quantity_factor": 1.0
+        }
+      ],
+      "shift_capacities": [
+        {
+          "role_code": "PROMO_OPERATOR",
+          "shift_hours": 8,
+          "worker_count": 2,
+          "absence_count": 1,
+          "available_skill_codes": ["UV_PRINT"],
+          "slot_available_hours": 8
+        }
+      ],
+      "labor_rates": [
+        {
+          "role_code": "PROMO_OPERATOR",
+          "base_hourly_rate": 100000,
+          "overtime_multiplier": 1.5,
+          "overtime_threshold_hours": 8,
+          "currency_code": "VND"
+        }
+      ],
+      "policies": []
+    }
+  }
+}

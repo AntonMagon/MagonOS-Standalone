@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+PRODUCT_OWNED_PATTERN='^(src/|apps/web/|scripts/|tests/|AGENTS\.md$|docs/current-project-state\.md$|\.codex/config\.toml$|docs/repo-workflow\.md$)'
+MEMORY_FILE=".codex/project-memory.md"
+
+upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream} 2>/dev/null || true)"
+if [[ -n "$upstream_ref" ]]; then
+  diff_range="${upstream_ref}..HEAD"
+elif git rev-parse HEAD~1 >/dev/null 2>&1; then
+  diff_range="HEAD~1..HEAD"
+else
+  diff_range="HEAD"
+fi
+
+outgoing_files="$(git diff --name-only "$diff_range")"
+
+if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -Eq "$PRODUCT_OWNED_PATTERN"; then
+  if ! printf '%s\n' "$outgoing_files" | grep -qx "$MEMORY_FILE"; then
+    echo "pre-push: outgoing product-owned changes do not include $MEMORY_FILE" >&2
+    echo "Update memory and create a new commit before pushing." >&2
+    exit 1
+  fi
+fi
+
+run_verify() {
+  if [[ -n "$outgoing_files" ]] && printf '%s\n' "$outgoing_files" | grep -q '^apps/web/'; then
+    ./scripts/verify_workflow.sh --with-web
+  else
+    ./scripts/verify_workflow.sh
+  fi
+}
+
+if ! run_verify; then
+  echo "pre-push: verification failed on the first attempt, retrying once" >&2
+  run_verify
+fi

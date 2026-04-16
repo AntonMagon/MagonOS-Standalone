@@ -1,0 +1,110 @@
+version: "3"
+
+interval: 500ms
+
+tasks:
+  sync:root-docs:
+    desc: Sync AGENTS.md and README.md from canonical repo state
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/sync_operating_docs.py
+
+  sync:visual-map:
+    desc: Regenerate the visual project map docs
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/update_project_visual_map.py
+
+  verify:
+    desc: Run the canonical repo verification
+    cmds:
+      - ./scripts/verify_workflow.sh
+
+  verify:web:
+    desc: Run repo verification including web typecheck
+    cmds:
+      - ./scripts/verify_workflow.sh --with-web
+
+  smoke:platform:
+    desc: Probe the current local backend/web/operator surfaces
+    cmds:
+      - ./scripts/platform_smoke_check.sh
+
+  perf:smoke:
+    desc: Run the lightweight k6 smoke scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh smoke
+
+  perf:load:
+    desc: Run the repo load scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh load
+
+  perf:stress:
+    desc: Run the repo stress scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh stress
+
+  checks:periodic:
+    desc: Run the lightweight periodic repo checks exactly once
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/run_periodic_checks.py
+
+  autosync:once:
+    desc: Run one repo-native autosync pass for explicit changed paths
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/run_repo_autosync.py {{.CLI_ARGS}}
+
+  autosync:all:
+    desc: Run the fallback autosync path without explicit changed paths
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/run_repo_autosync.py --all
+
+  autosync:watch:
+    desc: Foreground fallback watcher when Watchman triggers are not used
+    watch: true
+    sources:
+      - src/**/*.py
+      - scripts/**/*.py
+      - scripts/**/*.sh
+      - tests/**/*.py
+      - perf/**/*.js
+      - apps/web/**/*.ts
+      - apps/web/**/*.tsx
+      - apps/web/**/*.js
+      - apps/web/**/*.jsx
+      - apps/web/**/*.json
+      - skills/*/SKILL.md
+      - docs/current-project-state.md
+      - docs/repo-workflow.md
+      - docs/ru/README.md
+      - docs/ru/current-project-state.md
+      - docs/ru/repo-workflow.md
+      - docs/ru/code-map.md
+      - docs/ru/performance-and-observability.md
+      - docs/performance-and-observability.md
+      - .codex/project-memory.md
+      - .codex/config.toml
+      - .githooks/*
+      - .watchmanconfig
+      - Taskfile.yml
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/run_repo_autosync.py --all
+
+  automation:install:
+    desc: Install the persistent Watchman trigger for repo autosync
+    cmds:
+      - ./scripts/install_repo_automation.sh
+
+  automation:status:
+    desc: Show the current Watchman status and installed repo trigger
+    cmds:
+      - ./scripts/repo_automation_status.sh
+
+  launchd:install:
+    desc: Install the local macOS LaunchAgent for periodic checks
+    cmds:
+      - ./scripts/install_launchd_periodic_checks.sh
+
+  launchd:status:
+    desc: Show the installed local macOS LaunchAgent status
+    cmds:
+      - ./scripts/launchd_periodic_checks_status.sh

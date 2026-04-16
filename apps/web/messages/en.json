@@ -1,0 +1,251 @@
+{
+  "meta": {
+    "title": "MagonOS — standalone product layer",
+    "description": "MagonOS brings company intelligence, commercial prep, and operator workflow together in one standalone web layer."
+  },
+  "nav": {
+    "overview": "Home",
+    "dashboard": "Runtime",
+    "ops": "Ops",
+    "projectMap": "Map",
+    "personalize": "Boundary"
+  },
+  "header": {
+    "homeAria": "Open the MagonOS home page",
+    "shell": "Standalone product layer",
+    "mainNavAria": "Primary navigation",
+    "mobileMenuOpen": "Open navigation menu",
+    "mobileMenuTitle": "Navigation and quick settings",
+    "mobileMenuText": "Switch language, adjust the theme, and jump into the working surfaces from here.",
+    "controlsLabel": "Quick controls"
+  },
+  "languageToggle": {
+    "label": "Interface language",
+    "ru": "RU",
+    "en": "EN",
+    "switchToRu": "Switch the interface to Russian",
+    "switchToEn": "Switch the interface to English"
+  },
+  "themeToggle": {
+    "toLight": "Switch to the light theme",
+    "toDark": "Switch to the dark theme"
+  },
+  "appearance": {
+    "openButton": "Open interface palettes",
+    "title": "Interface palettes",
+    "description": "Palettes change the accent and glow tokens without disturbing page structure or component hierarchy.",
+    "palettes": {
+      "ember-signal": {
+        "name": "Warm signal",
+        "description": "The default working palette with an amber accent"
+      },
+      "tidal-mint": {
+        "name": "Tidal mint",
+        "description": "A cooler accent for calmer operator workflows"
+      },
+      "violet-ink": {
+        "name": "Violet ink",
+        "description": "Sharper and more editorial without adding visual noise"
+      }
+    },
+    "page": {
+      "eyebrow": "Platform boundary",
+      "title": "The line between the public shell, the standalone core, and the remaining ERP tails should be obvious at a glance.",
+      "text": "This page states the current product contract. Some things are already owned by standalone, some still run in bridge mode, and the UI should not blur that distinction.",
+      "contractTitle": "Current architecture contract",
+      "contractText": "The public shell and the operator workflow should behave like one product layer. Internal ERP links are acceptable only as a transition dependency, not as the place where new logic should grow.",
+      "openDialog": "Open the runtime view",
+      "rules": {
+        "one": "If an entity is part of the product long term, it needs a standalone source of truth instead of living only in legacy Odoo models.",
+        "two": "The public shell should explain the working product contour clearly: company intelligence, commercial context, handoff prep, and operator workflow.",
+        "three": "Bridge dependencies must be shown honestly. A transitional contour should not be presented as a completed migration.",
+        "four": "New work belongs in the standalone repository by default. Donor code is for inspection, extraction, or final cut-off only."
+      }
+    }
+  },
+  "home": {
+    "badge": "Standalone product platform",
+    "eyebrow": "Company intelligence and ops",
+    "title": "MagonOS moves a company from canonical intake and operator review into commercial context and production handoff.",
+    "text": "This is no longer a shell sitting on top of Odoo. The active contour now lives in standalone: company intelligence, review, customer context, opportunity tracking, and quote intent. Internal ERP bridges still exist, but they no longer define the product layer.",
+    "openDashboard": "Open runtime view",
+    "openOps": "Open ops workbench",
+    "highlights": {
+      "one": "Company intelligence is stored in standalone and does not depend on the Odoo runtime.",
+      "two": "Review, qualification, and routing feed the same company-centric operator workflow.",
+      "three": "Customer accounts, opportunities, and quote intent now have their own product boundary instead of living as external references only.",
+      "four": "Production handoff and the production board sit in the same runtime as the company workbench."
+    },
+    "focusLabel": "Core fact",
+    "focusTitle": "The active workflow is already standalone-owned.",
+    "focusText": "Company intelligence, review, commercial context, and handoff prep live here. Full ERP and CRM parity is still unfinished, so bridge dependencies still need explicit tracking.",
+    "runtimeLabel": "Runtime status",
+    "runtimeOnline": "Standalone backend is available",
+    "runtimeCompanies": "Canonical companies: {count}",
+    "runtimeFeedback": "Feedback events: {count}",
+    "runtimeOffline": "The backend is unavailable right now. The public shell is up, but the operator contour did not respond.",
+    "layers": {
+      "standalone": {
+        "title": "What is already native",
+        "body": "SQLite, canonical companies, review, routing, commercial prep, and handoff preparation already belong to standalone."
+      },
+      "bridge": {
+        "title": "Where the bridge remains",
+        "body": "Some CRM and ERP semantics, plus historical identifiers, still carry Odoo traces. That is a bridge fact, not the product target."
+      },
+      "next": {
+        "title": "What comes next",
+        "body": "The next step is to cut off the remaining commercial and ERP tails so standalone becomes the only product-of-record."
+      }
+    },
+    "operatorEyebrow": "Operator contour",
+    "operatorTitle": "The working surfaces now live in the same product as the public shell.",
+    "operatorText": "From here you open companies, the review queue, feedback status, customer context, quote intent, and production prep. A separate table-first site is no longer the main entry point.",
+    "openOperatorConsole": "Open ops console",
+    "openCompanyWorkbench": "Open company workbench"
+  },
+  "dashboard": {
+    "eyebrow": "Runtime view",
+    "title": "What already lives in standalone and is available to the operator today.",
+    "text": "This view shows the current standalone runtime: data volume, working surfaces, and quick entry points into the actual operator flow. It is neither a marketing shell nor a context-free debug page.",
+    "runtimeLabel": "Backend status",
+    "runtimeOnline": "Runtime is available",
+    "runtimeOffline": "Runtime is unavailable",
+    "runtimeDb": "SQLite: {path}",
+    "runtimeUnavailable": "The backend did not respond. Start the standalone runtime before opening the operator surfaces.",
+    "openConsole": "Open ops console",
+    "openBoard": "Open production board",
+    "workspaceLabel": "Key surfaces",
+    "workspaceTitle": "Where the operator enters from the shared product shell",
+    "workspaceText": "These are direct entry points into the current company-centric workflow: companies, review, and feedback. They no longer sit apart from the main shell.",
+    "surfaces": {
+      "companies": {
+        "title": "Company workbench",
+        "body": "Open company intelligence, scores, commercial context, and related actions in one place."
+      },
+      "review": {
+        "title": "Review queue",
+        "body": "Open the review queue and move straight into the decision flow for a specific company."
+      },
+      "feedback": {
+        "title": "Feedback status",
+        "body": "Inspect downstream outcomes separately from the canonical intelligence layer."
+      }
+    },
+    "metrics": {
+      "companies": {
+        "title": "Companies",
+        "detail": "Canonical records in standalone"
+      },
+      "queue": {
+        "title": "Review queue",
+        "detail": "Items waiting for operator review"
+      },
+      "feedback": {
+        "title": "Feedback ledger",
+        "detail": "Downstream feedback events"
+      }
+    },
+    "recentLabel": "Recent companies",
+    "recentTitle": "Quick entry into company records",
+    "recentUnknownCity": "City not set",
+    "recentNoEmail": "Email not set",
+    "recentEmpty": "There are no companies to show in the runtime yet."
+  },
+  "opsWorkbench": {
+    "eyebrow": "Ops workbench",
+    "title": "The operator layer now sits inside the same standalone product and leads into the real working paths.",
+    "text": "This page connects the public shell to the active runtime surfaces. There is no Odoo runtime here and no decorative imitation of an operator UI.",
+    "runtimeLabel": "Backend status",
+    "runtimeOnline": "Standalone backend is available",
+    "runtimeOffline": "Standalone backend is unavailable",
+    "runtimeDb": "SQLite: {path}",
+    "runtimeUnavailable": "Start the backend runtime before entering the operator surfaces.",
+    "openConsole": "Open ops console",
+    "openBoard": "Open production board",
+    "metrics": {
+      "companies": {
+        "title": "Companies",
+        "detail": "Canonical companies in the runtime"
+      },
+      "review": {
+        "title": "Review queue",
+        "detail": "Items waiting for operator review"
+      },
+      "feedback": {
+        "title": "Feedback events",
+        "detail": "Events in the downstream ledger"
+      }
+    },
+    "surfacesLabel": "Working surfaces",
+    "surfacesTitle": "Where the operator goes from the unified product",
+    "surfacesText": "These are active entry points into the current standalone core. They lead into working screens, not decorative placeholders.",
+    "surfaces": {
+      "companies": {
+        "href": "companies",
+        "title": "Company workbench",
+        "body": "Open supplier and company intelligence, scores, review, feedback, and commercial linkage."
+      },
+      "review": {
+        "href": "review-queue",
+        "title": "Review queue",
+        "body": "Open the review queue and continue into the company-centric decision flow."
+      },
+      "feedback": {
+        "href": "feedback-status",
+        "title": "Feedback status",
+        "body": "Inspect downstream outcomes separately from canonical intelligence."
+      },
+      "board": {
+        "href": "production-board",
+        "title": "Production board",
+        "body": "Open production-prep and handoff execution surfaces."
+      }
+    },
+    "recentLabel": "Recent companies",
+    "recentTitle": "Quick entry into work",
+    "recentText": "The latest companies available for operator drill-down.",
+    "recentUnknownCity": "City not set",
+    "recentNoEmail": "Email not set",
+    "recentEmpty": "No companies have been loaded yet.",
+    "bridgeLabel": "Platform boundary",
+    "bridgeTitle": "The public shell and the operator surfaces now live in one standalone repository.",
+    "bridgeText": "The app root can now remain a product-facing shell while the ops workbench sits beside it as an embedded working layer. That is cleaner than replacing the product surface with backend tables.",
+    "backToPublic": "Back to runtime view",
+    "openBackendDashboard": "Open backend console"
+  },
+  "projectMap": {
+    "eyebrow": "Visual map",
+    "title": "The project map shows the product contour, risks, skills, and automated control loops in one place.",
+    "text": "This surface exists so the project reads as a living structure rather than a pile of chat history: what standalone already owns, where overlap remains, and which automated loops keep the system aligned.",
+    "statusLabel": "Current focus",
+    "fallbackFocus": "No active focus has been extracted yet",
+    "fallbackRisk": "The operational risk has not been extracted from project memory yet.",
+    "openRuntime": "Open runtime",
+    "openOps": "Open ops",
+    "flowLabel": "Flow contour",
+    "flowTitle": "How the working chain moves today",
+    "ownedLabel": "Native core",
+    "ownedTitle": "What standalone already owns",
+    "overlapLabel": "Danger zone",
+    "overlapTitle": "Where overlap still remains",
+    "scopeLabel": "Scope guard",
+    "scopeTitle": "What should not expand",
+    "automationLabel": "Automation loops",
+    "automationTitle": "Which recurring checks should keep the project aligned",
+    "recentLabel": "Recent movement",
+    "recentTitle": "What changed recently in the project",
+    "metrics": {
+      "skills": "Skills",
+      "skillsDetail": "Active project-specific skills",
+      "automations": "Automations",
+      "automationsDetail": "Recurring control loops",
+      "worklog": "Worklog",
+      "worklogDetail": "Recent recorded changes"
+    }
+  },
+  "common": {
+    "brand": "MagonOS",
+    "close": "Close"
+  }
+}

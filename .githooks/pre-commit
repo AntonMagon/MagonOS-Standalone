@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# RU: Этот hook режет commit, если обновили product-owned код без project memory, docs/ru или русских пояснений в коде.
+MEMORY_FILE=".codex/project-memory.md"
+PRODUCT_OWNED_PATTERN='^(src/|apps/web/|scripts/|tests/|perf/|AGENTS\.md$|docs/current-project-state\.md$|docs/ru/|\.codex/config\.toml$|docs/repo-workflow\.md$)'
+RUSSIAN_DOCS_PATTERN='^docs/ru/'
+
+if [[ ! -f "$MEMORY_FILE" ]]; then
+  echo "pre-commit: missing $MEMORY_FILE" >&2
+  exit 1
+fi
+
+if ! grep -q "<!-- ACTIVE:START -->" "$MEMORY_FILE" || ! grep -q "<!-- ACTIVE:END -->" "$MEMORY_FILE"; then
+  echo "pre-commit: $MEMORY_FILE is missing ACTIVE markers" >&2
+  exit 1
+fi
+
+if ! grep -q "<!-- WORKLOG:START -->" "$MEMORY_FILE" || ! grep -q "<!-- WORKLOG:END -->" "$MEMORY_FILE"; then
+  echo "pre-commit: $MEMORY_FILE is missing WORKLOG markers" >&2
+  exit 1
+fi
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMRT)"
+if [[ -z "$staged_files" ]]; then
+  exit 0
+fi
+
+if printf '%s\n' "$staged_files" | grep -Eq "$PRODUCT_OWNED_PATTERN"; then
+  # RU: Perf/versioned launchd layer тоже считаем product-owned, иначе новый operating contour можно будет менять без memory/docs sync.
+  if ! printf '%s\n' "$staged_files" | grep -qx "$MEMORY_FILE"; then
+    echo "pre-commit: product-owned changes require a staged $MEMORY_FILE update" >&2
+    echo "Run: ./.venv/bin/python scripts/finalize_task.py --summary \"...\" --changed \"...\" --verify \"./scripts/verify_workflow.sh\"" >&2
+    exit 1
+  fi
+  if ! printf '%s\n' "$staged_files" | grep -Eq "$RUSSIAN_DOCS_PATTERN"; then
+    echo "pre-commit: product-owned changes require at least one staged docs/ru/ update" >&2
+    echo "Document the change in Russian under docs/ru/ before committing." >&2
+    exit 1
+  fi
+fi
+
+# RU: До commit проверяем, что корневые AGENTS.md и README.md уже пересобраны из project-memory, skills и automation state.
+./.venv/bin/python scripts/sync_operating_docs.py --check
+./.venv/bin/python scripts/check_russian_comment_contract.py
+./scripts/restore_context.sh --check >/dev/null
