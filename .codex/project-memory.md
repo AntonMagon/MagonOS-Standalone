@@ -60,15 +60,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:35 +07`
+- Updated at: `2026-04-17 04:56 +07`
 - Branch: `develop`
-- Current focus: Synced visual project map with the new operating-doc automation state
+- Current focus: Added local file-watch autosync with Watchman and Task
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The visual map now follows the new operating-doc sync state, but scheduled automations still report drift through inbox items rather than auto-committing repo changes.
+- Biggest operational risk: The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:56 +07 | develop
+- Summary: Added local file-watch autosync with Watchman and Task
+- Changed:
+  - src/magon_standalone/repo_autosync.py autosync planner and loop guards
+  - scripts/run_repo_autosync.py scripts/install_repo_automation.sh scripts/repo_automation_status.sh repo automation entrypoints
+  - Taskfile.yml and .watchmanconfig local automation config
+  - scripts/install_repo_guards.sh scripts/verify_workflow.sh automation contract integration
+  - tests/test_repo_autosync.py loop-safe autosync coverage
+  - docs/ru/README.md docs/ru/repo-workflow.md docs/ru/code-map.md automation documentation
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
 ### 2026-04-17 04:35 +07 | develop
 - Summary: Synced visual project map with the new operating-doc automation state
 - Changed:

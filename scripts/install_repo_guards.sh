@@ -7,9 +7,14 @@ cd "$REPO_ROOT"
 chmod +x \
   .githooks/pre-commit \
   .githooks/pre-push \
+  scripts/install_repo_automation.sh \
   scripts/restore_context.sh \
   scripts/install_repo_guards.sh \
+  scripts/repo_automation_status.sh \
+  scripts/run_repo_autosync.py \
   scripts/verify_workflow.sh
+
+# RU: Repo guards теперь включают и automation entrypoints, чтобы watcher/status scripts не оставались без executable bit после свежего clone.
 
 git config core.hooksPath .githooks
 

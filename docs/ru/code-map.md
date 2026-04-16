@@ -192,6 +192,32 @@ Project-safe wrapper вокруг установленного `playwright` skil
 
 Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
+### `scripts/run_repo_autosync.py`
+
+Главный repo-native autosync runner.
+Принимает список changed paths и не пытается угадывать “какой skill выбрать”, а запускает канонические действия репозитория:
+- `scripts/sync_operating_docs.py`
+- `scripts/update_project_visual_map.py`
+- `./scripts/verify_workflow.sh`
+- `./scripts/verify_workflow.sh --with-web`
+
+Смысл:
+- после сохранения файлов корневые `AGENTS.md` и `README.md` не должны отставать
+- `/project-map` и visual docs тоже не должны жить отдельно
+- verification должен запускаться по реальному контуру изменений
+
+### `scripts/install_repo_automation.sh`
+
+Installer постоянного Watchman trigger для этого репозитория.
+Ставит trigger `magonos-repo-auto`, который следит только за source-of-truth путями и не слушает generated outputs.
+
+### `scripts/repo_automation_status.sh`
+
+Показывает текущий статус Watchman:
+- версия
+- watched roots
+- trigger list для этого repo
+
 ### `scripts/sync_operating_docs.py`
 
 Канонический синхронизатор корневых operating docs.
@@ -212,7 +238,32 @@ Project-safe wrapper вокруг установленного `playwright` skil
 
 Важно:
 - browser automation wrapper `scripts/run_playwright_cli.sh` тоже включён в этот contract
+- autosync scripts и watchman installer тоже входят в этот contract
 - если verification не знает про новый launcher или guard, значит repo drift уже начался
+
+### `Taskfile.yml`
+
+Короткий task-runner слой поверх канонических repo scripts.
+Нужен для предсказуемых команд:
+- `task sync:root-docs`
+- `task sync:visual-map`
+- `task verify`
+- `task verify:web`
+- `task automation:install`
+- `task automation:status`
+- `task autosync:watch`
+
+### `.watchmanconfig`
+
+Root config для Watchman.
+Нужен, чтобы watcher не тратил события на:
+- `.git`
+- `.venv`
+- `node_modules`
+- `.next`
+- `.cache`
+- `data`
+- `__pycache__`
 
 ## Skills
 

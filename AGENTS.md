@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 04:35 +07`
-- Current focus: Synced visual project map with the new operating-doc automation state
+- Auto-synced at: `2026-04-17 04:56 +07`
+- Current focus: Added local file-watch autosync with Watchman and Task
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The visual map now follows the new operating-doc sync state, but scheduled automations still report drift through inbox items rather than auto-committing repo changes.
+- Biggest operational risk: The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
 - Validated contour:
   - company
   - commercial/customer context

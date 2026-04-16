@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: `2026-04-17 04:35 +0700`
+Обновлено: `2026-04-17 04:56 +0700`
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: no additional risk recorded
+- Current focus: Added local file-watch autosync with Watchman and Task
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
 
 ## Автоматические контуры контроля
 

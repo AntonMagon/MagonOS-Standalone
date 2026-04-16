@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-17 04:35 +0700",
+  "generated_at": "2026-04-17 04:56 +0700",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,26 +63,26 @@
     "source repo feature growth"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 04:35 +07`",
+    "updated_at": "`2026-04-17 04:56 +07`",
     "branch": "`develop`",
-    "current_focus": "Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh`",
-    "biggest_operational_risk": "no additional risk recorded"
+    "current_focus": "Added local file-watch autosync with Watchman and Task",
+    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats."
   },
   "recent_worklog": [
     {
+      "heading": "2026-04-17 04:56 +07 | develop",
+      "summary": "Added local file-watch autosync with Watchman and Task",
+      "risk": "See worklog entry"
+    },
+    {
+      "heading": "2026-04-17 04:35 +07 | develop",
+      "summary": "Synced visual project map with the new operating-doc automation state",
+      "risk": "See worklog entry"
+    },
+    {
       "heading": "2026-04-17 04:35 +07 | develop",
       "summary": "Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 04:33 +07 | develop",
-      "summary": "Completed automatic root-doc sync for AGENTS.md and README.md",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 04:31 +07 | develop",
-      "summary": "Made root operating docs truly auto-synced with project memory and automations",
       "risk": "See worklog entry"
     }
   ],

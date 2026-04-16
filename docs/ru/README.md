@@ -140,3 +140,40 @@
 ```bash
 ./scripts/run_playwright_cli.sh open http://127.0.0.1:3000/ --headed
 ```
+
+## Локальная автоматизация по изменению файлов
+
+Теперь в репозитории есть отдельный repo-native autosync слой, который нужен именно как обход ограничения Codex: skills не стартуют сами на каждый save, но repo может сам запускать свои канонические действия.
+
+Что для этого есть:
+- `.watchmanconfig`
+  Конфиг root watch для Watchman.
+- `Taskfile.yml`
+  Короткие команды `task sync:root-docs`, `task verify:web`, `task automation:install`, `task autosync:watch`.
+- `scripts/install_repo_automation.sh`
+  Ставит постоянный Watchman trigger `magonos-repo-auto`.
+- `scripts/run_repo_autosync.py`
+  Принимает changed paths, затем запускает:
+  - `scripts/sync_operating_docs.py`
+  - `scripts/update_project_visual_map.py`
+  - `./scripts/verify_workflow.sh` или `./scripts/verify_workflow.sh --with-web`
+- `scripts/repo_automation_status.sh`
+  Показывает, что Watchman реально смотрит этот repo и что trigger установлен.
+
+Канонический запуск:
+
+```bash
+./scripts/install_repo_automation.sh
+./scripts/repo_automation_status.sh
+```
+
+Ручной fallback без background trigger:
+
+```bash
+task autosync:watch
+```
+
+Важно:
+- autosync не делает commit/push сам
+- autosync не выбирает “skill” на каждый save
+- autosync запускает именно repo-native scripts, чтобы корневые docs, visual map и verification не отставали от реального состояния

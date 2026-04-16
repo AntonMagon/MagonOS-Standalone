@@ -1,0 +1,11 @@
+{
+  "ignore_dirs": [
+    ".git",
+    ".venv",
+    "node_modules",
+    ".next",
+    ".cache",
+    "data",
+    "__pycache__"
+  ]
+}

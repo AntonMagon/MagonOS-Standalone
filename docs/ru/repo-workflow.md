@@ -55,6 +55,27 @@
 
 Внутри `verify_workflow` теперь дополнительно проверяется, что `AGENTS.md` и `README.md` не отстали от project memory, skills и automation state.
 
+## Что теперь автоматизируется по изменению файлов
+
+В репозитории добавлен отдельный локальный autosync-контур:
+- Watchman следит за source-of-truth путями
+- trigger запускает `scripts/run_repo_autosync.py`
+- autosync пересобирает root docs и visual map
+- autosync потом прогоняет `verify_workflow` или `verify_workflow --with-web`
+
+Точки входа:
+
+```bash
+./scripts/install_repo_automation.sh
+./scripts/repo_automation_status.sh
+task autosync:watch
+```
+
+Ограничение остаётся честным:
+- этот слой не заменяет commit/push
+- этот слой не даёт настоящего event-driven запуска skills внутри Codex
+- он автоматизирует именно repo-native действия поверх сохранения файлов
+
 ## Что считается обязательным русским слоем
 
 - русская документация в `docs/ru/`
