@@ -104,6 +104,26 @@ Direct backend URLs still exist for debugging:
 ./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```
 
+## Required Repo Workflow
+This repo now keeps its working context and close-out discipline inside the repository itself.
+
+Required entrypoints:
+
+```bash
+./scripts/restore_context.sh
+./scripts/install_repo_guards.sh
+./scripts/verify_workflow.sh
+./.venv/bin/python scripts/finalize_task.py --summary "..." --changed "..." --verify "./scripts/verify_workflow.sh"
+```
+
+Canonical rules:
+- start substantial work with `./scripts/restore_context.sh`
+- install versioned git guards with `./scripts/install_repo_guards.sh`
+- update `.codex/project-memory.md` before committing substantial repo changes
+- do not claim GitHub visibility until `git push` actually succeeds
+
+Detailed workflow: `docs/repo-workflow.md`
+
 ## Deploy notes
 - This repo is the official product runtime.
 - The source Odoo repo is no longer the official startup path.

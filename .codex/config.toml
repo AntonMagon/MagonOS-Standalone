@@ -6,6 +6,8 @@ root = "/Users/anton/Desktop/MagonOS-Standalone"
 required = [
   "AGENTS.md",
   "docs/current-project-state.md",
+  ".codex/project-memory.md",
+  "docs/repo-workflow.md",
 ]
 
 optional = [
@@ -36,8 +38,12 @@ backend_db = "data/platform.sqlite3"
 legacy_donor_repo = "/Users/anton/Desktop/MagonOS/MagonOS"
 
 [workflow]
+restore_context = "scripts/restore_context.sh"
+install_repo_guards = "scripts/install_repo_guards.sh"
 start_unified = "scripts/run_unified_platform.sh --fresh"
 start_backend = "scripts/run_platform.sh --fresh --port 8091"
 pipeline_fixture = ".venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json"
 test_backend = ".venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations"
+verify_workflow = "scripts/verify_workflow.sh"
+finalize_task = ".venv/bin/python scripts/finalize_task.py --summary \"...\" --changed \"...\" --verify \"./scripts/verify_workflow.sh\""
 web_typecheck = "cd apps/web && npm run typecheck"

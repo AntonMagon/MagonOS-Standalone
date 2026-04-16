@@ -64,6 +64,14 @@ When donor inspection is required:
 Use the smallest command that proves the result.
 Canonical commands and local surfaces are defined in `docs/current-project-state.md`.
 
+## Repo Memory And Execution Guards
+- Restore substantial task context with `./scripts/restore_context.sh`.
+- Persistent project memory lives in `.codex/project-memory.md`.
+- Substantial work is not done until `.codex/project-memory.md` is updated with a verification-backed entry.
+- Finalize substantial work with `./.venv/bin/python scripts/finalize_task.py ...`.
+- Versioned repo hooks live in `.githooks/` and are installed with `./scripts/install_repo_guards.sh`.
+- Do not claim GitHub visibility until a real `git push` succeeds.
+
 ## Reporting Contract
 For substantial tasks, report:
 1. repo worked in
