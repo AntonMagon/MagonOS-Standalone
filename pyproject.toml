@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "gunicorn>=22.0",
+  "sentry-sdk>=2.58.0",
 ]
 
 [project.optional-dependencies]

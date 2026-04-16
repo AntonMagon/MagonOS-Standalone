@@ -14,6 +14,8 @@ from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote
 from wsgiref.simple_server import WSGIRequestHandler, make_server
 
+from magon_standalone.observability import wrap_wsgi_app
+
 from .contracts import (
     LaborPolicyInput,
     LaborRateInput,
@@ -1997,7 +1999,8 @@ class SupplierIntelligenceApiServer:
         self.service = service
         self.host = host
         self.port = port
-        self._server = make_server(host, port, create_wsgi_app(service), handler_class=QuietRequestHandler)
+        # RU: Даже локальный simple-server должен идти через observability wrapper, чтобы perf/error capture не существовал только в deploy-режиме.
+        self._server = make_server(host, port, wrap_wsgi_app(create_wsgi_app(service)), handler_class=QuietRequestHandler)
         self.port = int(self._server.server_port)
         self.base_url = f"http://{self.host}:{self.port}"
 

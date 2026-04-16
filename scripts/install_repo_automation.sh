@@ -24,15 +24,19 @@ watchman -- trigger "$REPO_ROOT" "$TRIGGER_NAME" \
   'src/**' \
   'scripts/**' \
   'tests/**' \
+  'perf/**' \
+  # RU: Perf и observability docs тоже включаем в trigger, иначе repo autosync не увидит новый operating layer.
   'apps/web/**' \
   'skills/**' \
   '.githooks/**' \
   'docs/current-project-state.md' \
   'docs/repo-workflow.md' \
+  'docs/performance-and-observability.md' \
   'docs/ru/README.md' \
   'docs/ru/current-project-state.md' \
   'docs/ru/repo-workflow.md' \
   'docs/ru/code-map.md' \
+  'docs/ru/performance-and-observability.md' \
   '.codex/project-memory.md' \
   '.codex/config.toml' \
   'Taskfile.yml' \

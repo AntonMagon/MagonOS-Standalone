@@ -144,6 +144,8 @@ def _build_payload() -> dict[str, object]:
             "Hourly Platform Smoke",
             "Hourly Visual Map",
             "Weekly Release Gate",
+            # RU: Локальный LaunchAgent тоже показываем в карте, чтобы системный periodic runner был виден рядом с Codex automations.
+            "Launchd Periodic Checks",
         ],
     }
 

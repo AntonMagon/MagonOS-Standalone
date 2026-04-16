@@ -13,6 +13,8 @@
   Канонические entrypoints запуска, проверки и repo workflow.
 - `tests/`
   Unit/integration-проверки backend и repo workflow.
+- `perf/`
+  Versioned perf/load сценарии для локальной платформы.
 - `docs/`
   Основная документация на английском.
 - `docs/ru/`
@@ -192,6 +194,76 @@ Project-safe wrapper вокруг установленного `playwright` skil
 
 Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
+### `scripts/platform_smoke_check.sh`
+
+Быстрый probe для:
+- `GET /health`
+- `GET /status`
+- `/`
+- `/dashboard`
+- `/ops-workbench`
+- `/project-map`
+- `/ui/companies`
+
+Нужен, чтобы без полного suite быстро доказать, что backend/web/operator surfaces живы.
+
+### `scripts/run_perf_suite.sh`
+
+Канонический launcher для `k6`.
+Сценарии лежат в:
+- `perf/k6/smoke.js`
+- `perf/k6/load.js`
+- `perf/k6/stress.js`
+
+Смысл:
+- smoke — быстрый proof живости и latency budget
+- load — умеренная нагрузка
+- stress — жёсткий локальный предел
+
+### `scripts/run_periodic_checks.py`
+
+Лёгкий periodic runner.
+Пишет:
+- `.cache/periodic-checks-status.json`
+- `.cache/periodic-checks.log`
+
+Нужен, чтобы локальная машина сама периодически фиксировала:
+- синхронность root docs
+- актуальность visual map
+- живость платформы
+- k6 smoke при живом runtime
+
+### `scripts/install_launchd_periodic_checks.sh`
+
+Устанавливает локальный macOS LaunchAgent `com.magonos.periodic-checks`.
+Это уже не Codex automation, а системный periodic runner уровня машины.
+
+### `scripts/launchd_periodic_checks_status.sh`
+
+Показывает:
+- plist в `~/Library/LaunchAgents/`
+- реальный `launchctl print`
+
+Если periodic runner "вроде установлен", но реально не живёт, смотреть сюда.
+
+### `src/magon_standalone/observability.py`
+
+Env-gated backend observability helper.
+Отвечает за:
+- backend Sentry init
+- safe WSGI wrapping
+- отсутствие жёсткой зависимости на внешний DSN в обычном локальном режиме
+
+### `apps/web/instrumentation-client.ts`
+
+Browser-side Sentry init для Next shell.
+Активируется только при наличии `NEXT_PUBLIC_MAGON_SENTRY_DSN`.
+
+### `apps/web/sentry.server.config.ts`
+
+Server-side Sentry init для Next shell.
+Держит server capture отдельно от browser env, но не ломает dev-path без DSN.
+
 ### `scripts/run_repo_autosync.py`
 
 Главный repo-native autosync runner.
@@ -249,8 +321,15 @@ Installer постоянного Watchman trigger для этого репози
 - `task sync:visual-map`
 - `task verify`
 - `task verify:web`
+- `task smoke:platform`
+- `task perf:smoke`
+- `task perf:load`
+- `task perf:stress`
+- `task checks:periodic`
 - `task automation:install`
 - `task automation:status`
+- `task launchd:install`
+- `task launchd:status`
 - `task autosync:watch`
 
 ### `.watchmanconfig`

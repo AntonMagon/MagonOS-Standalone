@@ -11,6 +11,7 @@ SRC_ROOT = REPO_ROOT / 'src'
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from magon_standalone.observability import init_backend_observability
 from magon_standalone.supplier_intelligence.api import SupplierIntelligenceApiServer, SupplierIntelligenceApiService
 
 
@@ -35,6 +36,8 @@ def main() -> int:
     parser.add_argument('--integration-token', default=os.environ.get('MAGON_STANDALONE_INTEGRATION_TOKEN') or os.environ.get('SUPPLIER_INTELLIGENCE_SYNC_TOKEN'))
     args = parser.parse_args()
 
+    # RU: CLI server path тоже должен включать env-gated backend observability, иначе локальный dev и deploy будут расходиться по capture-поведению.
+    init_backend_observability()
     service = SupplierIntelligenceApiService(
         db_path=args.db_path,
         default_query=args.default_query,

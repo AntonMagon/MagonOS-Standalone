@@ -13,6 +13,7 @@
 - `apps/web/`
 - `scripts/`
 - `tests/`
+- `perf/`
 - `AGENTS.md`
 - `docs/current-project-state.md`
 - `docs/ru/`
@@ -27,6 +28,8 @@
   Русское описание обязательного workflow репозитория.
 - `code-map.md`
   Русская карта кода: какие директории и ключевые файлы за что отвечают.
+- `performance-and-observability.md`
+  Русское описание perf/load/launchd/Sentry-контура.
 - `visuals/`
   Отдельная папка для визуальных карт проекта, чтобы состояние системы читалось не только текстом.
 
@@ -177,3 +180,17 @@ task autosync:watch
 - autosync не делает commit/push сам
 - autosync не выбирает “skill” на каждый save
 - autosync запускает именно repo-native scripts, чтобы корневые docs, visual map и verification не отставали от реального состояния
+
+## Performance / periodic / observability слой
+
+Теперь поверх autosync добавлен ещё один технический контур:
+- `perf/k6/` — versioned smoke/load/stress сценарии
+- `scripts/run_perf_suite.sh` — канонический k6 launcher
+- `scripts/platform_smoke_check.sh` — быстрый probe локальных surfaces
+- `scripts/run_periodic_checks.py` — лёгкий periodic runner
+- `scripts/install_launchd_periodic_checks.sh` — установка macOS LaunchAgent
+- `scripts/launchd_periodic_checks_status.sh` — живой status launchd job
+- `src/magon_standalone/observability.py` и `apps/web/instrumentation-client.ts` — env-gated Sentry prep
+
+Подробности:
+- `docs/ru/performance-and-observability.md`

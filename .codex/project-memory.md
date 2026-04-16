@@ -60,15 +60,26 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:56 +07`
+- Updated at: `2026-04-17 05:39 +07`
 - Branch: `develop`
-- Current focus: Added local file-watch autosync with Watchman and Task
+- Current focus: Added perf, launchd, and observability operating layer
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
+- Biggest operational risk: The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 05:39 +07 | develop
+- Summary: Added perf, launchd, and observability operating layer
+- Changed:
+  - k6 perf scenarios and launchers
+  - launchd periodic runner and status tooling
+  - env-gated Sentry prep for backend and Next shell
+  - repo automation/watch/task/docs integration for perf and periodic checks
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure.
 ### 2026-04-17 04:56 +07 | develop
 - Summary: Added local file-watch autosync with Watchman and Task
 - Changed:

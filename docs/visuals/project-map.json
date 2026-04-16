@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-17 04:56 +0700",
+  "generated_at": "2026-04-17 05:39 +0700",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "source repo feature growth"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 04:56 +07`",
+    "updated_at": "`2026-04-17 05:39 +07`",
     "branch": "`develop`",
-    "current_focus": "Added local file-watch autosync with Watchman and Task",
+    "current_focus": "Added perf, launchd, and observability operating layer",
     "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats."
+    "biggest_operational_risk": "The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 05:39 +07 | develop",
+      "summary": "Added perf, launchd, and observability operating layer",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 04:56 +07 | develop",
       "summary": "Added local file-watch autosync with Watchman and Task",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 04:35 +07 | develop",
       "summary": "Synced visual project map with the new operating-doc automation state",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 04:35 +07 | develop",
-      "summary": "Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs",
       "risk": "See worklog entry"
     }
   ],
@@ -104,6 +104,7 @@
     "Hourly Repo Guard",
     "Hourly Platform Smoke",
     "Hourly Visual Map",
-    "Weekly Release Gate"
+    "Weekly Release Gate",
+    "Launchd Periodic Checks"
   ]
 }

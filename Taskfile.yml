@@ -23,6 +23,31 @@ tasks:
     cmds:
       - ./scripts/verify_workflow.sh --with-web
 
+  smoke:platform:
+    desc: Probe the current local backend/web/operator surfaces
+    cmds:
+      - ./scripts/platform_smoke_check.sh
+
+  perf:smoke:
+    desc: Run the lightweight k6 smoke scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh smoke
+
+  perf:load:
+    desc: Run the repo load scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh load
+
+  perf:stress:
+    desc: Run the repo stress scenario against the current local platform
+    cmds:
+      - ./scripts/run_perf_suite.sh stress
+
+  checks:periodic:
+    desc: Run the lightweight periodic repo checks exactly once
+    cmds:
+      - PYTHONDONTWRITEBYTECODE=1 ./.venv/bin/python scripts/run_periodic_checks.py
+
   autosync:once:
     desc: Run one repo-native autosync pass for explicit changed paths
     cmds:
@@ -41,6 +66,7 @@ tasks:
       - scripts/**/*.py
       - scripts/**/*.sh
       - tests/**/*.py
+      - perf/**/*.js
       - apps/web/**/*.ts
       - apps/web/**/*.tsx
       - apps/web/**/*.js
@@ -53,6 +79,8 @@ tasks:
       - docs/ru/current-project-state.md
       - docs/ru/repo-workflow.md
       - docs/ru/code-map.md
+      - docs/ru/performance-and-observability.md
+      - docs/performance-and-observability.md
       - .codex/project-memory.md
       - .codex/config.toml
       - .githooks/*
@@ -70,3 +98,13 @@ tasks:
     desc: Show the current Watchman status and installed repo trigger
     cmds:
       - ./scripts/repo_automation_status.sh
+
+  launchd:install:
+    desc: Install the local macOS LaunchAgent for periodic checks
+    cmds:
+      - ./scripts/install_launchd_periodic_checks.sh
+
+  launchd:status:
+    desc: Show the installed local macOS LaunchAgent status
+    cmds:
+      - ./scripts/launchd_periodic_checks_status.sh

@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: `2026-04-17 04:56 +0700`
+Обновлено: `2026-04-17 05:39 +0700`
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: Added local file-watch autosync with Watchman and Task
+- Current focus: Added perf, launchd, and observability operating layer
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The repo now auto-runs sync and verification on file changes, but autosync still stops at repo-native actions and does not replace human commit/push decisions or Codex skill dispatch across chats.
+- Biggest operational risk: The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure.
 
 ## Автоматические контуры контроля
 
@@ -58,6 +58,7 @@ flowchart LR
 - Hourly Platform Smoke
 - Hourly Visual Map
 - Weekly Release Gate
+- Launchd Periodic Checks
 
 ## Активные project skills
 

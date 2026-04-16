@@ -76,6 +76,32 @@ task autosync:watch
 - этот слой не даёт настоящего event-driven запуска skills внутри Codex
 - он автоматизирует именно repo-native действия поверх сохранения файлов
 
+## Периодический локальный контур
+
+Поверх autosync теперь есть ещё один OS-level слой:
+
+```bash
+./scripts/install_launchd_periodic_checks.sh --interval 1800
+./scripts/launchd_periodic_checks_status.sh
+```
+
+Он нужен не вместо autosync, а поверх него:
+- autosync реагирует на save/change
+- launchd даёт регулярную ревизию состояния машины и runtime
+
+Лёгкий periodic run выполняет:
+- `scripts/sync_operating_docs.py`
+- `scripts/update_project_visual_map.py`
+- `scripts/platform_smoke_check.sh`
+- `scripts/run_perf_suite.sh smoke`, если платформа жива
+
+Если локальный runtime не поднят на стандартных портах, periodic runner не считается сломанным:
+- он всё равно синхронизирует docs
+- пишет status/log
+- помечает smoke/perf как `skip`, а не как ложный failure
+
+Это intentionally не полный `verify_workflow`, чтобы не гонять тяжёлый suite каждые 30 минут.
+
 ## Что считается обязательным русским слоем
 
 - русская документация в `docs/ru/`

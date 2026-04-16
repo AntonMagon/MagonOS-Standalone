@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from magon_standalone.observability import init_backend_observability, wrap_wsgi_app
 from magon_standalone.supplier_intelligence.api import SupplierIntelligenceApiService, create_wsgi_app
 
 
@@ -27,4 +28,6 @@ service = SupplierIntelligenceApiService(
     integration_token=_env('MAGON_STANDALONE_INTEGRATION_TOKEN', None, 'SUPPLIER_INTELLIGENCE_SYNC_TOKEN'),
 )
 
-app = create_wsgi_app(service)
+# RU: WSGI deploy path тоже оборачиваем здесь, чтобы gunicorn/runtime capture не отличались от локального CLI server path.
+init_backend_observability()
+app = wrap_wsgi_app(create_wsgi_app(service))

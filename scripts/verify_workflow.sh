@@ -21,9 +21,16 @@ cd "$REPO_ROOT"
 # RU: Browser automation wrapper тоже входит в канонический contract и не должен выпадать из syntax-check при repo verification.
 # RU: Корневые AGENTS.md и README.md тоже считаются продуктовым runtime-контрактом и обязаны быть в синхроне.
 # RU: Локальный autosync watcher тоже входит в contract: если его scripts/tests не проходят, background automation уже нельзя считать рабочей.
+# RU: Perf/launchd/observability layer тоже должен быть частью канонического verify path, иначе новая автоматизация быстро станет "непроверяемым хвостом".
 bash -n \
   scripts/install_repo_automation.sh \
+  scripts/install_launchd_periodic_checks.sh \
   scripts/run_platform.sh \
+  scripts/platform_smoke_check.sh \
+  scripts/run_perf_suite.sh \
+  scripts/launchd_periodic_checks_status.sh \
+  scripts/render_launchd_periodic_checks.py \
+  scripts/run_periodic_checks.py \
   scripts/run_unified_platform.sh \
   scripts/run_playwright_cli.sh \
   scripts/repo_automation_status.sh \
@@ -35,8 +42,12 @@ bash -n \
   .githooks/pre-push
 
 ./.venv/bin/python -m py_compile \
+  scripts/render_launchd_periodic_checks.py \
   scripts/run_repo_autosync.py \
+  scripts/run_periodic_checks.py \
   scripts/sync_operating_docs.py \
+  src/magon_standalone/launchd_periodic_checks.py \
+  src/magon_standalone/observability.py \
   src/magon_standalone/repo_autosync.py \
   src/magon_standalone/operating_docs_sync.py
 
@@ -48,6 +59,8 @@ bash -n \
   tests.test_operations \
   tests.test_workforce \
   tests.test_deploy \
+  tests.test_launchd_periodic_checks \
+  tests.test_observability \
   tests.test_repo_autosync \
   tests.test_repo_workflow \
   tests.test_operating_docs_sync \
