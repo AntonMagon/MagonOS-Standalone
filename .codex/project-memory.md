@@ -60,15 +60,23 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:16 +07`
+- Updated at: `2026-04-17 04:18 +07`
 - Branch: `develop`
-- Current focus: Keep repo guards, automations, and browser automation aligned with the real Codex operating model
+- Current focus: Keep repo verification accurate while integrating automation and browser tooling
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Skills and cron automations are active, but Codex still does not provide event-driven per-file auto-skill triggering across chats; only hooks, scheduled automations, and explicit agent invocation are automatic.
+- Biggest operational risk: The operating model is now stable again, but skill execution in Codex remains prompt-driven or schedule-driven rather than event-driven on every file save.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:18 +07 | develop
+- Summary: Fixed verify_workflow regression that broke pre-push after browser automation integration
+- Changed:
+  - scripts/verify_workflow.sh comment placement in bash -n contract
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The operating model is now stable again, but skill execution in Codex remains prompt-driven or schedule-driven rather than event-driven on every file save.
 ### 2026-04-17 04:16 +07 | develop
 - Summary: Audited automation and skill operating contract and hardened verification for browser automation
 - Changed:

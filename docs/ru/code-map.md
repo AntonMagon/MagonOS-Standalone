@@ -192,6 +192,18 @@ Project-safe wrapper вокруг установленного `playwright` skil
 
 Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
+### `scripts/verify_workflow.sh`
+
+Главная локальная verification-цепочка репозитория.
+Сейчас она обязана проверять:
+- shell syntax для канонических launcher- и guard-скриптов
+- backend/unit tests
+- web typecheck при `--with-web`
+
+Важно:
+- browser automation wrapper `scripts/run_playwright_cli.sh` тоже включён в этот contract
+- если verification не знает про новый launcher или guard, значит repo drift уже начался
+
 ## Skills
 
 ### `skills/audit-docs-vs-runtime/SKILL.md`

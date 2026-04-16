@@ -18,10 +18,10 @@ cd "$REPO_ROOT"
 
 # RU: Проверяем не только shell/python синтаксис, но и то, что repo-level guard scripts вообще запускаемы.
 # RU: В verification теперь включён installer project skills, чтобы repo не держал "мертвые" skills без активации в CODEX_HOME.
+# RU: Browser automation wrapper тоже входит в канонический contract и не должен выпадать из syntax-check при repo verification.
 bash -n \
   scripts/run_platform.sh \
   scripts/run_unified_platform.sh \
-  # RU: Browser automation wrapper тоже входит в канонический contract и не должен выпадать из syntax-check при repo verification.
   scripts/run_playwright_cli.sh \
   scripts/restore_context.sh \
   scripts/install_project_skills.sh \
