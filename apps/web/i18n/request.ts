@@ -25,12 +25,14 @@ function isPlainObject(value: unknown): value is MessageTree {
 }
 
 async function detectLocale(): Promise<AppLocale> {
+  // Сначала уважаем явный выбор пользователя из cookie, чтобы интерфейс не "прыгал" между языками.
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get(localeCookieName)?.value;
   if (isLocale(cookieLocale)) {
     return cookieLocale;
   }
 
+  // Если cookie ещё нет, берём самый дешёвый fallback из Accept-Language.
   const acceptLanguage = (await headers()).get('accept-language') ?? '';
   const normalized = acceptLanguage.toLowerCase();
   if (normalized.startsWith('en')) {
@@ -41,6 +43,7 @@ async function detectLocale(): Promise<AppLocale> {
 }
 
 async function loadMessages(locale: AppLocale) {
+  // Русский слой остаётся базовым словарём, а английский накладывается поверх него как override.
   const baseMessages = (await import('../messages/ru.json')).default as MessageTree;
   if (locale === defaultLocale) {
     return baseMessages;

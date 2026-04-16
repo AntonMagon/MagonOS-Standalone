@@ -5,6 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REQUIRED_FILES=(
   "AGENTS.md"
   "docs/current-project-state.md"
+  "docs/ru/README.md"
+  "docs/ru/current-project-state.md"
   ".codex/config.toml"
   ".codex/project-memory.md"
   "docs/repo-workflow.md"

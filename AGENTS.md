@@ -72,6 +72,13 @@ Canonical commands and local surfaces are defined in `docs/current-project-state
 - Versioned repo hooks live in `.githooks/` and are installed with `./scripts/install_repo_guards.sh`.
 - Do not claim GitHub visibility until a real `git push` succeeds.
 
+## Russian Documentation And Comment Contract
+- Russian repo documentation lives in `docs/ru/`.
+- Product-owned changes must update at least one relevant file in `docs/ru/` in the same commit.
+- Non-obvious business logic, routing logic, locale logic, persistence transitions, and workflow guards must have concise Russian comments or docstrings near the changed code.
+- Do not add noise comments. Add Russian comments only where they explain purpose, boundary, or non-obvious behavior.
+- If the code changed and no Russian explanation was needed, that decision must still be justified by the code being trivial.
+
 ## Reporting Contract
 For substantial tasks, report:
 1. repo worked in

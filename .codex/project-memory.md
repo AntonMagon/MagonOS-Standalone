@@ -54,18 +54,33 @@ It exists so the project context survives across sessions instead of being re-ex
 - No one should claim GitHub visibility until a real `git push` succeeds.
 - Hooks are versioned in `.githooks/` and installed locally through `./scripts/install_repo_guards.sh`.
 - If product-owned files change, `.codex/project-memory.md` must be updated in the same commit.
+- If product-owned files change, at least one relevant file in `docs/ru/` must be updated in the same commit.
+- Non-obvious changed logic must get concise Russian comments or docstrings near the code.
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:22 +07`
+- Updated at: `2026-04-17 02:31 +07`
 - Branch: `develop`
-- Current focus: ship the locale-aware standalone shell and backend operator UI as the current working product state
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`, PASS `cd apps/web && npm run build`
-- Biggest operational risk: next build emits a cache-invalidation warning from next-intl dynamic import parsing, but the build succeeds and routes are generated
+- Current focus: keep docs/ru and Russian explanatory comments mandatory for future product-owned changes
+- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `cd apps/web && npm run build`
+- Biggest operational risk: the Russian documentation requirement is enforced at commit level, but comment quality still depends on disciplined code review rather than semantic static analysis
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:31 +07 | develop
+- Summary: enforce Russian documentation layer and Russian code-comment contract
+- Changed:
+  - docs/ru/README.md, docs/ru/current-project-state.md, docs/ru/repo-workflow.md, docs/ru/code-map.md
+  - AGENTS.md, docs/repo-workflow.md, .codex/config.toml
+  - .githooks/pre-commit, scripts/restore_context.sh, .codex/project-memory.md
+  - Russian comments in apps/web/i18n/request.ts and src/magon_standalone/supplier_intelligence/api.py
+- Verified:
+  - PASS `./scripts/restore_context.sh --check`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - the Russian documentation requirement is enforced at commit level, but comment quality still depends on disciplined code review rather than semantic static analysis
 ### 2026-04-17 02:22 +07 | develop
 - Summary: finish locale-aware web shell and localized backend operator surfaces
 - Changed:

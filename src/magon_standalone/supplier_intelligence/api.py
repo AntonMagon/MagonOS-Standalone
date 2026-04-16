@@ -748,6 +748,7 @@ _UI_VALUE_LABEL_RU = {
 
 
 def _current_locale() -> str:
+    # Локаль живёт в request-local контексте, чтобы backend UI не протекал между запросами.
     return _REQUEST_LOCALE.get()
 
 
@@ -784,6 +785,7 @@ def _localize_html_fragment(fragment: str) -> str:
     if _current_locale() != "ru" or not fragment:
         return fragment
 
+    # Локализуем уже готовый HTML точечными заменами, чтобы не тащить отдельный шаблонный слой.
     def replace_text(match: re.Match[str]) -> str:
         return f"{match.group(1)}{_translate_preserving_whitespace(match.group(2))}"
 

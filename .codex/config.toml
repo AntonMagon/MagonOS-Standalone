@@ -6,11 +6,15 @@ root = "/Users/anton/Desktop/MagonOS-Standalone"
 required = [
   "AGENTS.md",
   "docs/current-project-state.md",
+  "docs/ru/README.md",
+  "docs/ru/current-project-state.md",
   ".codex/project-memory.md",
   "docs/repo-workflow.md",
 ]
 
 optional = [
+  "docs/ru/repo-workflow.md",
+  "docs/ru/code-map.md",
   "docs/audit-context.md",
   "docs/business-logic-parity-audit.md",
   "docs/operating-layer-migration-audit.md",

@@ -19,6 +19,8 @@ This document defines the canonical workflow that closes that gap.
 
 - `AGENTS.md`
 - `docs/current-project-state.md`
+- `docs/ru/README.md`
+- `docs/ru/current-project-state.md`
 - `.codex/config.toml`
 - `.codex/project-memory.md`
 
@@ -38,6 +40,7 @@ What it does:
 - shows the active repo status
 - shows the installed hooks path
 - prints the canonical project context files in a predictable order
+- includes the required Russian documentation layer
 
 This is the repo-native context restore entrypoint.
 
@@ -87,6 +90,7 @@ Installed hooks:
 Purpose:
 
 - prevent commits that change product-owned files without also updating `.codex/project-memory.md`
+- prevent commits that change product-owned files without also updating the Russian documentation layer in `docs/ru/`
 - ensure the memory file still contains the required markers
 
 Product-owned paths for this guard:
@@ -97,8 +101,14 @@ Product-owned paths for this guard:
 - `tests/`
 - `AGENTS.md`
 - `docs/current-project-state.md`
+- `docs/ru/`
 - `.codex/config.toml`
 - `docs/repo-workflow.md`
+
+Russian-document requirement:
+
+- if product-owned files are staged, at least one staged file must be inside `docs/ru/`
+- this keeps the Russian explanation layer moving with the code, instead of becoming stale after the first setup
 
 ### pre-push
 
@@ -146,10 +156,12 @@ Minimal disciplined path for a substantial task:
 
 1. `./scripts/restore_context.sh`
 2. implement the change
-3. `./scripts/verify_workflow.sh`
-4. `./.venv/bin/python scripts/finalize_task.py ...`
-5. `git add ...`
-6. `git commit -m "..."`
-7. `git push`
+3. update the relevant file in `docs/ru/`
+4. add concise Russian comments/docstrings in changed non-obvious logic when needed
+5. `./scripts/verify_workflow.sh`
+6. `./.venv/bin/python scripts/finalize_task.py ...`
+7. `git add ...`
+8. `git commit -m "..."`
+9. `git push`
 
-If step 7 does not happen, the work is still local only.
+If step 9 does not happen, the work is still local only.
