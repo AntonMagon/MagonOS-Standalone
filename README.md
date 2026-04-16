@@ -126,10 +126,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 05:39 +07`
-- Current focus: Added perf, launchd, and observability operating layer
+- Auto-synced at: `2026-04-17 05:43 +07`
+- Current focus: Stabilized visual map timestamps for periodic checks
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure.
+- Biggest operational risk: The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
 - Validated contour:
   - company
   - commercial/customer context

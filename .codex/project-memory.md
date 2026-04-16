@@ -60,15 +60,24 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 05:39 +07`
+- Updated at: `2026-04-17 05:43 +07`
 - Branch: `develop`
-- Current focus: Added perf, launchd, and observability operating layer
+- Current focus: Stabilized visual map timestamps for periodic checks
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The new smoke and periodic layers are green, but the manual load profile at 25 VUs still shows multi-second latency on the local dev shell, which is a real scaling warning rather than a tooling failure.
+- Biggest operational risk: The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 05:43 +07 | develop
+- Summary: Stabilized visual map timestamps for periodic checks
+- Changed:
+  - scripts/update_project_visual_map.py stable generated_at source
+  - visual map outputs no longer drift on idle periodic runs
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
 ### 2026-04-17 05:39 +07 | develop
 - Summary: Added perf, launchd, and observability operating layer
 - Changed:

@@ -117,9 +117,12 @@ def _build_payload() -> dict[str, object]:
     memory_text = _read(PROJECT_MEMORY_PATH)
     active = _active_context(memory_text)
 
+    generated_at = active.get("updated_at") or datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %z")
+
+    # RU: generated_at берём из project-memory active timestamp, чтобы periodic runner не пачкал git-дерево одной лишь новой меткой времени.
     # RU: Автоматы держим прямо в payload, чтобы docs и /project-map рендерили один и тот же контрольный контур без ручной синхронизации.
     return {
-        "generated_at": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %z"),
+        "generated_at": generated_at,
         "repo": {
             "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
             "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS",
