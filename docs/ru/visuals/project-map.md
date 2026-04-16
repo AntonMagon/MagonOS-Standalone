@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 05:43 +07``
+Обновлено: ``2026-04-17 05:58 +07``
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: Stabilized visual map timestamps for periodic checks
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
+- Current focus: Stable autosync, staggered automation cadence, and a verified path to promote develop to main
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Biggest operational risk: Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
 
 ## Автоматические контуры контроля
 

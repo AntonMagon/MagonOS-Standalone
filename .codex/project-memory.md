@@ -60,15 +60,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 05:43 +07`
+- Updated at: `2026-04-17 05:58 +07`
 - Branch: `develop`
-- Current focus: Stabilized visual map timestamps for periodic checks
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
+- Current focus: Stable autosync, staggered automation cadence, and a verified path to promote develop to main
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Biggest operational risk: Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 05:58 +07 | develop
+- Summary: Added periodic-run overlap lock and staggered Codex automation cadence
+- Changed:
+  - scripts/run_periodic_checks.py
+  - src/magon_standalone/periodic_checks.py
+  - tests/test_periodic_checks.py
+  - docs/ru/performance-and-observability.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Risk:
+  - Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
 ### 2026-04-17 05:43 +07 | develop
 - Summary: Stabilized visual map timestamps for periodic checks
 - Changed:

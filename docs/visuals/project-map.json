@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 05:43 +07`",
+  "generated_at": "`2026-04-17 05:58 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "source repo feature growth"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 05:43 +07`",
+    "updated_at": "`2026-04-17 05:58 +07`",
     "branch": "`develop`",
-    "current_focus": "Stabilized visual map timestamps for periodic checks",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs."
+    "current_focus": "Stable autosync, staggered automation cadence, and a verified path to promote develop to main",
+    "last_verified_workflow_status": "PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`",
+    "biggest_operational_risk": "Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 05:58 +07 | develop",
+      "summary": "Added periodic-run overlap lock and staggered Codex automation cadence",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 05:43 +07 | develop",
       "summary": "Stabilized visual map timestamps for periodic checks",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 05:39 +07 | develop",
       "summary": "Added perf, launchd, and observability operating layer",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 04:56 +07 | develop",
-      "summary": "Added local file-watch autosync with Watchman and Task",
       "risk": "See worklog entry"
     }
   ],

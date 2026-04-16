@@ -85,6 +85,7 @@ task checks:periodic
 - пишет status в `.cache/periodic-checks-status.json`
 - пишет лог в `.cache/periodic-checks.log`
 - если локальная платформа не поднята на целевых URL, не падает, а честно пишет `skip` по smoke/perf
+- если предыдущий periodic-run ещё не закончился, новый запуск тоже не наслаивается поверх него, а пишет controlled `periodic-lock-skip`
 
 Важно:
 - это лёгкий periodic runner
@@ -92,6 +93,16 @@ task checks:periodic
 - он не делает commit/push
 - он не стартует платформу сам
 - он проверяет уже живой repo/runtime-контур
+
+## Как разведён тайминг
+
+- локальный `launchd`-runner остаётся частым silent-maintenance слоем
+- Codex automations не должны дублировать его каждый час одним и тем же тяжёлым проходом
+- правильный контур такой:
+  - `launchd` каждые `1800` секунд держит sync/smoke/perf-smoke в фоне
+  - `Platform Smoke` идёт реже как inbox-facing контроль живости
+  - `Repo Guard` идёт ещё реже как drift-аудит
+  - `Visual Map` идёт редко, потому что карта и так пересобирается file-watch/periodic контуром
 
 ## Sentry env contract
 

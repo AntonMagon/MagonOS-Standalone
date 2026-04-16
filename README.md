@@ -126,10 +126,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 05:43 +07`
-- Current focus: Stabilized visual map timestamps for periodic checks
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The periodic runner now exits cleanly and stops dirtying the repo on idle runs, but the manual k6 load profile still shows heavy latency on the local dev shell at 25 VUs.
+- Auto-synced at: `2026-04-17 05:58 +07`
+- Current focus: Stable autosync, staggered automation cadence, and a verified path to promote develop to main
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_periodic_checks tests.test_launchd_periodic_checks tests.test_observability tests.test_repo_autosync`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Biggest operational risk: Local dev-shell latency under k6 load is still the main unresolved production-scale risk; the new cadence only removes automation overlap and drift noise.
 - Validated contour:
   - company
   - commercial/customer context
@@ -145,9 +145,9 @@ Detailed workflow: `docs/repo-workflow.md`
   - feedback ledger / projection
   - workforce estimation
 - Active repo automations:
-  - Hourly Platform Smoke
-  - Hourly Repo Guard
-  - Hourly Visual Map
+  - Platform Smoke 2h
+  - Repo Guard 3h
+  - Visual Map 6h
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
