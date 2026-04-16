@@ -5,7 +5,6 @@ import {ArrowRight, DatabaseZap, Factory, ListChecks, MessageSquareQuote} from '
 import {MetricCard} from '@/components/dashboard/metric-card';
 import {SectionIntro} from '@/components/sections/section-intro';
 import {MagicCard} from '@/components/ui/magic-card';
-import {defaultLocale} from '@/i18n/config';
 import {getOperatorUrl, getPlatformStatus, getRecentCompanies} from '@/lib/standalone-api';
 
 const linkedSurfaces = [
@@ -27,7 +26,7 @@ const linkedSurfaces = [
 ] as const;
 
 export default async function DashboardPage() {
-  const t = await getTranslations({locale: defaultLocale, namespace: 'dashboard'});
+  const t = await getTranslations('dashboard');
   const status = await getPlatformStatus();
   const recentCompanies = await getRecentCompanies(4);
 
@@ -48,16 +47,16 @@ export default async function DashboardPage() {
 
           <MagicCard className="rounded-[1.8rem] border-white/12" mode="gradient" gradientFrom="#ee4f27" gradientTo="#54d2b5">
             <div className="space-y-5 p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{t('runtimeLabel')}</p>
-                  <h3 className="mt-2 text-2xl">{status ? t('runtimeOnline') : t('runtimeOffline')}</h3>
+                  <h3 className="mt-2 text-2xl leading-tight">{status ? t('runtimeOnline') : t('runtimeOffline')}</h3>
                 </div>
                 <div className="rounded-full border border-white/12 bg-white/6 p-2 text-primary">
                   <DatabaseZap className="h-5 w-5" />
                 </div>
               </div>
-              <div className="rounded-[1.2rem] border border-white/8 bg-black/12 p-4 text-sm leading-6 text-muted-foreground">
+              <div className="break-words rounded-[1.2rem] border border-white/8 bg-black/12 p-4 text-sm leading-6 text-muted-foreground">
                 {status ? t('runtimeDb', {path: status.db_path}) : t('runtimeUnavailable')}
               </div>
               <div className="flex flex-wrap gap-3">
@@ -82,10 +81,10 @@ export default async function DashboardPage() {
         <div className="glass-panel reveal-section rounded-[2rem] border-white/10 p-5">
           <div className="mb-4 space-y-2">
             <p className="text-sm text-muted-foreground">{t('workspaceLabel')}</p>
-            <h2 className="text-2xl">{t('workspaceTitle')}</h2>
+            <h2 className="text-2xl leading-tight">{t('workspaceTitle')}</h2>
             <p className="text-sm leading-6 text-muted-foreground">{t('workspaceText')}</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 xl:grid-cols-3">
             {linkedSurfaces.map((surface) => {
               const Icon = surface.icon;
               return (
@@ -97,7 +96,7 @@ export default async function DashboardPage() {
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-white/6 text-primary">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="text-lg font-medium">{t(`surfaces.${surface.key}.title`)}</div>
+                  <div className="text-lg font-medium leading-tight">{t(`surfaces.${surface.key}.title`)}</div>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{t(`surfaces.${surface.key}.body`)}</p>
                 </Link>
               );
@@ -108,7 +107,7 @@ export default async function DashboardPage() {
         <div className="glass-panel reveal-section rounded-[2rem] border-white/10 p-5">
           <div className="mb-4 space-y-2">
             <p className="text-sm text-muted-foreground">{t('recentLabel')}</p>
-            <h2 className="text-2xl">{t('recentTitle')}</h2>
+            <h2 className="text-2xl leading-tight">{t('recentTitle')}</h2>
           </div>
           <div className="grid gap-3">
             {recentCompanies.length ? (
@@ -119,15 +118,15 @@ export default async function DashboardPage() {
                   className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4 transition-colors hover:bg-black/16"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-lg font-medium">{company.canonical_name}</div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.22em] text-muted-foreground">{company.canonical_key}</div>
+                    <div className="min-w-0">
+                      <div className="text-lg font-medium leading-tight">{company.canonical_name}</div>
+                      <div className="mt-1 truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">{company.canonical_key}</div>
                     </div>
-                    <ArrowRight className="mt-1 h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
                     <span>{company.city || t('recentUnknownCity')}</span>
-                    <span>{company.canonical_email || t('recentNoEmail')}</span>
+                    <span className="break-all">{company.canonical_email || t('recentNoEmail')}</span>
                   </div>
                 </Link>
               ))

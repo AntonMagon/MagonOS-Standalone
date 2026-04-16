@@ -35,6 +35,36 @@ class TestStandaloneApi(unittest.TestCase):
         self.assertIn('Recent companies', home)
         self.assertIn('Recent downstream feedback', home)
 
+    def test_operator_pages_can_render_in_russian_with_language_cookie(self):
+        home = self._get_text('/', headers={'Cookie': 'magonos-locale=ru'})
+        companies_page = self._get_text('/ui/companies', headers={'Cookie': 'magonos-locale=ru'})
+
+        self.assertIn('Консоль данных о поставщиках', home)
+        self.assertIn('Язык интерфейса', home)
+        self.assertIn('data-locale-switch="ru"', home)
+        self.assertIn('Канонический реестр поставщиков', companies_page)
+        self.assertIn('Поиск по компании, сайту, контакту или направлению', companies_page)
+        self.assertNotIn('Capabilities', companies_page)
+        self.assertNotIn('Raw records', home)
+
+    def test_company_detail_renders_human_russian_labels(self):
+        self._post_json('/runs', {'fixture': str(self.fixture_path)})
+        companies = self._get_json('/companies')
+        company_id = companies['items'][0]['id']
+
+        detail_page = self._get_text(f'/ui/companies/{company_id}', headers={'Cookie': 'magonos-locale=ru'})
+
+        self.assertIn('Направления', detail_page)
+        self.assertIn('Самоклеящиеся этикетки', detail_page)
+        self.assertIn('Электронная почта', detail_page)
+        self.assertIn('Отпечаток источника', detail_page)
+        self.assertIn('Готово к контакту', detail_page)
+        self.assertIn('Запрошен расчёт', detail_page)
+        self.assertNotIn('Capabilities', detail_page)
+        self.assertNotIn('Source fingerprint', detail_page)
+        self.assertNotIn('Outreach ready', detail_page)
+        self.assertNotIn('Label Self Adhesive', detail_page)
+
     def test_operator_pages_render_meaningful_content(self):
         self._post_json('/runs', {'fixture': str(self.fixture_path)})
         companies = self._get_json('/companies')
@@ -637,22 +667,26 @@ class TestStandaloneApi(unittest.TestCase):
             self._get('/runs')
         self.assertEqual(bad_method.exception.code, 405)
 
-    def _get(self, path: str):
-        return urlopen(f'{self.server.base_url}{path}', timeout=5)
+    def _get(self, path: str, headers: dict[str, str] | None = None):
+        request_headers = {'Cookie': 'magonos-locale=en'}
+        if headers:
+            request_headers.update(headers)
+        request = Request(f'{self.server.base_url}{path}', headers=request_headers)
+        return urlopen(request, timeout=5)
 
     def _get_json(self, path: str) -> dict:
         with self._get(path) as response:
             return json.loads(response.read().decode('utf-8'))
 
-    def _get_text(self, path: str) -> str:
-        with self._get(path) as response:
+    def _get_text(self, path: str, headers: dict[str, str] | None = None) -> str:
+        with self._get(path, headers=headers) as response:
             return response.read().decode('utf-8')
 
     def _post_json(self, path: str, payload: dict) -> dict:
         request = Request(
             f'{self.server.base_url}{path}',
             data=json.dumps(payload).encode('utf-8'),
-            headers={'Content-Type': 'application/json'},
+            headers={'Content-Type': 'application/json', 'Cookie': 'magonos-locale=en'},
             method='POST',
         )
         with urlopen(request, timeout=10) as response:
@@ -663,7 +697,7 @@ class TestStandaloneApi(unittest.TestCase):
         request = Request(
             f'{self.server.base_url}{path}',
             data=body,
-            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+            headers={'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': 'magonos-locale=en'},
             method='POST',
         )
         with urlopen(request, timeout=10) as response:

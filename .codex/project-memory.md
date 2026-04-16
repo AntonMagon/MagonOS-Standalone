@@ -57,15 +57,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:08 +07`
+- Updated at: `2026-04-17 02:22 +07`
 - Branch: `develop`
-- Current focus: keep push-path verification strict but resilient to a one-off local timeout
-- Last verified workflow status: PASS `bash -n .githooks/pre-push`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: the repo still contains unrelated unstaged product work that must stay outside these workflow commits
+- Current focus: ship the locale-aware standalone shell and backend operator UI as the current working product state
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`, PASS `cd apps/web && npm run build`
+- Biggest operational risk: next build emits a cache-invalidation warning from next-intl dynamic import parsing, but the build succeeds and routes are generated
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 02:22 +07 | develop
+- Summary: finish locale-aware web shell and localized backend operator surfaces
+- Changed:
+  - apps/web app pages and navigation
+  - apps/web i18n config and locale messages
+  - backend supplier_intelligence API localization and locale cookie handling
+  - tests.test_api locale coverage
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - next build emits a cache-invalidation warning from next-intl dynamic import parsing, but the build succeeds and routes are generated
 ### 2026-04-17 02:08 +07 | develop
 - Summary: harden pre-push verification against one-off local test flake
 - Changed:

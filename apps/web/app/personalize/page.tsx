@@ -5,12 +5,11 @@ import {ArrowRight, CheckCircle2, GitBranch} from 'lucide-react';
 import {InteractiveGlassCard} from '@/components/lightswind/interactive-glass-card';
 import {MagneticButton} from '@/components/lightswind/magnetic-button';
 import {SectionIntro} from '@/components/sections/section-intro';
-import {defaultLocale} from '@/i18n/config';
 
 const ruleKeys = ['one', 'two', 'three', 'four'] as const;
 
 export default async function PersonalizePage() {
-  const t = await getTranslations({locale: defaultLocale, namespace: 'appearance.page'});
+  const t = await getTranslations('appearance.page');
 
   return (
     <main className="container space-y-6 pt-8 md:space-y-8 md:pt-10">
@@ -23,7 +22,7 @@ export default async function PersonalizePage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/12 bg-white/8 text-primary">
                   <GitBranch className="h-5 w-5" />
                 </div>
-                <h2 className="text-2xl">{t('contractTitle')}</h2>
+                <h2 className="text-2xl leading-tight">{t('contractTitle')}</h2>
                 <p className="text-sm leading-6 text-muted-foreground">{t('contractText')}</p>
               </div>
               <Link href="/dashboard">

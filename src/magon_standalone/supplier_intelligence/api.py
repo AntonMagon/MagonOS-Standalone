@@ -4,8 +4,11 @@ from __future__ import annotations
 import html
 import json
 import logging
+import re
 import threading
+from contextvars import ContextVar
 from dataclasses import asdict
+from http.cookies import SimpleCookie
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote
@@ -27,6 +30,790 @@ from .workforce_estimation_service import WorkforceEstimationEngine
 LOGGER = logging.getLogger(__name__)
 DEFAULT_UI_FIXTURE = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "vn_suppliers_raw.json"
 DEFAULT_WORKFORCE_FIXTURE = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "workforce_cases_vn.json"
+LOCALE_COOKIE_NAME = "magonos-locale"
+DEFAULT_UI_LOCALE = "ru"
+SUPPORTED_UI_LOCALES = {"ru", "en"}
+_REQUEST_LOCALE: ContextVar[str] = ContextVar("magonos_ui_locale", default=DEFAULT_UI_LOCALE)
+_HTML_TEXT_RE = re.compile(r"(^|>)([^<>]+)(?=<|$)", re.S)
+_HTML_ATTR_RE = re.compile(r'(?P<name>placeholder|aria-label|title)="(?P<value>[^"]+)"')
+
+_UI_TEXT_RU = {
+    "Dashboard": "Панель",
+    "Companies": "Компании",
+    "Commercial": "Коммерция",
+    "Quotes": "Котировки",
+    "Handoffs": "Передачи",
+    "Production": "Производство",
+    "Workforce": "Персонал",
+    "Review queue": "Очередь проверки",
+    "Feedback status": "Статус обратной связи",
+    "Feedback": "Обратная связь",
+    "Feedback audit": "Аудит обратной связи",
+    "Raw records": "Исходные данные",
+    "Scores": "Оценки",
+    "Interface language": "Язык интерфейса",
+    "Standalone operator panel": "Внутренняя автономная панель",
+    "Supplier intelligence console": "Консоль данных о поставщиках",
+    "Use the company workbench as the main operator surface. Standalone intelligence stays authoritative. Downstream commercial/Odoo-derived outcomes are shown separately as feedback.": "Используй карточку компании как основную рабочую поверхность. Данные автономного контура остаются источником истины. Коммерческие исходы и отклики из смежных систем показываются отдельно как внешняя обратная связь.",
+    "Local operator actions": "Локальные действия оператора",
+    "Fixture path": "Путь к фикстуре",
+    "Query": "Запрос",
+    "Country": "Страна",
+    "Run local fixture pipeline": "Запустить локальный прогон по фикстуре",
+    "Seed narrow synthetic downstream feedback so the company workbench and feedback screens are inspectable without external integrations.": "Подгрузи тестовую внешнюю обратную связь, чтобы карточку компании и экраны обратной связи можно было проверить без внешних интеграций.",
+    "Load sample feedback": "Загрузить тестовую обратную связь",
+    "Recent companies": "Недавние компании",
+    "Recent downstream feedback": "Недавняя внешняя обратная связь",
+    "Synthetic sample feedback is present": "В системе есть тестовая обратная связь",
+    "These rows are local test data seeded from the operator panel. They are clearly labeled and separate from standalone intelligence.": "Эти строки являются локальными тестовыми данными, загруженными из панели оператора. Они явно помечены и отделены от основного слоя данных.",
+    "Quick navigation": "Быстрая навигация",
+    "Open timeline": "Открыть историю",
+    "Company": "Компания",
+    "City": "Город",
+    "Score": "Оценка",
+    "Queue": "Очередь",
+    "Feedback events": "События обратной связи",
+    "Companies with feedback": "Компании с обратной связью",
+    "Routing feedback": "Отклики по маршрутизации",
+    "Synthetic feedback": "Тестовая обратная связь",
+    "Raw records": "Исходные данные",
+    "Canonical companies": "Канонические компании",
+    "Scored companies": "Оценённые компании",
+    "No companies yet.": "Компаний пока нет.",
+    "No feedback events yet.": "Событий обратной связи пока нет.",
+    "No queue": "Очереди нет",
+    "No feedback": "Обратная связь отсутствует",
+    "Synthetic sample": "Тестовая синтетика",
+    "Companies": "Компании",
+    "Canonical supplier intelligence": "Канонический реестр поставщиков",
+    "Browse standalone-owned supplier/company intelligence with score, queue, and feedback context.": "Просматривай данные о поставщике и компании вместе с оценкой, очередью и контекстом обратной связи.",
+    "matching companies": "подходящих компаний",
+    "Search company, site, contact, capability": "Поиск по компании, сайту, контакту или направлению",
+    "All cities": "Все города",
+    "All capabilities": "Все направления",
+    "All feedback states": "Все состояния обратной связи",
+    "Has feedback": "Есть обратная связь",
+    "No feedback": "Нет обратной связи",
+    "25 rows": "25 строк",
+    "50 rows": "50 строк",
+    "100 rows": "100 строк",
+    "Apply": "Применить",
+    "Capabilities": "Направления",
+    "Contact": "Контакт",
+    "Website": "Сайт",
+    "No companies match the current filters.": "Нет компаний, подходящих под текущие фильтры.",
+    "Company workbench": "Карточка компании",
+    "This is the main operator surface for one company. Standalone intelligence, downstream feedback, raw evidence, scores, and review state are kept together here.": "Это основная рабочая поверхность по одной компании. Здесь собраны канонические данные, внешняя обратная связь, исходные материалы, оценки и текущее состояние проверки.",
+    "Back to companies": "Назад к компаниям",
+    "Open feedback timeline": "Открыть историю обратной связи",
+    "Open feedback audit": "Открыть аудит обратной связи",
+    "Open workforce planner": "Открыть планирование персонала",
+    "Open opportunity list": "Открыть список сделок",
+    "Jump to raw evidence": "Перейти к исходным данным",
+    "Company overview": "Обзор компании",
+    "Canonical company card for quick operator inspection.": "Каноническая карточка компании для быстрой операторской проверки.",
+    "Standalone intelligence": "Данные автономного контура",
+    "Standalone-owned normalized/canonical intelligence. Downstream feedback never overwrites this block.": "Нормализованные и канонические данные автономного контура. Внешняя обратная связь никогда не переписывает этот блок.",
+    "Scores": "Оценки",
+    "Standalone workflow": "Автономный рабочий процесс",
+    "This is the migrated business workflow state that used to sit in Odoo vendor profile and qualification objects.": "Это перенесённое состояние бизнес-процесса, которое раньше хранилось в профиле поставщика и объектах квалификации в Odoo.",
+    "Operator decision": "Решение оператора",
+    "Outcome": "Исход",
+    "Reason code": "Код причины",
+    "Notes": "Заметки",
+    "Apply standalone decision": "Применить решение",
+    "Standalone commercial state": "Коммерческое состояние",
+    "Editable commercial follow-up owned by standalone. This is where manual sales progress lives now, not in downstream feedback snapshots.": "Редактируемое коммерческое сопровождение, принадлежащее автономному контуру. Именно здесь теперь живёт ручной прогресс продаж, а не во внешних снимках состояния.",
+    "Commercial action": "Коммерческое действие",
+    "Manual-first update form for customer/opportunity progress.": "Прямая форма для ручного обновления прогресса по клиенту и сделке.",
+    "Customer account": "Карточка клиента",
+    "Minimum standalone customer/account owner for this commercial contour. This is not a res.partner clone.": "Это минимальная карточка клиента для текущего коммерческого контура. Она не копирует `res.partner`.",
+    "Save customer account": "Сохранить клиентский аккаунт",
+    "Standalone-owned customer identity used by opportunities and quote workbench.": "Эта карточка клиента используется в сделках и заявках на расчёт.",
+    "Opportunities": "Сделки",
+    "Standalone lead/opportunity ownership for the active contour.": "Собственный слой сделок для активного коммерческого контура.",
+    "Open list": "Открыть список",
+    "Create opportunity": "Создать сделку",
+    "Capture the commercial owner record here instead of depending on Odoo CRM lead ownership.": "Фиксируй здесь сделку и коммерческого владельца вместо зависимости от состояния лида в Odoo CRM.",
+    "Quote intents": "Заявки на расчёт",
+    "Standalone-owned RFQ / quote-intent records. This is the first minimal replacement for Odoo quote handoff.": "Записи по запросам на расчёт принадлежат автономному контуру. Это первая минимальная замена старой Odoo-логики расчёта.",
+    "Create quote intent": "Создать заявку на расчёт",
+    "Capture the request so the operator path can continue inside standalone.": "Зафиксируй запрос, чтобы операторский маршрут продолжался внутри автономного контура.",
+    "Production handoffs": "Передачи в производство",
+    "Manual-first handoff into execution. This replaces jumping straight from quote status into ERP-shaped order objects.": "Ручная передача в исполнение. Она заменяет прямой переход из статуса расчёта в ERP-подобные объекты заказа.",
+    "Create production handoff": "Создать передачу в производство",
+    "Create a lightweight execution handoff without pulling in full ERP order logic.": "Создай лёгкую передачу в исполнение без втягивания полной ERP-логики заказа.",
+    "Qualification decisions": "Решения по квалификации",
+    "Standalone decision ledger for this supplier workflow.": "Журнал решений по этому процессу работы с поставщиком.",
+    "Downstream feedback": "Внешняя обратная связь",
+    "Projection derived from the feedback ledger. This remains separate from standalone intelligence.": "Сводка, построенная по журналу обратной связи. Она остаётся отдельной от основного слоя данных.",
+    "Feedback timeline": "История обратной связи",
+    "Recent downstream events relevant to this company.": "Недавние внешние события, относящиеся к этой компании.",
+    "Commercial audit": "Коммерческий аудит",
+    "Append-only audit for customer account, opportunity, quote, and handoff state changes in standalone.": "Неперезаписываемый журнал изменений по клиентским карточкам, сделкам, расчётам и передачам внутри автономного контура.",
+    "Routing audit": "Аудит маршрутизации",
+    "Audit trail of standalone queue transitions and routing decisions.": "Журнал переходов очереди и решений маршрутизации внутри автономного контура.",
+    "Raw/source evidence": "Исходные данные",
+    "Compact raw evidence summary. Open the raw record detail page when you need payload-level inspection.": "Краткая сводка исходных данных. Открывай карточку записи, когда нужно проверить исходный ответ целиком.",
+    "No score stored yet for this company.": "Для этой компании пока нет сохранённой оценки.",
+    "No standalone quote intents yet.": "Заявок на расчёт пока нет.",
+    "No production handoffs yet.": "Передач в производство пока нет.",
+    "No standalone commercial audit yet.": "Коммерческого аудита пока нет.",
+    "No review queue entries for this company.": "Для этой компании пока нет записей в очереди проверки.",
+    "No standalone qualification decisions yet.": "Решений по квалификации пока нет.",
+    "No standalone routing audit yet.": "Аудита маршрутизации пока нет.",
+    "No downstream feedback projection yet. Standalone intelligence is still present, but no downstream commercial/routing outcome has been ingested.": "Сводки по внешней обратной связи пока нет. Основные данные уже есть, но внешние коммерческие и маршрутные исходы ещё не были загружены.",
+    "No related feedback events yet.": "Связанных событий обратной связи пока нет.",
+    "No correlated raw/source evidence found for this company.": "Связанных исходных данных для этой компании не найдено.",
+    "Workforce planner": "Планировщик персонала",
+    "Standalone labor estimation": "Оценка трудозатрат",
+    "Use the pure workforce engine to estimate labor hours, headcount, overtime, and cost. This tool does not mutate company intelligence or downstream feedback.": "Используй отдельный расчётный модуль для оценки трудочасов, численности, переработок и стоимости. Этот инструмент не меняет данные о компаниях и внешнюю обратную связь.",
+    "Back to dashboard": "Назад к панели",
+    "Company context": "Контекст компании",
+    "Optional. This only anchors the estimate to a company workbench for operator navigation.": "Необязательно. Это лишь привязывает оценку к карточке компании для операторской навигации.",
+    "Sample scenarios": "Тестовые сценарии",
+    "Choose sample case": "Выбрать сценарий",
+    "Load scenario": "Загрузить сценарий",
+    "Scenario fixture: ": "Фикстура сценария: ",
+    "Estimate input": "Вход оценки",
+    "Edit the structured payload directly when you need a custom estimate. This is an explicit standalone planning tool, not hidden workflow state.": "Редактируй структурированные входные данные напрямую, когда нужна нестандартная оценка. Это отдельный планировочный инструмент, а не скрытое состояние процесса.",
+    "Structured estimate payload": "Структурированные входные данные для расчёта",
+    "Run workforce estimate": "Запустить оценку персонала",
+    "Estimate summary": "Сводка оценки",
+    "Role breakdown": "Разбивка по ролям",
+    "Assumptions and gaps": "Допущения и пробелы",
+    "No workforce estimate yet.": "Оценки персонала пока нет.",
+    "No role breakdown yet.": "Разбивки по ролям пока нет.",
+    "No assumptions yet.": "Допущений пока нет.",
+    "Missing skills:": "Недостающие навыки:",
+    "No assumptions recorded.": "Допущения не записаны.",
+    "Commercial pipeline": "Коммерческая воронка",
+    "Standalone commercial follow-up": "Коммерческое сопровождение",
+    "Manual-first commercial state owned by standalone. This replaces hiding active sales progress inside Odoo-only lead state.": "Коммерческое состояние, принадлежащее автономному контуру. Оно заменяет практику прятать активный прогресс продаж внутри Odoo.",
+    "commercial records": "коммерческих записей",
+    "All customer states": "Все состояния клиента",
+    "All stages": "Все стадии",
+    "Customer status": "Статус клиента",
+    "Commercial stage": "Коммерческая стадия",
+    "Due": "Срок",
+    "Downstream feedback": "Внешняя обратная связь",
+    "No standalone commercial records yet.": "Коммерческих записей пока нет.",
+    "Standalone commercial opportunities": "Коммерческие сделки",
+    "Minimal lead/opportunity ownership for the active contour. This is not a generic CRM suite.": "Минимальный слой ведения сделок для активного контура. Это не универсальная CRM-система.",
+    "opportunities": "возможностей",
+    "All statuses": "Все статусы",
+    "Account": "Аккаунт",
+    "Source": "Источник",
+    "Value": "Сумма",
+    "Next action": "Следующее действие",
+    "No opportunities yet.": "Возможностей пока нет.",
+    "Standalone RFQ / quote intake": "Приём заявок на расчёт",
+    "Manual-first quote requests captured inside standalone, instead of disappearing into Odoo-only order scaffolding.": "Запросы на расчёт фиксируются внутри автономного контура и не исчезают в Odoo-шаблонах заказов.",
+    "quote intents": "заявок на расчёт",
+    "All quote types": "Все типы котировок",
+    "Type": "Тип",
+    "RFQ ref": "Номер запроса",
+    "Quantity": "Количество",
+    "Target due": "Целевой срок",
+    "Quote ref / Amount": "Номер котировки / Сумма",
+    "Quote": "Расчёт",
+    "Amount": "Сумма",
+    "No quote intents yet.": "Заявок на расчёт пока нет.",
+    "Opportunity workbench": "Карточка сделки",
+    "Standalone-owned opportunity state for the active contour. This is the minimum replacement for Odoo lead ownership.": "Состояние сделки в автономном контуре. Это минимальная замена зависимости от владения лидом в Odoo.",
+    "Back to opportunities": "Назад к сделкам",
+    "Linked quote intents": "Связанные заявки на расчёт",
+    "Opportunity summary": "Сводка сделки",
+    "Update opportunity": "Обновить сделку",
+    "Title": "Название",
+    "Status": "Статус",
+    "No linked account": "Связанного аккаунта нет",
+    "Primary account": "Основной аккаунт",
+    "Source channel": "Канал источника",
+    "Estimated value": "Оценочная сумма",
+    "Currency": "Валюта",
+    "Currency code": "Код валюты",
+    "Target due date": "Целевая дата",
+    "External opportunity ref": "Внешний код сделки",
+    "Trace Odoo lead ref": "Связь с лидом Odoo",
+    "Save opportunity": "Сохранить сделку",
+    "No quote intents linked to this opportunity yet.": "К этой сделке пока не привязаны заявки на расчёт.",
+    "Production handoffs": "Передачи в производство",
+    "Standalone execution handoff": "Передача в производство",
+    "Minimal handoff from quote/commercial state into production execution. This avoids forcing everything into ERP orders too early.": "Минимальная передача из состояния расчёта и коммерческой работы в производственное исполнение. Это позволяет не тащить всё слишком рано в ERP-заказы.",
+    "Open production board": "Открыть доску производства",
+    "handoff records": "записей передачи",
+    "Production ref": "Производственный код",
+    "Ship date": "Дата отгрузки",
+    "Specification": "Спецификация",
+    "No production handoffs yet.": "Передач в производство пока нет.",
+    "Ready for production": "Готово к производству",
+    "Scheduled": "Запланировано",
+    "In progress": "В работе",
+    "Blocked": "Заблокировано",
+    "Completed": "Завершено",
+    "No quote link": "Связи с котировкой нет",
+    "No opportunity": "Сделка отсутствует",
+    "No quote": "Котировки нет",
+    "Move to": "Переместить в",
+    "Update status": "Обновить статус",
+    "No handoffs in this column.": "В этой колонке нет передач.",
+    "Production board": "Доска производства",
+    "Standalone execution board": "Доска исполнения",
+    "Operator-first production board built on top of standalone handoff records. This is the minimal replacement for hiding execution state inside ERP-shaped order objects.": "Операторская доска производства, построенная поверх записей передачи в производство. Это минимальная замена скрытию исполнения внутри ERP-объектов.",
+    "Open handoff list": "Открыть список передач",
+    "total handoffs": "всего передач",
+    "Quote workbench": "Карточка расчёта",
+    "Standalone-owned quote workflow. This is where manual pricing progress should live instead of disappearing into ERP-shaped objects too early.": "Именно здесь должен жить ручной процесс расчёта, а не исчезать слишком рано внутри ERP-подобных объектов.",
+    "Back to quote intents": "Назад к заявкам на расчёт",
+    "No company mapping found for this quote intent.": "Для этой заявки на расчёт не найдено соответствие компании.",
+    "Canonical company": "Каноническая компания",
+    "Commercial context": "Коммерческий контекст",
+    "Ownership": "Владение",
+    "Standalone": "Автономный контур",
+    "Commercial summary": "Коммерческая сводка",
+    "Quote summary": "Сводка котировки",
+    "Quote reference": "Номер котировки",
+    "Quoted amount": "Сумма котировки",
+    "Pricing notes": "Комментарии к расчёту",
+    "Save quote workflow": "Сохранить расчёт",
+    "Handoff status": "Статус передачи",
+    "Production reference": "Производственный код",
+    "Requested ship date": "Запрошенная дата отгрузки",
+    "Specification summary": "Сводка спецификации",
+    "Production handoff": "Передача в производство",
+    "Standalone-owned execution handoff. This is the bridge between quote state and actual production follow-through.": "Передача в производство в автономном контуре. Это мост между состоянием расчёта и фактическим ведением производства.",
+    "Back to production handoffs": "Назад к передачам в производство",
+    "Back to quote workbench": "Назад к карточке котировки",
+    "Back to opportunity": "Назад к сделке",
+    "Quote context": "Контекст котировки",
+    "Opportunity context": "Контекст сделки",
+    "Handoff summary": "Сводка передачи",
+    "Update handoff": "Обновить передачу",
+    "Save production handoff": "Сохранить передачу в производство",
+    "Feedback projection": "Сводка обратной связи",
+    "Downstream outcome view": "Обзор внешних исходов",
+    "Projection derived from the feedback ledger. It is readable for operators and stays separate from canonical intelligence.": "Сводка, построенная по журналу обратной связи. Она удобна для оператора и остаётся отдельной от канонических данных.",
+    "projection rows": "строк проекции",
+    "Search source key or company": "Поиск по ключу источника или компании",
+    "All states": "Все состояния",
+    "Has routing": "Есть маршрутизация",
+    "Has qualification": "Есть квалификация",
+    "Has commercial": "Есть коммерческий исход",
+    "Has linkage": "Есть связка",
+    "Manual override": "Ручное переопределение",
+    "Company / source": "Компания / источник",
+    "Outcome summary": "Сводка исходов",
+    "Partner": "Партнёр",
+    "Commercial": "Коммерция",
+    "Last event": "Последнее событие",
+    "Reason": "Причина",
+    "No feedback projection rows match the current filters.": "Под текущие фильтры не подходит ни одна строка сводки обратной связи.",
+    "Feedback detail": "Детали обратной связи",
+    "This is the downstream feedback projection and its audit trail. It remains separate from canonical intelligence.": "Здесь показана сводка внешней обратной связи и её журнал изменений. Она остаётся отдельной от канонических данных.",
+    "Current projection": "Текущая проекция",
+    "Related canonical company": "Связанная каноническая компания",
+    "Feedback ledger for this source": "Журнал обратной связи по этому источнику",
+    "No canonical company currently matches this feedback source key.": "Сейчас ни одна каноническая компания не соответствует этому ключу источника.",
+    "Source key": "Ключ источника",
+    "Routing": "Маршрутизация",
+    "Manual review": "Ручная проверка",
+    "Qualification": "Квалификация",
+    "Partner linkage": "Связка с партнёром",
+    "CRM linkage": "Связка с CRM",
+    "Routing note": "Заметка по маршрутизации",
+    "Qualification note": "Заметка по квалификации",
+    "Commercial note": "Коммерческая заметка",
+    "No feedback events yet for this source key.": "Для этого ключа источника пока нет событий обратной связи.",
+    "Occurred": "Когда",
+    "Event": "Событие",
+    "Event ID": "ID события",
+    "Feedback event ledger": "Журнал событий обратной связи",
+    "Audit-level view of the downstream feedback ledger. Synthetic/sample rows are explicitly labeled.": "Аудитный вид журнала внешней обратной связи. Тестовые строки помечены отдельно.",
+    "matching events": "подходящих событий",
+    "Search event id, source key, company, reason": "Поиск по ID события, ключу источника, компании или причине",
+    "All event types": "Все типы событий",
+    "Routing": "Маршрутизация",
+    "Partner linkage": "Связка с партнёром",
+    "Commercial disposition": "Коммерческий исход",
+    "Action": "Действие",
+    "Open company": "Открыть компанию",
+    "No feedback events match the current filters.": "Под текущие фильтры не подходит ни одно событие обратной связи.",
+    "Raw record detail": "Детали исходной записи",
+    "Source evidence": "Исходные данные",
+    "Inspect the raw discovery row and jump directly back into the related company workbench when correlation exists.": "Проверь исходную запись и вернись прямо в связанную карточку компании, если связь уже установлена.",
+    "Back to raw records": "Назад к исходным данным",
+    "This raw record is not currently correlated to a canonical company.": "Эта исходная запись сейчас не связана с канонической компанией.",
+    "Raw record metadata": "Метаданные исходной записи",
+    "Canonical correlation": "Каноническая корреляция",
+    "List fields": "Списковые поля",
+    "Raw payload": "Исходный ответ",
+    "Raw name": "Название в источнике",
+    "Source type": "Тип источника",
+    "Source domain": "Домен источника",
+    "Scenario key": "Ключ сценария",
+    "Fetch status": "Статус получения",
+    "Source URL": "URL источника",
+    "Candidate dedup fingerprint": "Кандидатный отпечаток дедупликации",
+    "No queue items yet.": "Элементов в очереди пока нет.",
+    "Operator review workload": "Нагрузка по ручной проверке",
+    "Everything currently queued for manual attention, with direct links back into the company workbench.": "Всё, что сейчас стоит в очереди на ручное внимание, с прямыми ссылками назад в карточку компании.",
+    "queue rows": "строк очереди",
+    "Priority": "Приоритет",
+    "Why in review": "Причина попадания в проверку",
+    "Missing company": "Компания отсутствует",
+    "Source-side discovery view": "Обзор исходных данных",
+    "Inspect raw discovery rows and move directly back into the related company workbench.": "Проверяй исходные записи и сразу возвращайся в связанную карточку компании.",
+    "raw rows": "сырых строк",
+    "Raw record": "Исходная запись",
+    "Parser conf.": "Уверенность парсера",
+    "Scenario": "Сценарий",
+    "Evidence summary": "Краткая сводка данных",
+    "No raw records stored yet.": "Исходные записи пока не сохранены.",
+    "Standalone scoring output": "Результаты оценки",
+    "Readable score breakdowns with direct links into the company workbench.": "Понятная разбивка оценок с прямыми ссылками в карточку компании.",
+    "score rows": "строк оценок",
+    "Composite": "Итоговая",
+    "Relevance": "Релевантность",
+    "Capability fit": "Соответствие направлениям",
+    "Contactability": "Контактируемость",
+    "Trust": "Доверие",
+    "No scores yet.": "Оценок пока нет.",
+    "Pipeline action": "Действие по запуску",
+    "Fixture pipeline run complete": "Прогон по фикстуре завершён",
+    "Local operator action only. This executed the standalone supplier-intelligence pipeline against fixture-backed input.": "Это локальное операторское действие. Оно запустило автономный процесс обработки поставщиков на входных данных из фикстуры.",
+    "Run report": "Отчёт запуска",
+    "Storage counts": "Счётчики хранилища",
+    "Next steps: ": "Следующие шаги: ",
+    "inspect companies": "посмотреть компании",
+    "review queue": "очередь проверки",
+    "raw records": "исходные данные",
+    "Feedback action": "Действие по обратной связи",
+    "Sample feedback loaded": "Тестовая обратная связь загружена",
+    "Local-only helper action. It seeds synthetic downstream feedback events so the operator panel is inspectable without waiting on external systems.": "Это локальное служебное действие. Оно загружает тестовые события внешней обратной связи, чтобы операторскую панель можно было проверить без ожидания внешних систем.",
+    "Action result": "Результат действия",
+    "generated": "сгенерировано",
+    "companies_used": "использовано компаний",
+    "inspect feedback projection": "проверить сводку обратной связи",
+    "audit the feedback ledger": "проверить журнал обратной связи",
+    "open companies": "открыть компании",
+    "Standalone workflow action": "Действие рабочего процесса",
+    "Decision applied": "Решение применено",
+    "The standalone operations domain is now the owner of this supplier routing/qualification decision.": "Автономный операционный контур теперь является владельцем этого решения по маршрутизации и квалификации поставщика.",
+    "Decision result": "Результат решения",
+    "Commercial state saved": "Коммерческое состояние сохранено",
+    "This company now has standalone-owned commercial follow-up state. It is editable here and no longer needs to hide behind downstream CRM snapshots.": "У этой компании теперь есть собственное коммерческое состояние. Оно редактируется здесь и больше не должно прятаться за внешними CRM-снимками.",
+    "Open commercial pipeline": "Открыть коммерческую воронку",
+    "Commercial state": "Коммерческое состояние",
+    "Standalone customer account action": "Действие по карточке клиента",
+    "Customer account saved": "Клиентский аккаунт сохранён",
+    "The active commercial contour now has a standalone-owned customer/account identity instead of relying on Odoo partner ownership.": "Активный коммерческий контур теперь имеет собственную карточку клиента вместо зависимости от партнёра в Odoo.",
+    "Open opportunities": "Открыть сделки",
+    "Opportunity created": "Сделка создана",
+    "Opportunity saved": "Сделка сохранена",
+    "Standalone opportunity ownership now exists for this company without depending on Odoo CRM lead state.": "Для этой компании теперь существует собственная сделка без зависимости от состояния в Odoo CRM.",
+    "Standalone opportunity ownership is updated here.": "Сделка обновляется здесь.",
+    "Open opportunity": "Открыть сделку",
+    "Open opportunity list": "Открыть список сделок",
+    "Quote workflow saved": "Расчёт сохранён",
+    "Quote intent created": "Заявка на расчёт создана",
+    "This standalone quote workflow is updated here. It should not need an Odoo quote object just to track pricing progress.": "Процесс расчёта обновляется здесь. Для отслеживания прогресса ему не нужен отдельный объект котировки в Odoo.",
+    "This request is now tracked in standalone. It no longer needs to start life as an Odoo-only quote or order artifact.": "Теперь этот запрос отслеживается автономно. Ему больше не нужно начинать жизнь как артефакт котировки или заказа только внутри Odoo.",
+    "No company workbench link": "Ссылка на карточку компании отсутствует",
+    "Open quote workbench": "Открыть карточку котировки",
+    "Open quote intents": "Открыть заявки на расчёт",
+    "Quote intent": "Заявка на расчёт",
+    "Production handoff saved": "Передача в производство сохранена",
+    "Production handoff created": "Передача в производство создана",
+    "This execution handoff is updated in standalone. It should not require an ERP order object just to track production readiness.": "Эта передача в производство обновляется внутри автономного контура. Для отслеживания готовности производства ей не нужен отдельный ERP-объект заказа.",
+    "This execution handoff is now tracked in standalone. It bridges quote/commercial state into delivery planning without dragging in full ERP flow.": "Эта передача в производство теперь отслеживается автономно. Она связывает расчёт и коммерческое состояние с планированием исполнения без втягивания полного ERP-потока.",
+    "Open production handoff": "Открыть передачу в производство",
+    "Open production handoffs": "Открыть передачи в производство",
+    "Handoff": "Передача",
+    "Context": "Контекст",
+    "Queue transition applied": "Переход очереди применён",
+    "Queue transition": "Переход очереди",
+    "Pipeline run": "Запуск обработки",
+    "Sample feedback": "Тестовая обратная связь",
+    "Manual queue transition is now recorded in standalone routing audit instead of Odoo queue state.": "Ручной переход очереди теперь записывается в аудит маршрутизации автономного контура вместо состояния очереди в Odoo.",
+    "Back to review queue": "Назад к очереди проверки",
+    "Queue row": "Строка очереди",
+    "No data.": "Нет данных.",
+    "Partner linked": "Партнёр связан",
+    "Routing update": "Обновление маршрутизации",
+    "Qualification update": "Обновление квалификации",
+    "Partner linkage update": "Обновление связи с партнёром",
+    "Commercial update": "Коммерческое обновление",
+    "Feedback event": "Событие обратной связи",
+    "Time": "Время",
+    "Kind": "Тип",
+    "Detail": "Детали",
+    "No recent activity yet.": "Недавней активности пока нет.",
+    "When": "Когда",
+    "Entity": "Сущность",
+    "From": "Из",
+    "To": "В",
+    "No commercial audit yet.": "Коммерческого аудита пока нет.",
+    "Linked": "Связано",
+    "Not linked": "Не связано",
+    "No partner": "Партнёра нет",
+    "CRM linked": "Есть связь с CRM",
+    "No CRM link": "Связи с CRM нет",
+    "Review status": "Статус проверки",
+    "No capabilities": "Направления не указаны",
+    "Canonical name": "Каноническое название",
+    "Address": "Адрес",
+    "Email": "Электронная почта",
+    "Phone": "Телефон",
+    "Provenance": "Источники",
+    "Freshness": "Актуальность",
+    "Overall standalone score.": "Итоговая оценка автономного контура.",
+    "Demand / query fit.": "Соответствие спросу и запросу.",
+    "Capability coverage.": "Покрытие по направлениям.",
+    "Reachability signal.": "Вероятность выхода на контакт.",
+    "Source trust and consistency.": "Надёжность и согласованность источника.",
+    "No standalone workflow state yet. Run the pipeline first so standalone can create a vendor workflow profile.": "Состояние рабочего процесса пока не сформировано. Сначала запусти обработку, чтобы система создала профиль поставщика.",
+    "Qualification status": "Статус квалификации",
+    "Lifecycle state": "Этап жизненного цикла",
+    "Routing state": "Статус маршрутизации",
+    "Outreach ready": "Готово к контакту",
+    "Ready": "Готово",
+    "Not ready": "Не готово",
+    "Operator notes": "Заметки оператора",
+    "No standalone commercial state yet. Create it here instead of treating downstream Odoo feedback as your editable source of truth.": "Коммерческое состояние пока не заведено. Создай его здесь, а не используй внешнюю обратную связь как редактируемый источник истины.",
+    "Prospect": "Потенциальный клиент",
+    "Active customer": "Активный клиент",
+    "Dormant": "Неактивный",
+    "New lead": "Новый лид",
+    "Contacting": "В контакте",
+    "RFQ requested": "Запрошен расчёт",
+    "Quoted": "Просчитано",
+    "Won": "Выиграно",
+    "Lost": "Проиграно",
+    "On hold": "На паузе",
+    "Customer reference": "Код клиента",
+    "Opportunity reference": "Код сделки",
+    "Next action due at": "Срок следующего действия",
+    "Save standalone commercial state": "Сохранить коммерческое состояние",
+    "Customer ref": "Код клиента",
+    "Opportunity ref": "Код сделки",
+    "Next action due": "Срок следующего действия",
+    "No standalone customer account yet. Create the minimum account owner here instead of relying on Odoo partner ownership for this contour.": "Карточка клиента пока не создана. Заведи минимальную карточку здесь, вместо зависимости от партнёра в Odoo.",
+    "Customer account form": "Форма карточки клиента",
+    "Agency": "Агентство",
+    "Reseller": "Реселлер",
+    "Internal": "Внутренний",
+    "Active": "Активен",
+    "Inactive": "Неактивен",
+    "Primary contact": "Основной контакт",
+    "Primary email": "Основная почта",
+    "Primary phone": "Основной телефон",
+    "Billing city": "Город для документов",
+    "External customer ref": "Внешний код клиента",
+    "Save customer account": "Сохранить карточку клиента",
+    "No linked opportunity": "Связанной сделки нет",
+    "Opportunity": "Сделка",
+    "Requested": "Запрошено",
+    "Pricing": "Расчёт",
+    "Last status change": "Последнее изменение статуса",
+    "Update quote workflow": "Обновить расчёт",
+    "Handoff status": "Статус передачи",
+    "No linked account": "Связанной карточки нет",
+    "Open feedback status": "Открыть статус обратной связи",
+    "Back to company workbench": "Назад к карточке компании",
+    "Open company workbench": "Открыть карточку компании",
+    "Open quote workbench": "Открыть карточку расчёта",
+    "Back to company": "Назад к компании",
+    "No company mapping found.": "Связанная компания не найдена.",
+    "Unmatched": "Без привязки",
+    "No company mapping found for this quote intent.": "Для этой заявки на расчёт не найдена связанная компания.",
+    "Update quote workflow": "Обновить расчёт",
+    "Save quote workflow": "Сохранить расчёт",
+    "No company mapping found for this handoff.": "Для этой передачи не найдена связанная компания.",
+    "Open handoff list": "Открыть список передач",
+    "Back to feedback status": "Назад к статусу обратной связи",
+    "Open timeline": "Открыть историю",
+    "Open feedback status": "Открыть статус обратной связи",
+    "Open opportunity": "Открыть сделку",
+    "Open opportunity list": "Открыть список сделок",
+    "Back to quote workbench": "Назад к карточке расчёта",
+    "Back to opportunity": "Назад к сделке",
+    "No company mapping found for this quote intent.": "Для этой заявки на расчёт связанная компания не найдена.",
+    "Feedback": "Обратная связь",
+    "Canonical key": "Канонический ключ",
+    "Confidence": "Уверенность",
+    "Parser confidence": "Уверенность парсера",
+    "Source confidence": "Уверенность источника",
+    "Source fingerprint": "Отпечаток источника",
+    "Dedup fingerprint": "Отпечаток дедупликации",
+    "Provisional": "Предварительно квалифицирован",
+    "Unreviewed": "Не проверено",
+    "Approved supplier": "Одобренный поставщик",
+    "Potential supplier": "Потенциальный поставщик",
+    "Needs manual review": "Нужна ручная проверка",
+    "Duplicate": "Дубликат",
+    "Not relevant": "Не подходит",
+    "Unreachable": "Недоступен",
+    "Account name": "Название аккаунта",
+    "Account type": "Тип аккаунта",
+    "Direct customer": "Прямой клиент",
+    "Internal account": "Внутренний аккаунт",
+    "Account status": "Статус аккаунта",
+    "No standalone opportunities yet. Create a commercial owner record here instead of relying on Odoo lead state.": "Сделок пока нет. Создай коммерческую запись здесь, вместо зависимости от состояния лида в Odoo.",
+    "New": "Новый",
+    "Why this company is currently in manual review and how the queue is moving.": "Почему эта компания сейчас находится на ручной проверке и как движется очередь.",
+    "High composite score; ready for qualification decision": "Высокая итоговая оценка; можно принимать решение по квалификации.",
+    "Pending": "Ожидает",
+    "Done": "Готово",
+    "Update": "Обновить",
+    "Open dedicated timeline": "Открыть полную историю",
+    "Domain": "Домен",
+    "Fetch": "Получение",
+    "No list fields": "Списковые поля отсутствуют",
+    "Quote / RFQ type": "Тип запроса на расчёт",
+    "Service quote": "Расчёт услуги",
+    "RFQ packaging": "Запрос на расчёт упаковки",
+    "RFQ labels": "Запрос на расчёт этикеток",
+    "RFQ printing": "Запрос на расчёт печати",
+    "Sample request": "Запрос образца",
+    "Quantity hint": "Ориентир по количеству",
+    "No linked quote intent": "Связанной заявки на расчёт нет",
+    "Trace Odoo partner ref (optional)": "Ссылка на партнёра Odoo (необязательно)",
+    "Trace Odoo lead ref (optional)": "Ссылка на лид Odoo (необязательно)",
+    "Source discovery rows persisted in standalone storage.": "Исходные записи сохранены в автономном хранилище.",
+    "Deduplicated supplier/company intelligence owned by standalone.": "Дедуплицированные данные о компаниях и поставщиках принадлежат автономному контуру.",
+    "Companies with composite scoring ready for review routing.": "Компании с итоговой оценкой, готовые к маршрутизации и проверке.",
+    "Open the company workbench and inspect one supplier end-to-end.": "Открой карточку компании и проверь поставщика целиком в одном месте.",
+    "See computed supplier scores and jump straight into a company workbench.": "Открой рассчитанные оценки поставщиков и сразу перейди в карточку компании.",
+    "Track RFQ / quote requests in standalone instead of deferring everything to ERP.": "Веди запросы на расчёт внутри автономного контура, а не откладывай всё до ERP.",
+    "Track standalone-owned commercial follow-up instead of hiding it in Odoo lead state.": "Веди коммерческое сопровождение внутри автономного контура, а не прячь его в статусе лида Odoo.",
+    "Track execution handoff in standalone instead of pushing everything into ERP orders.": "Веди передачу в производство внутри автономного контура, а не отправляй всё сразу в ERP-заказы.",
+    "Move active jobs across execution states with a simple operator board.": "Перемещай активные задания по статусам исполнения через простую операторскую доску.",
+    "RFQ ready": "Готово к запросу на расчёт",
+    "RFQ reference": "Номер запроса",
+    "e.g. 5,000 boxes / 10,000 labels": "например, 5 000 коробок / 10 000 этикеток",
+}
+
+_UI_PREFIX_RU = {
+    "Standalone commercial opportunities for ": "Сделки по компании ",
+    "Quote intent #": "Заявка на расчёт #",
+    "Production handoff #": "Передача в производство #",
+    "Handoff #": "Передача #",
+    "Quote #": "Расчёт #",
+}
+
+_UI_LABEL_RU = {
+    "raw_records": "Исходные данные",
+    "canonical_companies": "Канонические компании",
+    "vendor_scores": "Оценки поставщиков",
+    "review_queue": "Очередь проверки",
+    "feedback_events": "События обратной связи",
+    "companies_with_feedback": "Компании с обратной связью",
+    "routing_feedback": "Отклики по маршрутизации",
+    "synthetic_feedback_events_count": "Тестовая обратная связь",
+    "canonical_name": "Каноническое имя",
+    "canonical_key": "Канонический ключ",
+    "company_key": "Ключ компании",
+    "city": "Город",
+    "address_text": "Адрес",
+    "canonical_email": "Электронная почта",
+    "canonical_phone": "Телефон",
+    "website": "Сайт",
+    "capabilities": "Направления",
+    "review_status": "Статус проверки",
+    "confidence": "Уверенность",
+    "parser_confidence": "Уверенность парсера",
+    "source_confidence": "Уверенность источника",
+    "source_fingerprint": "Отпечаток источника",
+    "dedup_fingerprint": "Отпечаток дедупликации",
+    "account_name": "Название аккаунта",
+    "account_type": "Тип аккаунта",
+    "account_status": "Статус аккаунта",
+    "primary_contact_name": "Основной контакт",
+    "primary_email": "Основная почта",
+    "primary_phone": "Основной телефон",
+    "billing_city": "Город биллинга",
+    "external_customer_ref": "Внешний код клиента",
+    "customer_status": "Статус клиента",
+    "commercial_stage": "Коммерческая стадия",
+    "customer_reference": "Код клиента",
+    "opportunity_reference": "Код сделки",
+    "next_action": "Следующее действие",
+    "next_action_due_at": "Срок следующего действия",
+    "title": "Название",
+    "status": "Статус",
+    "source_channel": "Канал источника",
+    "estimated_value": "Оценочная сумма",
+    "currency_code": "Код валюты",
+    "target_due_at": "Целевой срок",
+    "external_opportunity_ref": "Внешний код сделки",
+    "odoo_lead_ref": "Код лида Odoo",
+    "notes": "Заметки",
+    "quantity_hint": "Подсказка по количеству",
+    "quote_type": "Тип котировки",
+    "quote_reference": "Номер котировки",
+    "quoted_amount": "Сумма котировки",
+    "pricing_notes": "Комментарии к расчёту",
+    "quote_intent_id": "ID заявки на расчёт",
+    "handoff_status": "Статус передачи",
+    "production_reference": "Производственный код",
+    "requested_ship_at": "Запрошенная дата отгрузки",
+    "specification_summary": "Сводка спецификации",
+    "created_at": "Создано",
+    "updated_at": "Обновлено",
+    "event_id": "ID события",
+    "occurred_at": "Когда",
+    "event_type": "Тип события",
+    "reason_code": "Код причины",
+    "queue_name": "Очередь",
+    "score": "Оценка",
+    "outcome": "Исход",
+    "outreach_ready": "Готово к контакту",
+    "rfq_ready": "Готово к запросу на расчёт",
+    "opportunity_id": "ID сделки",
+    "quote_id": "ID котировки",
+    "partner_linked": "Партнёр связан",
+    "crm_linked": "CRM связана",
+    "rfq_reference": "Номер запроса",
+    "source_type": "Тип источника",
+    "source_domain": "Домен источника",
+    "scenario_key": "Ключ сценария",
+    "candidate_dedup_fingerprint": "Кандидатный отпечаток дедупликации",
+}
+
+_UI_VALUE_LABEL_RU = {
+    "new": "Новый",
+    "contacting": "Контакт",
+    "qualified": "Квалифицирован",
+    "rfq_requested": "Запрошен расчёт",
+    "quoted": "Просчитан",
+    "won": "Выигран",
+    "lost": "Проигран",
+    "on_hold": "На паузе",
+    "requested": "Запрошен",
+    "pricing": "Ценообразование",
+    "ready_for_production": "Готово к производству",
+    "scheduled": "Запланировано",
+    "in_progress": "В работе",
+    "blocked": "Заблокировано",
+    "completed": "Завершено",
+    "approved_supplier": "Одобренный поставщик",
+    "potential_supplier": "Потенциальный поставщик",
+    "provisional": "Предварительно квалифицирован",
+    "unqualified": "Не квалифицирован",
+    "unreviewed": "Не проверено",
+    "needs_manual_review": "Нужна ручная проверка",
+    "needs_review": "Нужна проверка",
+    "duplicate": "Дубликат",
+    "not_relevant": "Не релевантно",
+    "unreachable": "Недоступен",
+    "pending": "Ожидает",
+    "done": "Готово",
+    "dismissed": "Отклонено",
+    "prospect": "Проспект",
+    "active_customer": "Активный клиент",
+    "dormant": "Неактивен",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "direct_customer": "Прямой клиент",
+    "agency": "Агентство",
+    "reseller": "Реселлер",
+    "internal": "Внутренний",
+    "new_lead": "Новый лид",
+    "service_quote": "Расчёт услуги",
+    "rfq_packaging": "Запрос на расчёт упаковки",
+    "rfq_labels": "Запрос на расчёт этикеток",
+    "rfq_printing": "Запрос на расчёт печати",
+    "sample_request": "Запрос образца",
+    "print_flexo": "Флексопечать",
+    "print_offset": "Офсетная печать",
+    "label_self_adhesive": "Самоклеящиеся этикетки",
+    "pack_corrugated": "Гофрокартонная упаковка",
+    "wide_format": "Широкоформатная печать",
+    "offset_printing": "Офсетная печать",
+    "label_printing": "Печать этикеток",
+    "packaging": "Упаковка",
+    "promo_items": "Промоматериалы",
+    "routing_feedback": "Маршрутизация",
+    "qualification_feedback": "Квалификация",
+    "partner_linkage_feedback": "Связка с партнёром",
+    "commercial_disposition_feedback": "Коммерческий исход",
+    "qualification_review": "Проверка квалификации",
+    "supplier_review": "Проверка поставщика",
+    "dedup_review": "Проверка дубликатов",
+    "manual_intake": "Ручной ввод",
+    "manual_override": "Ручное переопределение",
+    "missing": "Отсутствует",
+}
+
+
+def _current_locale() -> str:
+    return _REQUEST_LOCALE.get()
+
+
+def _translate_exact(text: str) -> str:
+    if _current_locale() != "ru" or not text:
+        return text
+    if text in _UI_TEXT_RU:
+        return _UI_TEXT_RU[text]
+    if text in _UI_LABEL_RU:
+        return _UI_LABEL_RU[text]
+    if text in _UI_VALUE_LABEL_RU:
+        return _UI_VALUE_LABEL_RU[text]
+    for source, target in _UI_PREFIX_RU.items():
+        if text.startswith(source):
+            return target + text[len(source):]
+    return text
+
+
+def _translate_preserving_whitespace(text: str) -> str:
+    stripped = text.strip()
+    if not stripped:
+        return text
+    translated = _translate_exact(stripped)
+    if translated == stripped:
+        return text
+    leading_len = len(text) - len(text.lstrip())
+    trailing_len = len(text) - len(text.rstrip())
+    leading = text[:leading_len]
+    trailing = text[len(text) - trailing_len :] if trailing_len else ""
+    return f"{leading}{translated}{trailing}"
+
+
+def _localize_html_fragment(fragment: str) -> str:
+    if _current_locale() != "ru" or not fragment:
+        return fragment
+
+    def replace_text(match: re.Match[str]) -> str:
+        return f"{match.group(1)}{_translate_preserving_whitespace(match.group(2))}"
+
+    localized = _HTML_TEXT_RE.sub(replace_text, fragment)
+
+    def replace_attr(match: re.Match[str]) -> str:
+        value = html.unescape(match.group("value"))
+        translated = _translate_exact(value)
+        if translated == value:
+            return match.group(0)
+        return f'{match.group("name")}="{html.escape(translated, quote=True)}"'
+
+    return _HTML_ATTR_RE.sub(replace_attr, localized)
+
+
+def _detect_ui_locale(environ: dict[str, Any]) -> str:
+    cookie_header = environ.get("HTTP_COOKIE", "")
+    if cookie_header:
+        cookie = SimpleCookie()
+        cookie.load(cookie_header)
+        value = cookie.get(LOCALE_COOKIE_NAME)
+        if value and value.value in SUPPORTED_UI_LOCALES:
+            return value.value
+
+    accept_language = (environ.get("HTTP_ACCEPT_LANGUAGE") or "").lower()
+    if accept_language.startswith("en"):
+        return "en"
+    if accept_language.startswith("ru"):
+        return "ru"
+    return DEFAULT_UI_LOCALE
 
 
 class SupplierIntelligenceApiService:
@@ -892,6 +1679,7 @@ class SupplierIntelligenceApiService:
 
 def create_wsgi_app(service: SupplierIntelligenceApiService) -> Callable:
     def app(environ: dict[str, Any], start_response: Callable) -> list[bytes]:
+        locale_token = _REQUEST_LOCALE.set(_detect_ui_locale(environ))
         method = environ["REQUEST_METHOD"].upper()
         path = environ.get("PATH_INFO", "")
         query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=False)
@@ -1191,6 +1979,8 @@ def create_wsgi_app(service: SupplierIntelligenceApiService) -> Callable:
         except Exception as exc:  # pragma: no cover
             LOGGER.exception("magon_standalone.request_failed path=%s", path)
             return _json_response(start_response, 500, {"error": "internal_error", "detail": str(exc)})
+        finally:
+            _REQUEST_LOCALE.reset(locale_token)
 
     return app
 
@@ -1582,7 +2372,7 @@ def _company_detail_page(data: dict[str, Any]) -> str:
           ], 'service_quote')}
         </select>
       </label>
-      <label>RFQ reference<input type="text" name="rfq_reference" value="" placeholder="RFQ-2026-001"></label>
+      <label>RFQ reference<input type="text" name="rfq_reference" value="" placeholder="ZAPR-2026-001"></label>
       <label>Quantity hint<input type="text" name="quantity_hint" value="" placeholder="e.g. 5,000 boxes / 10,000 labels"></label>
       <label>Target due date<input type="text" name="target_due_at" value="" placeholder="2026-04-25"></label>
       <label>Status
@@ -1671,7 +2461,7 @@ def _company_detail_page(data: dict[str, Any]) -> str:
             transition_form = (
                 f'<form method="post" action="/ui/actions/queue/{int(item.get("id") or 0)}/transition" class="inline-form">'
                 f'<input type="hidden" name="reason_code" value="manual_transition">'
-                f'<input type="hidden" name="notes" value="Changed from company workbench">'
+                f'<input type="hidden" name="notes" value="Изменено из карточки компании">'
                 f'<select name="target_status">{_simple_options([("pending","Pending"),("in_progress","In progress"),("done","Done"),("dismissed","Dismissed")], str(item.get("status") or "pending"))}</select>'
                 f'<button type="submit">Update</button>'
                 f'</form>'
@@ -2663,20 +3453,28 @@ def _layout(title: str, body: str, active: str) -> str:
             {_nav_link('raw', '/ui/raw-records', 'Raw records', active)}
             {_nav_link('scores', '/ui/scores', 'Scores', active)}
           </nav>
+          <div class="header-tools">
+            {_language_toggle()}
+          </div>
         </header>
         <main class=\"main\">{body}</main>
+        {_language_toggle_script()}
         """,
     )
 
 
 def _page(title: str, body: str) -> str:
+    localized_title = _translate_exact(title)
+    localized_body = _localize_html_fragment(body)
     return (
-        "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>"
-        + html.escape(title)
+        "<!doctype html><html lang=\""
+        + html.escape(_current_locale())
+        + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>"
+        + html.escape(localized_title)
         + "</title><style>"
         + _style()
         + "</style></head><body>"
-        + body
+        + localized_body
         + "</body></html>"
     )
 
@@ -2684,7 +3482,34 @@ def _page(title: str, body: str) -> str:
 def _style() -> str:
     return """
     :root{--bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;--accent:#0f766e;--accent-soft:#ccfbf1;--blue:#1d4ed8;--blue-soft:#dbeafe;--amber:#b45309;--amber-soft:#fef3c7;--red:#b91c1c;--red-soft:#fee2e2;--gray-soft:#f3f4f6;--shadow:0 10px 30px rgba(15,23,42,.06)}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#dbeafe;padding:12px;border-radius:10px;overflow:auto}header.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:20}.brand a{text-decoration:none;font-weight:700;font-size:18px}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a{text-decoration:none;padding:8px 12px;border-radius:999px;color:var(--muted);background:transparent}.nav a.active{background:var(--accent-soft);color:var(--accent);font-weight:600}.main{max-width:1360px;margin:0 auto;padding:24px}.hero{display:grid;grid-template-columns:1.4fr .8fr;gap:16px;align-items:start;margin-bottom:20px}.hero.compact{grid-template-columns:1fr auto}.eyebrow{margin:0 0 6px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.lead{margin:8px 0 0;color:var(--muted);max-width:900px}h1{margin:0;font-size:34px;line-height:1.1}h2{margin:0 0 12px;font-size:20px}section{margin-bottom:20px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.panel-accent{border-color:#bfe7e2;background:#f7fffd}.panel-tight{padding:14px}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.cards.compact{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}.stat-value{font-size:28px;font-weight:700;margin:4px 0}.muted{color:var(--muted)}.small{font-size:12px}.grid.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.link-list{margin:0;padding-left:18px}.link-list li{margin:8px 0}.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) repeat(4,minmax(0,180px));gap:10px;margin-bottom:14px;align-items:end}.toolbar input,.toolbar select,.stack input,.stack select,.inline-form select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.stack{display:grid;gap:10px}.stack label{display:grid;gap:6px;color:var(--muted);font-size:12px}.inline-form{display:flex;gap:8px;align-items:center;min-width:240px}.button-link,button{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;text-decoration:none;font-weight:600;cursor:pointer}.button-link{width:max-content}.button-link.ghost{background:#fff;color:var(--accent)}.button-row{display:flex;flex-wrap:wrap;gap:10px}.button-link:hover,button:hover{opacity:.95}.nav-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;display:block}.nav-card strong{display:block;margin-bottom:6px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:#fafafa;position:sticky;top:68px}.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.badge.neutral{background:var(--gray-soft);color:#374151}.badge.success{background:var(--accent-soft);color:var(--accent)}.badge.info{background:var(--blue-soft);color:var(--blue)}.badge.warn{background:var(--amber-soft);color:var(--amber)}.badge.danger{background:var(--red-soft);color:var(--red)}.badge.accent{background:#ede9fe;color:#6d28d9}.chips{display:flex;flex-wrap:wrap;gap:6px}.strong-link{font-weight:700;text-decoration:none}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.detail-grid .span-2{grid-column:span 2}.field-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}.field-value{font-size:15px}.card-note{font-size:13px;color:var(--muted)}.activity-table td:first-child{width:120px}.empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#fcfcfd}.kicker{margin-bottom:8px}.split{display:flex;justify-content:space-between;gap:16px;align-items:center}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.nowrap{white-space:nowrap}@media (max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}.hero,.grid.two,.cards.compact,.detail-grid{grid-template-columns:1fr}.detail-grid .span-2{grid-column:auto}.inline-form{flex-direction:column;align-items:stretch}}@media (max-width:720px){header.topbar{padding:14px 16px;align-items:flex-start;flex-direction:column;gap:10px}.main{padding:16px}.cards{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}h1{font-size:28px}th{top:108px}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#dbeafe;padding:12px;border-radius:10px;overflow:auto}header.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:20;gap:16px}.brand a{text-decoration:none;font-weight:700;font-size:18px}.nav{display:flex;gap:10px;flex-wrap:wrap;flex:1}.nav a{text-decoration:none;padding:8px 12px;border-radius:999px;color:var(--muted);background:transparent}.nav a.active{background:var(--accent-soft);color:var(--accent);font-weight:600}.header-tools{display:flex;align-items:center;justify-content:flex-end}.lang-toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:4px}.lang-toggle button{min-width:44px;padding:8px 12px;border:none;background:transparent;color:var(--muted);border-radius:999px;box-shadow:none}.lang-toggle button.active{background:var(--accent-soft);color:var(--accent);font-weight:700}.main{max-width:1360px;margin:0 auto;padding:24px}.hero{display:grid;grid-template-columns:1.4fr .8fr;gap:16px;align-items:start;margin-bottom:20px}.hero.compact{grid-template-columns:1fr auto}.eyebrow{margin:0 0 6px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.lead{margin:8px 0 0;color:var(--muted);max-width:900px}h1{margin:0;font-size:34px;line-height:1.1}h2{margin:0 0 12px;font-size:20px}section{margin-bottom:20px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.panel-accent{border-color:#bfe7e2;background:#f7fffd}.panel-tight{padding:14px}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.cards.compact{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}.stat-value{font-size:28px;font-weight:700;margin:4px 0}.muted{color:var(--muted)}.small{font-size:12px}.grid.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.link-list{margin:0;padding-left:18px}.link-list li{margin:8px 0}.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) repeat(4,minmax(0,180px));gap:10px;margin-bottom:14px;align-items:end}.toolbar input,.toolbar select,.stack input,.stack select,.inline-form select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.stack{display:grid;gap:10px}.stack label{display:grid;gap:6px;color:var(--muted);font-size:12px}.inline-form{display:flex;gap:8px;align-items:center;min-width:240px}.button-link,button{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;text-decoration:none;font-weight:600;cursor:pointer}.button-link{width:max-content}.button-link.ghost{background:#fff;color:var(--accent)}.button-row{display:flex;flex-wrap:wrap;gap:10px}.button-link:hover,button:hover{opacity:.95}.nav-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;display:block}.nav-card strong{display:block;margin-bottom:6px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:#fafafa;position:sticky;top:68px}.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.badge.neutral{background:var(--gray-soft);color:#374151}.badge.success{background:var(--accent-soft);color:var(--accent)}.badge.info{background:var(--blue-soft);color:var(--blue)}.badge.warn{background:var(--amber-soft);color:var(--amber)}.badge.danger{background:var(--red-soft);color:var(--red)}.badge.accent{background:#ede9fe;color:#6d28d9}.chips{display:flex;flex-wrap:wrap;gap:6px}.strong-link{font-weight:700;text-decoration:none}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.detail-grid .span-2{grid-column:span 2}.field-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}.field-value{font-size:15px}.card-note{font-size:13px;color:var(--muted)}.activity-table td:first-child{width:120px}.empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#fcfcfd}.kicker{margin-bottom:8px}.split{display:flex;justify-content:space-between;gap:16px;align-items:center}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.nowrap{white-space:nowrap}@media (max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}.hero,.grid.two,.cards.compact,.detail-grid{grid-template-columns:1fr}.detail-grid .span-2{grid-column:auto}.inline-form{flex-direction:column;align-items:stretch}}@media (max-width:860px){header.topbar{padding:14px 16px;align-items:flex-start;flex-direction:column}.header-tools{width:100%;justify-content:flex-start}.main{padding:16px}.cards{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}h1{font-size:28px}th{top:148px}}
+    """
+
+
+def _language_toggle() -> str:
+    locale = _current_locale()
+    ru_class = "active" if locale == "ru" else ""
+    en_class = "active" if locale == "en" else ""
+    return (
+        f'<div class="lang-toggle" role="group" aria-label="{html.escape(_translate_exact("Interface language"))}">'
+        f'<button type="button" class="{ru_class}" data-locale-switch="ru">RU</button>'
+        f'<button type="button" class="{en_class}" data-locale-switch="en">EN</button>'
+        "</div>"
+    )
+
+
+def _language_toggle_script() -> str:
+    return f"""
+    <script>
+    document.addEventListener('click', function(event) {{
+      const button = event.target.closest('[data-locale-switch]');
+      if (!button) {{
+        return;
+      }}
+      document.cookie = '{LOCALE_COOKIE_NAME}=' + button.getAttribute('data-locale-switch') + '; path=/; max-age=31536000; samesite=lax';
+      window.location.reload();
+    }});
+    </script>
     """
 
 
@@ -2703,7 +3528,7 @@ def _stat_card(title: str, value: Any, note: str) -> str:
 
 def _dict_table(data: dict[str, Any]) -> str:
     if not data:
-        return '<p class="muted">No data.</p>'
+        return f'<p class="muted">{html.escape(_translate_exact("No data."))}</p>'
     rows = ''.join(f'<tr><th>{html.escape(_labelize(str(k)))}</th><td>{html.escape(str(v))}</td></tr>' for k, v in data.items())
     return f'<table><tbody>{rows}</tbody></table>'
 
@@ -2715,7 +3540,7 @@ def _chips(values: list[str], tone: str = "neutral") -> str:
 
 
 def _badge(label: str, tone: str = "neutral") -> str:
-    return f'<span class="badge {tone}">{html.escape(label)}</span>'
+    return f'<span class="badge {tone}">{html.escape(_translate_exact(label))}</span>'
 
 
 def _bool_badge(value: bool, yes: str, no: str) -> str:
@@ -2766,7 +3591,7 @@ def _feedback_badge(value: Any) -> str:
 
 def _feedback_summary_badges(item: dict[str, Any] | None) -> str:
     if not item:
-        return '<span class="muted">No feedback</span>'
+        return f'<span class="muted">{html.escape(_translate_exact("No feedback"))}</span>'
     badges = []
     if item.get('routing_outcome'):
         badges.append(_feedback_badge(item.get('routing_outcome')))
@@ -2778,7 +3603,7 @@ def _feedback_summary_badges(item: dict[str, Any] | None) -> str:
         badges.append(_badge('Partner linked', 'success'))
     if _projection_is_synthetic(item):
         badges.append(_synthetic_badge())
-    return ' '.join(badges) or '<span class="muted">No feedback</span>'
+    return ' '.join(badges) or f'<span class="muted">{html.escape(_translate_exact("No feedback"))}</span>'
 
 
 def _projection_is_synthetic(item: dict[str, Any] | None) -> bool:
@@ -2797,11 +3622,11 @@ def _synthetic_badge() -> str:
 def _feedback_event_outcome_summary(item: dict[str, Any]) -> str:
     event_type = item.get('event_type') or ''
     if event_type == 'routing_feedback':
-        return ' / '.join(part for part in [_labelize(str(item.get('routing_outcome') or '')) if item.get('routing_outcome') else '', _labelize(str(item.get('manual_review_status') or '')) if item.get('manual_review_status') else ''] if part) or 'Routing update'
+        return ' / '.join(part for part in [_labelize(str(item.get('routing_outcome') or '')) if item.get('routing_outcome') else '', _labelize(str(item.get('manual_review_status') or '')) if item.get('manual_review_status') else ''] if part) or _translate_exact('Routing update')
     if event_type == 'qualification_feedback':
         return _labelize(str(item.get('qualification_status') or 'Qualification update'))
     if event_type == 'partner_linkage_feedback':
-        return 'Partner linked' if item.get('partner_linked') else 'Partner linkage update'
+        return _translate_exact('Partner linked') if item.get('partner_linked') else _translate_exact('Partner linkage update')
     if event_type == 'commercial_disposition_feedback':
         return _labelize(str(item.get('lead_status') or 'Commercial update'))
     return _labelize(str(event_type or 'Feedback event'))
@@ -2828,7 +3653,7 @@ def _queue_tone(queue_name: str) -> str:
 
 def _recent_activity_table(items: list[dict[str, str]]) -> str:
     if not items:
-        return '<div class="empty">No recent activity yet.</div>'
+        return f'<div class="empty">{html.escape(_translate_exact("No recent activity yet."))}</div>'
     rows = ''.join(
         f'<tr><td class="nowrap">{html.escape(item.get("timestamp") or "—")}</td><td>{_badge(_labelize(item.get("kind") or "item"), "neutral")}</td><td>{_maybe_link(item.get("title") or "—", item.get("href"))}</td><td>{html.escape(item.get("detail") or "—")}</td></tr>'
         for item in items
@@ -2838,7 +3663,7 @@ def _recent_activity_table(items: list[dict[str, str]]) -> str:
 
 def _commercial_audit_table(items: list[dict[str, Any]]) -> str:
     if not items:
-        return '<div class="empty">No commercial audit yet.</div>'
+        return f'<div class="empty">{html.escape(_translate_exact("No commercial audit yet."))}</div>'
     rows = ''.join(
         f"<tr><td>{html.escape(item.get('occurred_at') or '—')}</td><td>{_badge(_labelize(item.get('entity_type') or ''), 'neutral')}</td><td>{html.escape(item.get('action_type') or '—')}</td><td>{html.escape(item.get('previous_status') or '—')}</td><td>{html.escape(item.get('new_status') or '—')}</td><td>{html.escape(item.get('note') or '—')}</td></tr>"
         for item in items
@@ -2868,7 +3693,15 @@ def _truncate(value: str | None, limit: int, with_markup: bool = True) -> str:
 
 
 def _labelize(value: str) -> str:
-    return value.replace('_', ' ').replace('-', ' ').strip().title()
+    if not value:
+        return ""
+    normalized = value.strip()
+    lowered = normalized.lower()
+    if lowered in _UI_VALUE_LABEL_RU and _current_locale() == "ru":
+        return _UI_VALUE_LABEL_RU[lowered]
+    if lowered in _UI_LABEL_RU and _current_locale() == "ru":
+        return _UI_LABEL_RU[lowered]
+    return _translate_exact(normalized.replace('_', ' ').replace('-', ' ').strip().title())
 
 
 def _query_value(query: dict[str, list[str]], key: str) -> str:

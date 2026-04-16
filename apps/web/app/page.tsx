@@ -9,25 +9,24 @@ import {SectionIntro} from '@/components/sections/section-intro';
 import {AnimatedGridPattern} from '@/components/ui/animated-grid-pattern';
 import {MagicCard} from '@/components/ui/magic-card';
 import {ShinyButton} from '@/components/ui/shiny-button';
-import {defaultLocale} from '@/i18n/config';
 import {getOperatorUrl, getPlatformStatus} from '@/lib/standalone-api';
 import {cn} from '@/lib/utils';
 
 export default async function HomePage() {
-  const t = await getTranslations({locale: defaultLocale, namespace: 'home'});
+  const t = await getTranslations('home');
   const platformStatus = await getPlatformStatus();
 
   const layers = [
     {
-      key: 'glass',
+      key: 'standalone',
       icon: Orbit
     },
     {
-      key: 'progressive',
+      key: 'bridge',
       icon: SlidersHorizontal
     },
     {
-      key: 'motion',
+      key: 'next',
       icon: AudioWaveform
     }
   ] as const;
@@ -51,7 +50,7 @@ export default async function HomePage() {
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 {t('badge')}
               </div>
-              <SectionIntro eyebrow={t('eyebrow')} title={t('title')} text={t('text')} />
+              <SectionIntro eyebrow={t('eyebrow')} title={t('title')} text={t('text')} className="max-w-4xl" />
               <div className="flex flex-wrap items-center gap-3">
                 <Link href="/dashboard">
                   <MagneticButton className="group min-w-[11rem]">
@@ -65,9 +64,9 @@ export default async function HomePage() {
                   </ShinyButton>
                 </Link>
               </div>
-              <div className="grid gap-2 pt-2 sm:grid-cols-2">
+              <div className="grid gap-2 pt-2 md:grid-cols-2">
                 {highlights.map((item) => (
-                  <div key={item} className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-foreground/82 backdrop-blur-xl">
+                  <div key={item} className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-foreground/82 backdrop-blur-xl">
                     {t(`highlights.${item}`)}
                   </div>
                 ))}
@@ -79,7 +78,7 @@ export default async function HomePage() {
                 <div className="relative flex h-full flex-col justify-between p-6">
                   <div>
                     <p className="text-sm text-muted-foreground">{t('focusLabel')}</p>
-                    <h3 className="mt-2 max-w-[12rem] text-2xl">{t('focusTitle')}</h3>
+                    <h3 className="mt-2 max-w-[14rem] text-2xl leading-tight">{t('focusTitle')}</h3>
                   </div>
                   <div className="rounded-[1.4rem] border border-white/10 bg-black/12 p-4 text-sm leading-6 text-muted-foreground backdrop-blur-xl">
                     {t('focusText')}
@@ -118,7 +117,7 @@ export default async function HomePage() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl">{t(`layers.${layer.key}.title`)}</h3>
+                    <h3 className="text-2xl leading-tight">{t(`layers.${layer.key}.title`)}</h3>
                     <p className="text-sm leading-6 text-muted-foreground">{t(`layers.${layer.key}.body`)}</p>
                   </div>
                 </div>
@@ -133,7 +132,7 @@ export default async function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">{t('operatorEyebrow')}</p>
-              <h2 className="text-3xl">{t('operatorTitle')}</h2>
+              <h2 className="text-3xl leading-tight">{t('operatorTitle')}</h2>
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground">{t('operatorText')}</p>
             </div>
             <div className="flex flex-wrap gap-3">

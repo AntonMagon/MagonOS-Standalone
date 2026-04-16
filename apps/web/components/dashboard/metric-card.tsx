@@ -5,12 +5,12 @@ export function MetricCard({
   title,
   value,
   detail,
-  tone = "primary"
+  tone = 'primary'
 }: {
   title: string;
   value: string;
   detail: string;
-  tone?: "primary" | "accent";
+  tone?: 'primary' | 'accent';
 }) {
   return (
     <InteractiveGlassCard className="min-h-[180px]">
@@ -19,16 +19,15 @@ export function MetricCard({
           <p className="text-sm text-muted-foreground">{title}</p>
           <p className="font-heading text-4xl leading-none">{value}</p>
         </div>
-        <div className="flex items-center justify-between">
+        <div>
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium",
-              tone === "primary" ? "bg-primary/14 text-primary" : "bg-accent/16 text-accent-foreground"
+              'inline-flex max-w-full items-center rounded-full px-3 py-1 text-xs font-medium leading-5',
+              tone === 'primary' ? 'bg-primary/14 text-primary' : 'bg-accent/16 text-accent-foreground'
             )}
           >
             {detail}
           </span>
-          <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">scope</span>
         </div>
       </div>
     </InteractiveGlassCard>
