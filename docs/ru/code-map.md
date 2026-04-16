@@ -140,6 +140,10 @@ Versioned memory проекта.
 Важно:
 - теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
 - это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
+- dev shell теперь использует отдельный `MAGON_WEB_DIST_DIR=.next-dev`
+- это нужно, чтобы параллельный `next build` не ломал живой runtime на `3000`
+- launcher теперь считает unified shell ready только после успешного `GET /`
+- это нужно, чтобы внешние smoke/perf проверки не ловили холодную компиляцию главной страницы как ложный runtime-failure
 
 ### `scripts/run_platform.sh`
 

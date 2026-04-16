@@ -15,6 +15,7 @@
   - `stress.js`
 - `scripts/run_perf_suite.sh`
   Канонический launcher для k6.
+  Важно: перед `k6` он теперь делает retry-aware warmup ключевых web routes, чтобы cold compile Next dev не выглядел как ложный perf-failure.
 - `scripts/platform_smoke_check.sh`
   Быстрый probe backend/web/operator surfaces.
 - `scripts/run_periodic_checks.py`
@@ -23,6 +24,7 @@
   - пересобирает visual map
   - проверяет живость платформы
   - запускает k6 smoke, если платформа жива
+  Его liveness-probe теперь терпимее к холодному dev runtime и не краснеет только из-за первого долгого compile.
 - `scripts/install_launchd_periodic_checks.sh`
   Ставит локальный macOS LaunchAgent.
 - `scripts/launchd_periodic_checks_status.sh`

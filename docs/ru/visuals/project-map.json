@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 06:08 +07`",
+  "generated_at": "`2026-04-17 06:50 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "source repo feature growth"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 06:08 +07`",
+    "updated_at": "`2026-04-17 06:50 +07`",
     "branch": "`develop`",
-    "current_focus": "Green PR checks and promotion of develop to main through the protected PR path",
-    "last_verified_workflow_status": "PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`",
-    "biggest_operational_risk": "The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup."
+    "current_focus": "Keep runtime automation green while architecture work continues",
+    "last_verified_workflow_status": "PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 06:50 +07 | develop",
+      "summary": "Stabilized full-project audit runtime across web, perf, and periodic checks",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 06:08 +07 | develop",
       "summary": "Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 05:58 +07 | develop",
       "summary": "Added periodic-run overlap lock and staggered Codex automation cadence",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 05:43 +07 | develop",
-      "summary": "Stabilized visual map timestamps for periodic checks",
       "risk": "See worklog entry"
     }
   ],

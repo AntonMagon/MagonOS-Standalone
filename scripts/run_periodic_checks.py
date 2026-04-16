@@ -26,13 +26,17 @@ def _run(command: list[str], repo_root: Path) -> dict[str, object]:
     }
 
 
-def _alive(url: str) -> bool:
-    completed = subprocess.run(
-        ["curl", "-fsS", "--max-time", "5", url],
-        capture_output=True,
-        text=True,
-    )
-    return completed.returncode == 0
+def _alive(url: str, attempts: int = 3, timeout_seconds: int = 30) -> bool:
+    # RU: Cold-start dev runtime может отвечать заметно дольше первого короткого curl, поэтому periodic runner делает несколько более терпеливых probe-попыток.
+    for _ in range(attempts):
+        completed = subprocess.run(
+            ["curl", "-fsS", "--max-time", str(timeout_seconds), url],
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode == 0:
+            return True
+    return False
 
 
 def main() -> int:

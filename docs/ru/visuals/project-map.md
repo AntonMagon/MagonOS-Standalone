@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 06:08 +07``
+Обновлено: ``2026-04-17 06:50 +07``
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: Green PR checks and promotion of develop to main through the protected PR path
-- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
+- Current focus: Keep runtime automation green while architecture work continues
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell.
 
 ## Автоматические контуры контроля
 
