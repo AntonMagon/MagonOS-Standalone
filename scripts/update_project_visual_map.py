@@ -36,6 +36,32 @@ def _section_bullets(text: str, heading: str) -> list[str]:
     return lines
 
 
+def _label_bullets(text: str, label: str) -> list[str]:
+    bullets = []
+    armed = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line == f"{label}:":
+            armed = True
+            continue
+        if not armed:
+            continue
+        if line.startswith("- "):
+            bullets.append(line[2:].strip())
+            continue
+        if bullets:
+            break
+    return bullets
+
+
+def _section_or_label_bullets(text: str, heading: str, label: str) -> list[str]:
+    bullets = _section_bullets(text, heading)
+    if bullets:
+        return bullets
+    # RU: В английском current-state этот блок хранится как label-список, и без fallback визуальная карта теряла owned capabilities.
+    return _label_bullets(text, label)
+
+
 def _active_context(memory_text: str) -> dict[str, str]:
     match = re.search(
         r"<!-- ACTIVE:START -->(.*?)<!-- ACTIVE:END -->",
@@ -100,7 +126,11 @@ def _build_payload() -> dict[str, object]:
         },
         "validated_contour_en": _section_bullets(state_en, "Validated standalone contour"),
         "validated_contour_ru": _section_bullets(state_ru, "Что уже подтверждено в standalone-контуре"),
-        "owned_capabilities_en": _section_bullets(state_en, "Also already standalone-owned"),
+        "owned_capabilities_en": _section_or_label_bullets(
+            state_en,
+            "Also already standalone-owned",
+            "Also already standalone-owned",
+        ),
         "owned_capabilities_ru": _section_bullets(state_ru, "Что уже принадлежит standalone"),
         "danger_overlap_en": _section_bullets(state_en, "Current dangerous overlap"),
         "danger_overlap_ru": _section_bullets(state_ru, "Где сейчас опасный overlap"),

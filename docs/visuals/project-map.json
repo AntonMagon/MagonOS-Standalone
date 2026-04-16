@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-17 03:29 +0700",
+  "generated_at": "2026-04-17 04:35 +0700",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -20,7 +20,14 @@
     "production handoff",
     "production board"
   ],
-  "owned_capabilities_en": [],
+  "owned_capabilities_en": [
+    "supplier intelligence pipeline",
+    "normalization / enrichment / dedup / scoring",
+    "review queue",
+    "routing / qualification decisions",
+    "feedback ledger / projection",
+    "workforce estimation"
+  ],
   "owned_capabilities_ru": [
     "supplier intelligence pipeline",
     "normalization / enrichment / dedup / scoring",
@@ -56,26 +63,26 @@
     "source repo feature growth"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 03:10 +07`",
+    "updated_at": "`2026-04-17 04:35 +07`",
     "branch": "`develop`",
-    "current_focus": "Ran project skill smoke audit and hardened unified platform watch mode",
+    "current_focus": "Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs",
     "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh`",
-    "biggest_operational_risk": "Current skill execution is procedural: event-driven skills like ci-watch-fix and donor-boundary-audit still need a real failing CI or explicit donor task to be meaningfully exercised."
+    "biggest_operational_risk": "no additional risk recorded"
   },
   "recent_worklog": [
     {
-      "heading": "2026-04-17 03:10 +07 | develop",
-      "summary": "Ran project skill smoke audit and hardened unified platform watch mode",
+      "heading": "2026-04-17 04:35 +07 | develop",
+      "summary": "Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-17 03:01 +07 | develop",
-      "summary": "Activated project skills via CODEX_HOME symlinks and normalized skill metadata",
+      "heading": "2026-04-17 04:33 +07 | develop",
+      "summary": "Completed automatic root-doc sync for AGENTS.md and README.md",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-17 02:57 +07 | develop",
-      "summary": "Added project skills for regression, CI, verification, release gating, docs sync, skill scanning, and donor boundary audit",
+      "heading": "2026-04-17 04:31 +07 | develop",
+      "summary": "Made root operating docs truly auto-synced with project memory and automations",
       "risk": "See worklog entry"
     }
   ],

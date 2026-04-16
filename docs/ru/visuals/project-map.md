@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: `2026-04-17 03:29 +0700`
+Обновлено: `2026-04-17 04:35 +0700`
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: Ran project skill smoke audit and hardened unified platform watch mode
+- Current focus: Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: Current skill execution is procedural: event-driven skills like ci-watch-fix and donor-boundary-audit still need a real failing CI or explicit donor task to be meaningfully exercised.
+- Biggest operational risk: no additional risk recorded
 
 ## Автоматические контуры контроля
 

@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 04:33 +07`
-- Current focus: Completed automatic root-doc sync for AGENTS.md and README.md
+- Auto-synced at: `2026-04-17 04:35 +07`
+- Current focus: Synced visual project map with the new operating-doc automation state
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
+- Biggest operational risk: The visual map now follows the new operating-doc sync state, but scheduled automations still report drift through inbox items rather than auto-committing repo changes.
 - Validated contour:
   - company
   - commercial/customer context

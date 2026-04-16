@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: `2026-04-17 03:29 +0700`
+Updated: `2026-04-17 04:35 +0700`
 
 ## Flow contour
 
@@ -15,7 +15,12 @@ flowchart LR
 
 ## Standalone-owned capabilities
 
-
+- supplier intelligence pipeline
+- normalization / enrichment / dedup / scoring
+- review queue
+- routing / qualification decisions
+- feedback ledger / projection
+- workforce estimation
 
 ## Validated contour
 

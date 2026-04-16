@@ -60,15 +60,33 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 04:33 +07`
+- Updated at: `2026-04-17 04:35 +07`
 - Branch: `develop`
-- Current focus: Completed automatic root-doc sync for AGENTS.md and README.md
+- Current focus: Synced visual project map with the new operating-doc automation state
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The repo now auto-syncs root operating docs during finalize and scheduled audits, but Codex still does not provide instant event-driven skill execution on every file save across chats.
+- Biggest operational risk: The visual map now follows the new operating-doc sync state, but scheduled automations still report drift through inbox items rather than auto-committing repo changes.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 04:35 +07 | develop
+- Summary: Synced visual project map with the new operating-doc automation state
+- Changed:
+  - scripts/update_project_visual_map.py owned-capabilities fallback for English current-state labels
+  - docs/ru/visuals/project-map.md docs/ru/visuals/project-map.json regenerated current state
+  - docs/visuals/project-map.md docs/visuals/project-map.json regenerated current state
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The visual map now follows the new operating-doc sync state, but scheduled automations still report drift through inbox items rather than auto-committing repo changes.
+### 2026-04-17 04:35 +07 | develop
+- Summary: Fixed visual map generator fallback for standalone-owned capabilities and regenerated visual map docs
+- Changed:
+  - scripts/update_project_visual_map.py docs/visuals/project-map.md docs/visuals/project-map.json docs/ru/visuals/project-map.md docs/ru/visuals/project-map.json
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
 ### 2026-04-17 04:33 +07 | develop
 - Summary: Completed automatic root-doc sync for AGENTS.md and README.md
 - Changed:
