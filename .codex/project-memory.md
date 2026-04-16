@@ -60,15 +60,30 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 02:57 +07`
+- Updated at: `2026-04-17 03:01 +07`
 - Branch: `develop`
-- Current focus: Added project skills for regression, CI, verification, release gating, docs sync, skill scanning, and donor boundary audit
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: Existing older local skills still use the previous plain markdown format; the new skills already use explicit name/description frontmatter.
+- Current focus: Activated project skills via CODEX_HOME symlinks and normalized skill metadata
+- Last verified workflow status: PASS `bash scripts/install_project_skills.sh`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: The current live Codex session still needs a restart before newly linked skills appear in the runtime-discovered skill list.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 03:01 +07 | develop
+- Summary: Activated project skills via CODEX_HOME symlinks and normalized skill metadata
+- Changed:
+  - scripts/install_project_skills.sh
+  - skills/audit-docs-vs-runtime/SKILL.md
+  - skills/git-safe-commit/SKILL.md
+  - skills/operate-platform/SKILL.md
+  - skills/operate-standalone-intelligence/SKILL.md
+  - docs/ru/README.md
+  - scripts/verify_workflow.sh
+- Verified:
+  - PASS `bash scripts/install_project_skills.sh`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - The current live Codex session still needs a restart before newly linked skills appear in the runtime-discovered skill list.
 ### 2026-04-17 02:57 +07 | develop
 - Summary: Added project skills for regression, CI, verification, release gating, docs sync, skill scanning, and donor boundary audit
 - Changed:

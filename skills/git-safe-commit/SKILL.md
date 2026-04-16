@@ -1,3 +1,8 @@
+---
+name: git-safe-commit
+description: Close a finished standalone task with narrow staging, verification, and an intentional commit/push path that respects repo guards.
+---
+
 # git-safe-commit
 
 ## Purpose

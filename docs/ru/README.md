@@ -83,3 +83,23 @@
 - `docs-sync-curator` — синхронизация docs/ и docs/ru/ с реальным кодом
 - `skill-pattern-scan` — поиск повторяющихся workflow-паттернов под новые skills
 - `donor-boundary-audit` — безопасный аудит donor/Odoo-границы
+
+## Как эти skills реально активируются
+
+Факт: одних файлов в `skills/` недостаточно.
+Текущая среда Codex реально подхватывает skills из `~/.codex/skills/`.
+
+Поэтому для project-local skills добавлен канонический installer:
+
+```bash
+./scripts/install_project_skills.sh
+```
+
+Что он делает:
+- берёт каждый каталог из `skills/*`
+- создаёт symlink в `~/.codex/skills/`
+- оставляет сам репозиторий single source of truth
+
+Важно:
+- после линковки нужен рестарт Codex, иначе текущая живая сессия не переиндексирует skill list
+- без этого repo skills остаются только проектными playbooks, а не live-discovered skills среды

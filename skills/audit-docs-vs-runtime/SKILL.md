@@ -1,3 +1,8 @@
+---
+name: audit-docs-vs-runtime
+description: Audit the standalone repo for mismatches between code, tests, runtime, AGENTS rules, and supporting docs, then report only concrete drift.
+---
+
 # audit-docs-vs-runtime
 
 ## Purpose

@@ -1,3 +1,8 @@
+---
+name: operate-platform
+description: Start and verify the active standalone MagonOS platform through its canonical runtime entrypoints and local surfaces.
+---
+
 # operate-platform
 
 ## Purpose

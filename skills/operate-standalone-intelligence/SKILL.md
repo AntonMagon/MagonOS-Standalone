@@ -1,3 +1,8 @@
+---
+name: operate-standalone-intelligence
+description: Run and verify the standalone supplier-intelligence pipeline and operator contour without guessing the owning scripts or runtime path.
+---
+
 # operate-standalone-intelligence
 
 ## Purpose
