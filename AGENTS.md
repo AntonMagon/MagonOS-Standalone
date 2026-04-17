@@ -109,24 +109,33 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 06:08 +07`
-- Current focus: Green PR checks and promotion of develop to main through the protected PR path
-- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
+- Auto-synced at: `2026-04-17 22:34 +07`
+- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: no additional risk recorded
 - Validated contour:
   - company
+  - request draft / intake boundary
   - commercial/customer context
   - opportunity
   - quote intent / RFQ boundary
   - production handoff
   - production board
 - Active repo automations:
+  - Architecture Drift Watch
+  - Daily Project Digest
+  - Dev Review Pulse
   - Platform Smoke 2h
   - Repo Guard 3h
-  - Visual Map 6h
+  - Visual Map Daily
+  - Nightly Deep Review
+  - Operator Flow Audit
+  - PR Branch Hygiene
+  - RU Locale Guard 6h
   - Weekly Release Gate
 - Repo-local operating skills:
   - audit-docs-vs-runtime
+  - automation-context-guard
   - ci-watch-fix
   - docs-sync-curator
   - donor-boundary-audit

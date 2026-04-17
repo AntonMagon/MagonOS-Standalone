@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-17 06:08 +07``
+Updated: ``2026-04-17 22:34 +07``
 
 ## Flow contour
 
@@ -15,9 +15,17 @@ flowchart LR
 
 ## Standalone-owned capabilities
 
+- company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
 - normalization / enrichment / dedup / scoring
-- review queue
+- limited catalog / showcase contour with guest draft + RFQ entry
+- draft autosave / abandoned / archive-ready intake layer
+- central request review queue with blocker/clarification flow
+- request draft -> request submit flow with required-field gating
+- versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
+- order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
+- managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+- foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection
 - workforce estimation
@@ -25,6 +33,7 @@ flowchart LR
 ## Validated contour
 
 - company
+- request draft / intake boundary
 - commercial/customer context
 - opportunity
 - quote intent / RFQ boundary

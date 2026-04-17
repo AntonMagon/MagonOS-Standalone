@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from magon_standalone.operating_docs_sync import (
     AGENTS_SYNC_END,
@@ -67,6 +68,74 @@ Also already standalone-owned:
             self.assertIn("PASS `./scripts/verify_workflow.sh`", synced[repo_root / "README.md"])
             self.assertIn("demo-skill", synced[repo_root / "AGENTS.md"])
             self.assertIn("review queue", synced[repo_root / "README.md"])
+
+    def test_sync_operating_docs_keeps_repo_backed_automation_list_without_local_codex_home(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            # RU: Этот кейс фиксирует CI-runner без локального ~/.codex, чтобы auto-sync не зависел от home-level automation state.
+            (repo_root / "skills" / "demo-skill").mkdir(parents=True)
+            (repo_root / "skills" / "demo-skill" / "SKILL.md").write_text(
+                "---\nname: demo-skill\ndescription: demo\n---\n",
+                encoding="utf-8",
+            )
+            (repo_root / "docs").mkdir()
+            (repo_root / ".codex").mkdir()
+            (repo_root / "docs" / "current-project-state.md").write_text(
+                """# Current Project State
+
+## Validated standalone contour
+- company
+
+Also already standalone-owned:
+- review queue
+
+## Runtime surfaces
+- public shell: `http://127.0.0.1:3000/`
+""",
+                encoding="utf-8",
+            )
+            (repo_root / ".codex" / "project-memory.md").write_text(
+                """# Project Memory
+
+## Active Context
+<!-- ACTIVE:START -->
+- Updated at: `2026-04-17 05:00 +07`
+- Branch: `develop`
+- Current focus: keep docs in sync
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: automation discovery in CI is empty
+<!-- ACTIVE:END -->
+""",
+                encoding="utf-8",
+            )
+            (repo_root / "AGENTS.md").write_text(
+                f"""# AGENTS
+
+{AGENTS_SYNC_START}
+- Auto-synced at: `2026-04-17 05:00 +07`
+- Current focus: keep docs in sync
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: automation discovery in CI is empty
+- Validated contour:
+  - company
+- Active repo automations:
+  - Demo Automation
+- Repo-local operating skills:
+  - demo-skill
+{AGENTS_SYNC_END}
+""",
+                encoding="utf-8",
+            )
+            (repo_root / "README.md").write_text(
+                f"# README\n\n{README_SYNC_START}\nold\n{README_SYNC_END}\n",
+                encoding="utf-8",
+            )
+
+            with patch("pathlib.Path.home", return_value=repo_root / "home-without-codex"):
+                synced = sync_operating_docs(repo_root)
+
+            self.assertIn("Demo Automation", synced[repo_root / "AGENTS.md"])
+            self.assertIn("Demo Automation", synced[repo_root / "README.md"])
 
 
 if __name__ == "__main__":

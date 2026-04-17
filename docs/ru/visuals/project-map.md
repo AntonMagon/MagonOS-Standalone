@@ -1,61 +1,71 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 06:08 +07``
+Обновлено: ``2026-04-17 22:34 +07``
 
 ## Контур движения
 
 ```mermaid
 flowchart LR
-  Company["Company"] --> Customer["Customer Account"]
-  Customer --> Opportunity["Opportunity"]
-  Opportunity --> Quote["Quote Intent / RFQ"]
-  Quote --> Handoff["Production Handoff"]
-  Handoff --> Board["Production Board"]
+  Company["Компания"] --> Customer["Клиентский аккаунт"]
+  Customer --> Opportunity["Сделка"]
+  Opportunity --> Quote["Заявка на расчёт / RFQ"]
+  Quote --> Handoff["Передача в производство"]
+  Handoff --> Board["Производственная доска"]
 ```
 
 ## Что уже принадлежит standalone
 
-- supplier intelligence pipeline
-- normalization / enrichment / dedup / scoring
-- review queue
-- routing / qualification decisions
-- feedback ledger / projection
-- workforce estimation
+- контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
+- конвейер проверки и обогащения поставщиков
+- нормализация / обогащение / дедупликация / скоринг
+- ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
+- autosave / abandoned / archive-ready слой Draft
+- центральная операторская очередь Review для Request с blocker/clarification flow
+- переход `draft -> request` с блокировкой по обязательным полям
+- versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order
+- слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
+- управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
+- foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
+- маршрутизация / квалификационные решения
+- журнал обратной связи / проекция
+- оценка трудозатрат
 
 ## Что сейчас является ядром контура
 
-- company
-- commercial/customer context
-- opportunity
-- quote intent / RFQ boundary
-- production handoff
-- production board
+- компания
+- граница черновика запроса / intake-заявки
+- коммерческий контекст клиента
+- сделка
+- заявка на расчёт / граница RFQ
+- передача в производство
+- производственная доска
 
 ## Где остаётся риск overlap
 
-- customer/account identity
-- opportunity/lead ownership
-- RFQ / quote boundary
+- идентичность клиента / аккаунта
+- владение сделкой / лидом
+- граница RFQ / расчёта
 
 ## Что не должно расползаться в scope
 
-- accounting
-- invoice / payment
-- full ERP order management
-- giant generic CRM
-- broad Odoo entity mirroring
-- source repo feature growth
+- бухгалтерия
+- счета / оплаты
+- полное ERP-управление заказами
+- огромная универсальная CRM
+- широкое зеркалирование сущностей Odoo
+- рост функциональности donor-репозитория
 
 ## Активный контекст
 
-- Current focus: Green PR checks and promotion of develop to main through the protected PR path
-- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
+- Текущий фокус: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: no additional risk recorded
 
 ## Автоматические контуры контроля
 
 - Hourly Repo Guard
 - Hourly Platform Smoke
+- RU Locale Guard
 - Hourly Visual Map
 - Weekly Release Gate
 - Launchd Periodic Checks
@@ -63,6 +73,7 @@ flowchart LR
 ## Активные project skills
 
 - audit-docs-vs-runtime
+- automation-context-guard
 - ci-watch-fix
 - docs-sync-curator
 - donor-boundary-audit

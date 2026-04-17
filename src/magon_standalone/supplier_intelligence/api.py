@@ -1033,6 +1033,8 @@ class SupplierIntelligenceApiService:
         routing_audit = store.list_routing_audit(company_key=canonical_key, limit=200, offset=0)
         commercial_record = store.get_commercial_record(canonical_key)
         customer_account = store.get_customer_account(canonical_key)
+        request_drafts = store.list_request_drafts(company_key=canonical_key, limit=0, offset=0)
+        request_intakes = store.list_request_intakes(company_key=canonical_key, limit=0, offset=0)
         opportunities = store.list_commercial_opportunities(company_key=canonical_key, limit=0, offset=0)
         quote_intents = store.list_quote_intents(company_key=canonical_key, limit=0, offset=0)
         production_handoffs = store.list_production_handoffs(company_key=canonical_key, limit=0, offset=0)
@@ -1054,6 +1056,8 @@ class SupplierIntelligenceApiService:
             "routing_audit": routing_audit,
             "commercial_record": commercial_record,
             "customer_account": customer_account,
+            "request_drafts": request_drafts,
+            "request_intakes": request_intakes,
             "opportunities": opportunities,
             "quote_intents": quote_intents,
             "production_handoffs": production_handoffs,
@@ -1101,6 +1105,239 @@ class SupplierIntelligenceApiService:
             actor=actor,
         )
         return {"company": company, "customer_account": record, "storage_counts": store.snapshot_counts()}
+
+    def operator_request_drafts(
+        self,
+        status: str = "",
+        draft_type: str = "",
+        company_id: int | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        store = self._store()
+        company_key = ""
+        company = None
+        if company_id is not None:
+            company = store.get_company_by_id(company_id)
+            if company is None:
+                raise LookupError(f"company:{company_id}")
+            company_key = company.get("canonical_key") or ""
+        records = store.list_request_drafts(
+            company_key=company_key or None,
+            status=status or None,
+            draft_type=draft_type or None,
+            limit=limit,
+            offset=offset,
+        )
+        total = store.count_request_drafts(company_key=company_key or None, status=status or None, draft_type=draft_type or None)
+        company_keys = [item.get("company_key") or "" for item in records]
+        companies = store.list_companies_by_keys(company_keys)
+        linked_requests = {
+            int(item.get("draft_id") or 0): item
+            for item in store.list_request_intakes(company_key=company_key or None, limit=0, offset=0)
+            if int(item.get("draft_id") or 0) > 0
+        }
+        items = [{**record, "company": companies.get(record.get("company_key") or ""), "request": linked_requests.get(int(record.get("id") or 0))} for record in records]
+        return {"items": items, "total": total, "limit": limit, "offset": offset, "status": status, "draft_type": draft_type, "company": company}
+
+    def operator_request_draft_detail(self, draft_id: int) -> dict[str, Any]:
+        store = self._store()
+        record = store.get_request_draft(draft_id)
+        if record is None:
+            raise LookupError(f"request_draft:{draft_id}")
+        company = store.get_company_by_key(record.get("company_key") or "")
+        request = next(iter(store.list_request_intakes(draft_id=draft_id, limit=1, offset=0)), None)
+        audit = store.list_commercial_audit(entity_type="request_draft", entity_id=draft_id, limit=200, offset=0)
+        return {"request_draft": record, "company": company, "request": request, "audit": audit}
+
+    def operator_create_request_draft(
+        self,
+        company_id: int,
+        draft_type: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        file_required: bool = False,
+        file_links: list[str] | None = None,
+        draft_status: str = "",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        store = self._store()
+        company = store.get_company_by_id(company_id)
+        if company is None:
+            raise LookupError(f"company:{company_id}")
+        if draft_type not in {"sample_request", "rfq_packaging", "rfq_labels", "rfq_printing", "service_quote"}:
+            raise ValueError("invalid_request_draft_type")
+        record = store.create_request_draft(
+            company_key=company.get("canonical_key") or "",
+            draft_type=draft_type,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            item_summary=item_summary,
+            quantity_hint=quantity_hint,
+            city=city,
+            requested_deadline=requested_deadline,
+            file_required=file_required,
+            file_links=file_links or [],
+            draft_status=draft_status or None,
+            notes=notes,
+            actor=actor,
+        )
+        return {"company": company, "request_draft": record, "storage_counts": store.snapshot_counts()}
+
+    def operator_update_request_draft(
+        self,
+        draft_id: int,
+        draft_type: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        file_required: bool = False,
+        file_links: list[str] | None = None,
+        draft_status: str = "",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        store = self._store()
+        if draft_type not in {"sample_request", "rfq_packaging", "rfq_labels", "rfq_printing", "service_quote"}:
+            raise ValueError("invalid_request_draft_type")
+        if draft_status and draft_status not in {"draft", "blocked", "archived", "awaiting_data", "ready_to_submit"}:
+            raise ValueError("invalid_request_draft_status")
+        record = store.update_request_draft(
+            draft_id=draft_id,
+            draft_type=draft_type,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            item_summary=item_summary,
+            quantity_hint=quantity_hint,
+            city=city,
+            requested_deadline=requested_deadline,
+            file_required=file_required,
+            file_links=file_links or [],
+            draft_status=draft_status or None,
+            notes=notes,
+            actor=actor,
+        )
+        company = store.get_company_by_key(record.get("company_key") or "")
+        return {"company": company, "request_draft": record, "storage_counts": store.snapshot_counts()}
+
+    def operator_submit_request_draft(
+        self,
+        draft_id: int,
+        source_channel: str = "manual_operator",
+        customer_reference: str = "",
+        request_status: str = "new",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        store = self._store()
+        if request_status not in {"new", "needs_review", "needs_clarification", "supplier_search", "offer_prep", "offer_sent", "converted_to_order", "cancelled"}:
+            raise ValueError("invalid_request_status")
+        # RU: Заявка создаётся только через явный submit из черновика, чтобы intake-слой не схлопывался обратно в quote-intent и не обходил обязательные проверки.
+        record = store.submit_request_draft(
+            draft_id=draft_id,
+            source_channel=source_channel,
+            customer_reference=customer_reference,
+            request_status=request_status,
+            notes=notes,
+            actor=actor,
+        )
+        company = store.get_company_by_key(record.get("company_key") or "")
+        draft = store.get_request_draft(draft_id)
+        return {"company": company, "request_draft": draft, "request": record, "storage_counts": store.snapshot_counts()}
+
+    def operator_requests(
+        self,
+        status: str = "",
+        request_type: str = "",
+        company_id: int | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        store = self._store()
+        company_key = ""
+        company = None
+        if company_id is not None:
+            company = store.get_company_by_id(company_id)
+            if company is None:
+                raise LookupError(f"company:{company_id}")
+            company_key = company.get("canonical_key") or ""
+        records = store.list_request_intakes(
+            company_key=company_key or None,
+            status=status or None,
+            request_type=request_type or None,
+            limit=limit,
+            offset=offset,
+        )
+        total = store.count_request_intakes(company_key=company_key or None, status=status or None, request_type=request_type or None)
+        company_keys = [item.get("company_key") or "" for item in records]
+        companies = store.list_companies_by_keys(company_keys)
+        draft_ids = [int(item.get("draft_id") or 0) for item in records if int(item.get("draft_id") or 0) > 0]
+        drafts = {int(item["id"]): item for item in (store.get_request_draft(draft_id) for draft_id in sorted(set(draft_ids))) if item}
+        items = [{**record, "company": companies.get(record.get("company_key") or ""), "request_draft": drafts.get(int(record.get("draft_id") or 0))} for record in records]
+        return {"items": items, "total": total, "limit": limit, "offset": offset, "status": status, "request_type": request_type, "company": company}
+
+    def operator_request_detail(self, request_id: int) -> dict[str, Any]:
+        store = self._store()
+        record = store.get_request_intake(request_id)
+        if record is None:
+            raise LookupError(f"request_intake:{request_id}")
+        company = store.get_company_by_key(record.get("company_key") or "")
+        draft = store.get_request_draft(int(record.get("draft_id") or 0)) if record.get("draft_id") else None
+        audit = store.list_commercial_audit(entity_type="request_intake", entity_id=request_id, limit=200, offset=0)
+        return {"request": record, "company": company, "request_draft": draft, "audit": audit}
+
+    def operator_update_request(
+        self,
+        request_id: int,
+        request_type: str,
+        source_channel: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        customer_reference: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        request_status: str = "new",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        store = self._store()
+        if request_type not in {"sample_request", "rfq_packaging", "rfq_labels", "rfq_printing", "service_quote"}:
+            raise ValueError("invalid_request_type")
+        if request_status not in {"new", "needs_review", "needs_clarification", "supplier_search", "offer_prep", "offer_sent", "converted_to_order", "cancelled"}:
+            raise ValueError("invalid_request_status")
+        record = store.update_request_intake(
+            request_id=request_id,
+            request_type=request_type,
+            source_channel=source_channel,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            customer_reference=customer_reference,
+            item_summary=item_summary,
+            quantity_hint=quantity_hint,
+            city=city,
+            requested_deadline=requested_deadline,
+            request_status=request_status,
+            notes=notes,
+            actor=actor,
+        )
+        company = store.get_company_by_key(record.get("company_key") or "")
+        return {"company": company, "request": record, "storage_counts": store.snapshot_counts()}
 
     def operator_opportunities(self, status: str = "", company_id: int | None = None, limit: int = 100, offset: int = 0) -> dict[str, Any]:
         store = self._store()
@@ -1750,6 +1987,26 @@ def create_wsgi_app(service: SupplierIntelligenceApiService) -> Callable:
                     customer_status=_query_value(query, "customer_status"),
                     **_pagination(query),
                 )))
+            if method == "GET" and path == "/ui/request-drafts":
+                return _html_response(start_response, 200, _request_drafts_page(service.operator_request_drafts(
+                    status=_query_value(query, "status"),
+                    draft_type=_query_value(query, "draft_type"),
+                    company_id=_optional_int(_query_value(query, "company_id")),
+                    **_pagination(query),
+                )))
+            if method == "GET" and path.startswith("/ui/request-drafts/"):
+                draft_id = int(path.removeprefix("/ui/request-drafts/").strip())
+                return _html_response(start_response, 200, _request_draft_detail_page(service.operator_request_draft_detail(draft_id)))
+            if method == "GET" and path == "/ui/requests":
+                return _html_response(start_response, 200, _requests_page(service.operator_requests(
+                    status=_query_value(query, "status"),
+                    request_type=_query_value(query, "request_type"),
+                    company_id=_optional_int(_query_value(query, "company_id")),
+                    **_pagination(query),
+                )))
+            if method == "GET" and path.startswith("/ui/requests/"):
+                request_id = int(path.removeprefix("/ui/requests/").strip())
+                return _html_response(start_response, 200, _request_detail_page(service.operator_request_detail(request_id)))
             if method == "GET" and path == "/ui/opportunities":
                 return _html_response(start_response, 200, _opportunities_page(service.operator_opportunities(
                     status=_query_value(query, "status"),
@@ -1868,6 +2125,74 @@ def create_wsgi_app(service: SupplierIntelligenceApiService) -> Callable:
                     notes=form.get("notes") or "",
                 )
                 return _html_response(start_response, 200, _customer_account_result_page(result))
+            if method == "POST" and path.startswith("/ui/actions/companies/") and path.endswith("/request-drafts"):
+                company_id = int(path.removeprefix("/ui/actions/companies/").removesuffix("/request-drafts").strip())
+                form = _parse_form_body(environ)
+                result = service.operator_create_request_draft(
+                    company_id=company_id,
+                    draft_type=form.get("draft_type") or "rfq_packaging",
+                    customer_name=form.get("customer_name") or "",
+                    customer_email=form.get("customer_email") or "",
+                    customer_phone=form.get("customer_phone") or "",
+                    item_summary=form.get("item_summary") or "",
+                    quantity_hint=form.get("quantity_hint") or "",
+                    city=form.get("city") or "",
+                    requested_deadline=form.get("requested_deadline") or "",
+                    file_required=(form.get("file_required") or "no") == "yes",
+                    file_links=_split_multiline_values(form.get("file_links") or ""),
+                    draft_status=form.get("draft_status") or "",
+                    notes=form.get("notes") or "",
+                )
+                return _html_response(start_response, 200, _request_draft_result_page(result))
+            if method == "POST" and path.startswith("/ui/actions/request-drafts/") and path.endswith("/submit"):
+                draft_id = int(path.removeprefix("/ui/actions/request-drafts/").removesuffix("/submit").strip())
+                form = _parse_form_body(environ)
+                result = service.operator_submit_request_draft(
+                    draft_id=draft_id,
+                    source_channel=form.get("source_channel") or "manual_operator",
+                    customer_reference=form.get("customer_reference") or "",
+                    request_status=form.get("request_status") or "new",
+                    notes=form.get("notes") or "",
+                )
+                return _html_response(start_response, 200, _request_result_page(result, created_from_draft=True))
+            if method == "POST" and path.startswith("/ui/actions/request-drafts/"):
+                draft_id = int(path.removeprefix("/ui/actions/request-drafts/").strip())
+                form = _parse_form_body(environ)
+                result = service.operator_update_request_draft(
+                    draft_id=draft_id,
+                    draft_type=form.get("draft_type") or "rfq_packaging",
+                    customer_name=form.get("customer_name") or "",
+                    customer_email=form.get("customer_email") or "",
+                    customer_phone=form.get("customer_phone") or "",
+                    item_summary=form.get("item_summary") or "",
+                    quantity_hint=form.get("quantity_hint") or "",
+                    city=form.get("city") or "",
+                    requested_deadline=form.get("requested_deadline") or "",
+                    file_required=(form.get("file_required") or "no") == "yes",
+                    file_links=_split_multiline_values(form.get("file_links") or ""),
+                    draft_status=form.get("draft_status") or "",
+                    notes=form.get("notes") or "",
+                )
+                return _html_response(start_response, 200, _request_draft_result_page(result, updated=True))
+            if method == "POST" and path.startswith("/ui/actions/requests/"):
+                request_id = int(path.removeprefix("/ui/actions/requests/").strip())
+                form = _parse_form_body(environ)
+                result = service.operator_update_request(
+                    request_id=request_id,
+                    request_type=form.get("request_type") or "rfq_packaging",
+                    source_channel=form.get("source_channel") or "manual_operator",
+                    customer_name=form.get("customer_name") or "",
+                    customer_email=form.get("customer_email") or "",
+                    customer_phone=form.get("customer_phone") or "",
+                    customer_reference=form.get("customer_reference") or "",
+                    item_summary=form.get("item_summary") or "",
+                    quantity_hint=form.get("quantity_hint") or "",
+                    city=form.get("city") or "",
+                    requested_deadline=form.get("requested_deadline") or "",
+                    request_status=form.get("request_status") or "new",
+                    notes=form.get("notes") or "",
+                )
+                return _html_response(start_response, 200, _request_result_page(result, updated=True))
             if method == "POST" and path.startswith("/ui/actions/companies/") and path.endswith("/opportunities"):
                 company_id = int(path.removeprefix("/ui/actions/companies/").removesuffix("/opportunities").strip())
                 form = _parse_form_body(environ)
@@ -2033,6 +2358,8 @@ def _dashboard_page(data: dict[str, Any]) -> str:
         [
             _nav_card("Companies", "/ui/companies", "Open the company workbench and inspect one supplier end-to-end."),
             _nav_card("Commercial pipeline", "/ui/commercial-pipeline", "Track standalone-owned commercial follow-up instead of hiding it in Odoo lead state."),
+            _nav_card("Request drafts", "/ui/request-drafts", "Capture raw intake drafts and verify that required fields are complete before submit."),
+            _nav_card("Requests", "/ui/requests", "Track validated standalone requests before pricing and production handoff."),
             _nav_card("Quote intents", "/ui/quote-intents", "Track RFQ / quote requests in standalone instead of deferring everything to ERP."),
             _nav_card("Production handoffs", "/ui/production-handoffs", "Track execution handoff in standalone instead of pushing everything into ERP orders."),
             _nav_card("Production board", "/ui/production-board", "Move active jobs across execution states with a simple operator board."),
@@ -2190,6 +2517,8 @@ def _company_detail_page(data: dict[str, Any]) -> str:
     routing_audit = data.get("routing_audit") or []
     commercial_record = data.get("commercial_record")
     customer_account = data.get("customer_account")
+    request_drafts = data.get("request_drafts") or []
+    request_intakes = data.get("request_intakes") or []
     opportunities = data.get("opportunities") or []
     quote_intents = data.get("quote_intents") or []
     production_handoffs = data.get("production_handoffs") or []
@@ -2329,6 +2658,48 @@ def _company_detail_page(data: dict[str, Any]) -> str:
       <button type="submit">Save customer account</button>
     </form>
     """
+
+    request_draft_form = f"""
+    <form method="post" action="/ui/actions/companies/{int(company.get('id') or 0)}/request-drafts" class="stack">
+      <label>Draft type
+        <select name="draft_type">
+          {_simple_options([
+            ('rfq_packaging', 'RFQ packaging'),
+            ('rfq_labels', 'RFQ labels'),
+            ('rfq_printing', 'RFQ printing'),
+            ('service_quote', 'Service quote'),
+            ('sample_request', 'Sample request'),
+          ], 'rfq_packaging')}
+        </select>
+      </label>
+      <label>Customer name<input type="text" name="customer_name" value="" placeholder="Buyer / company contact"></label>
+      <label>Customer email<input type="text" name="customer_email" value="" placeholder="buyer@example.com"></label>
+      <label>Customer phone<input type="text" name="customer_phone" value="" placeholder="+84..."></label>
+      <label>Item summary<input type="text" name="item_summary" value="" placeholder="Corrugated carton with 4c print"></label>
+      <label>Quantity hint<input type="text" name="quantity_hint" value="" placeholder="5000 boxes"></label>
+      <label>City<input type="text" name="city" value="{html.escape(company.get('city') or '')}" placeholder="Ho Chi Minh City"></label>
+      <label>Requested deadline<input type="text" name="requested_deadline" value="" placeholder="2026-04-25"></label>
+      <label>File required<select name="file_required">{_simple_options([('no', 'No'), ('yes', 'Yes')], 'no')}</select></label>
+      <label>File links<input type="text" name="file_links" value="" placeholder="https://... , https://..."></label>
+      <label>Notes<input type="text" name="notes" value=""></label>
+      <button type="submit">Create request draft</button>
+    </form>
+    """
+    request_drafts_block = '<div class="empty">No standalone request drafts yet. Start here before creating a request.</div>'
+    if request_drafts:
+        request_draft_rows = ''.join(
+            f"<tr><td><a class=\"strong-link\" href=\"/ui/request-drafts/{int(item.get('id') or 0)}\">Draft #{int(item.get('id') or 0)}</a></td><td>{_badge(_labelize(item.get('draft_type') or 'rfq_packaging'), 'accent')}</td><td>{html.escape(item.get('item_summary') or '—')}</td><td>{html.escape(item.get('requested_deadline') or '—')}</td><td>{_badge(_labelize(item.get('required_fields_state') or 'awaiting_data'), 'neutral')}</td><td>{_badge(_labelize(item.get('draft_status') or 'awaiting_data'), 'neutral')}</td></tr>"
+            for item in request_drafts
+        )
+        request_drafts_block = f"<table><thead><tr><th>Draft</th><th>Type</th><th>Item</th><th>Deadline</th><th>Required fields</th><th>Status</th></tr></thead><tbody>{request_draft_rows}</tbody></table>"
+
+    request_intakes_block = '<div class="empty">No standalone requests yet. Submit a ready draft to create the operator request record.</div>'
+    if request_intakes:
+        request_rows = ''.join(
+            f"<tr><td><a class=\"strong-link\" href=\"/ui/requests/{int(item.get('id') or 0)}\">{html.escape(item.get('request_code') or ('Request #' + str(int(item.get('id') or 0))))}</a></td><td>{_badge(_labelize(item.get('request_type') or 'rfq_packaging'), 'accent')}</td><td>{html.escape(item.get('source_channel') or '—')}</td><td>{html.escape(item.get('requested_deadline') or '—')}</td><td>{_badge(_labelize(item.get('request_status') or 'new'), 'neutral')}</td><td>{html.escape(item.get('customer_reference') or '—')}</td></tr>"
+            for item in request_intakes
+        )
+        request_intakes_block = f"<table><thead><tr><th>Request</th><th>Type</th><th>Source</th><th>Deadline</th><th>Status</th><th>Customer ref</th></tr></thead><tbody>{request_rows}</tbody></table>"
 
     account_option_pairs = [("", "No linked account")]
     if customer_account:
@@ -2569,6 +2940,11 @@ def _company_detail_page(data: dict[str, Any]) -> str:
       <div class="panel"><h2>Save customer account</h2><p class="muted">Standalone-owned customer identity used by opportunities and quote workbench.</p>{customer_account_form}</div>
     </section>
     <section class="grid two">
+      <div class="panel panel-accent" id="request-drafts"><div class="split"><div><h2>Request drafts</h2><p class="muted">Manual-first intake drafts that must pass required-field checks before they become standalone requests.</p></div><div><a class="button-link ghost" href="/ui/request-drafts?company_id={int(company.get('id') or 0)}">Open list</a></div></div>{request_drafts_block}</div>
+      <div class="panel"><h2>Create request draft</h2><p class="muted">Capture the raw intake first, then submit it into the request queue only when required fields are ready.</p>{request_draft_form}</div>
+    </section>
+    <section class="panel panel-accent" id="requests"><div class="split"><div><h2>Requests</h2><p class="muted">Standalone request records created from validated drafts. This is the foundation layer before quotes and production handoffs.</p></div><div><a class="button-link ghost" href="/ui/requests?company_id={int(company.get('id') or 0)}">Open request list</a></div></div>{request_intakes_block}</section>
+    <section class="grid two">
       <div class="panel panel-accent" id="opportunities"><div class="split"><div><h2>Opportunities</h2><p class="muted">Standalone lead/opportunity ownership for the active contour.</p></div><div><a class="button-link ghost" href="/ui/opportunities?company_id={int(company.get('id') or 0)}">Open list</a></div></div>{opportunities_block}</div>
       <div class="panel"><h2>Create opportunity</h2><p class="muted">Capture the commercial owner record here instead of depending on Odoo CRM lead ownership.</p>{opportunity_form}</div>
     </section>
@@ -2712,6 +3088,95 @@ def _commercial_pipeline_page(data: dict[str, Any]) -> str:
     return _layout("Commercial pipeline", body, active="commercial")
 
 
+def _request_drafts_page(data: dict[str, Any]) -> str:
+    company = data.get("company")
+    rows = []
+    for item in data["items"]:
+        row_company = item.get("company")
+        request = item.get("request")
+        company_cell = '<span class="muted">Unmatched</span>'
+        if row_company:
+            company_cell = f'<a class="strong-link" href="/ui/companies/{int(row_company.get("id") or 0)}">{html.escape(row_company.get("canonical_name") or "Company")}</a><div class="muted small">{html.escape(row_company.get("city") or "—")}</div>'
+        linked_request = _maybe_link(
+            (request or {}).get("request_code") or "—",
+            f"/ui/requests/{int(request.get('id') or 0)}" if request else None,
+        )
+        rows.append(
+            f"<tr>"
+            f"<td>{company_cell}</td>"
+            f"<td><a class=\"strong-link\" href=\"/ui/request-drafts/{int(item.get('id') or 0)}\">Draft #{int(item.get('id') or 0)}</a></td>"
+            f"<td>{_badge(_labelize(item.get('draft_type') or 'rfq_packaging'), 'accent')}</td>"
+            f"<td>{html.escape(item.get('item_summary') or '—')}</td>"
+            f"<td>{html.escape(item.get('requested_deadline') or '—')}</td>"
+            f"<td>{_badge(_labelize(item.get('required_fields_state') or 'awaiting_data'), 'neutral')}</td>"
+            f"<td>{_badge(_labelize(item.get('draft_status') or 'awaiting_data'), 'neutral')}</td>"
+            f"<td>{linked_request}</td>"
+            f"</tr>"
+        )
+    body_rows = ''.join(rows) or '<tr><td colspan="8" class="muted">No request drafts yet.</td></tr>'
+    company_hidden = f'<input type="hidden" name="company_id" value="{int(company.get("id") or 0)}">' if company else ''
+    company_label = f' for {html.escape(company.get("canonical_name") or "company")}' if company else ''
+    filters = f"""
+    <form method="get" action="/ui/request-drafts" class="toolbar">
+      {company_hidden}
+      <select name="status">{_simple_options([('', 'All statuses'), ('awaiting_data', 'Awaiting data'), ('ready_to_submit', 'Ready to submit'), ('blocked', 'Blocked'), ('archived', 'Archived'), ('submitted', 'Submitted')], data['status'])}</select>
+      <select name="draft_type">{_simple_options([('', 'All draft types'), ('rfq_packaging', 'RFQ packaging'), ('rfq_labels', 'RFQ labels'), ('rfq_printing', 'RFQ printing'), ('service_quote', 'Service quote'), ('sample_request', 'Sample request')], data['draft_type'])}</select>
+      <select name="limit">{_simple_options([('25','25 rows'),('50','50 rows'),('100','100 rows')], str(data['limit']))}</select>
+      <button type="submit">Apply</button>
+    </form>
+    """
+    table = f"<table><thead><tr><th>Company</th><th>Draft</th><th>Type</th><th>Item</th><th>Deadline</th><th>Required fields</th><th>Status</th><th>Request</th></tr></thead><tbody>{body_rows}</tbody></table>"
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Request drafts</p><h1>Standalone intake drafts{company_label}</h1><p class="lead">Manual-first intake drafts that must pass required-field checks before they become requests.</p></div><div class="panel panel-tight"><strong>{data['total']}</strong><span class="muted">drafts</span></div></section>
+    <section class="panel">{filters}{table}</section>
+    """
+    return _layout("Request drafts", body, active="drafts")
+
+
+def _requests_page(data: dict[str, Any]) -> str:
+    company = data.get("company")
+    rows = []
+    for item in data["items"]:
+        row_company = item.get("company")
+        draft = item.get("request_draft")
+        company_cell = '<span class="muted">Unmatched</span>'
+        if row_company:
+            company_cell = f'<a class="strong-link" href="/ui/companies/{int(row_company.get("id") or 0)}">{html.escape(row_company.get("canonical_name") or "Company")}</a><div class="muted small">{html.escape(row_company.get("city") or "—")}</div>'
+        draft_link = _maybe_link(
+            f"Draft #{int(draft.get('id') or 0)}" if draft else '—',
+            f"/ui/request-drafts/{int(draft.get('id') or 0)}" if draft else None,
+        )
+        rows.append(
+            f"<tr>"
+            f"<td>{company_cell}</td>"
+            f"<td><a class=\"strong-link\" href=\"/ui/requests/{int(item.get('id') or 0)}\">{html.escape(item.get('request_code') or ('Request #' + str(int(item.get('id') or 0))))}</a></td>"
+            f"<td>{_badge(_labelize(item.get('request_type') or 'rfq_packaging'), 'accent')}</td>"
+            f"<td>{html.escape(item.get('source_channel') or '—')}</td>"
+            f"<td>{html.escape(item.get('requested_deadline') or '—')}</td>"
+            f"<td>{_badge(_labelize(item.get('request_status') or 'new'), 'neutral')}</td>"
+            f"<td>{draft_link}</td>"
+            f"</tr>"
+        )
+    body_rows = ''.join(rows) or '<tr><td colspan="7" class="muted">No requests yet.</td></tr>'
+    company_hidden = f'<input type="hidden" name="company_id" value="{int(company.get("id") or 0)}">' if company else ''
+    company_label = f' for {html.escape(company.get("canonical_name") or "company")}' if company else ''
+    filters = f"""
+    <form method="get" action="/ui/requests" class="toolbar">
+      {company_hidden}
+      <select name="status">{_simple_options([('', 'All statuses'), ('new', 'New'), ('needs_review', 'Needs review'), ('needs_clarification', 'Needs clarification'), ('supplier_search', 'Supplier search'), ('offer_prep', 'Offer prep'), ('offer_sent', 'Offer sent'), ('converted_to_order', 'Converted to order'), ('cancelled', 'Cancelled')], data['status'])}</select>
+      <select name="request_type">{_simple_options([('', 'All request types'), ('rfq_packaging', 'RFQ packaging'), ('rfq_labels', 'RFQ labels'), ('rfq_printing', 'RFQ printing'), ('service_quote', 'Service quote'), ('sample_request', 'Sample request')], data['request_type'])}</select>
+      <select name="limit">{_simple_options([('25','25 rows'),('50','50 rows'),('100','100 rows')], str(data['limit']))}</select>
+      <button type="submit">Apply</button>
+    </form>
+    """
+    table = f"<table><thead><tr><th>Company</th><th>Request</th><th>Type</th><th>Source</th><th>Deadline</th><th>Status</th><th>Draft</th></tr></thead><tbody>{body_rows}</tbody></table>"
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Requests</p><h1>Standalone intake requests{company_label}</h1><p class="lead">Validated request records created from drafts before pricing and production flow continue.</p></div><div class="panel panel-tight"><strong>{data['total']}</strong><span class="muted">requests</span></div></section>
+    <section class="panel">{filters}{table}</section>
+    """
+    return _layout("Requests", body, active="requests")
+
+
 def _opportunities_page(data: dict[str, Any]) -> str:
     company = data.get("company")
     rows = []
@@ -2792,6 +3257,75 @@ def _quote_pipeline_page(data: dict[str, Any]) -> str:
     <section class="panel">{filters}{table}</section>
     """
     return _layout("Quote intents", body, active="quotes")
+
+
+def _request_draft_detail_page(data: dict[str, Any]) -> str:
+    record = data["request_draft"]
+    company = data.get("company")
+    request = data.get("request")
+    audit = data.get("audit") or []
+    action_links = ['<a class="button-link ghost" href="/ui/request-drafts">Back to request drafts</a>']
+    if company:
+        action_links.append(f'<a class="button-link ghost" href="/ui/companies/{int(company.get("id") or 0)}">Back to company workbench</a>')
+    if request:
+        action_links.append(f'<a class="button-link ghost" href="/ui/requests/{int(request.get("id") or 0)}">Open linked request</a>')
+    file_links_block = '<div class="empty">No file links yet.</div>'
+    if record.get("file_links"):
+        file_links_block = '<ul class="link-list">' + ''.join(f'<li>{_external_link(item)}</li>' for item in record.get("file_links") or []) + '</ul>'
+    blocking_block = _chips(record.get("blocking_reasons") or [], tone='warn') or '<span class="muted">No blocking reasons</span>'
+    linked_request_block = '<div class="empty">This draft has not been submitted into a request yet.</div>'
+    if request:
+        linked_request_block = _dict_table({
+            "request_code": request.get("request_code"),
+            "request_status": request.get("request_status"),
+            "source_channel": request.get("source_channel"),
+            "requested_deadline": request.get("requested_deadline"),
+        })
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Request draft</p><h1>Draft #{int(record.get('id') or 0)}</h1><p class="lead">Manual intake draft before the request becomes a standalone-owned operator record.</p></div><div class="panel panel-tight"><div class="button-row">{' '.join(action_links)}</div></div></section>
+    <section class="grid two">
+      <div class="panel"><h2>Draft summary</h2>{_dict_table({"draft_type": record.get("draft_type"), "customer_name": record.get("customer_name"), "customer_email": record.get("customer_email"), "customer_phone": record.get("customer_phone"), "item_summary": record.get("item_summary"), "quantity_hint": record.get("quantity_hint"), "city": record.get("city"), "requested_deadline": record.get("requested_deadline"), "required_fields_state": record.get("required_fields_state"), "draft_status": record.get("draft_status"), "owner": record.get("owner")})}</div>
+      <div class="panel"><h2>Validation + files</h2><div class="detail-grid"><div><span class="field-label">Blocking reasons</span><div class="field-value">{blocking_block}</div></div><div><span class="field-label">File required</span><div class="field-value">{_bool_badge(bool(record.get("file_required")), 'Yes', 'No')}</div></div><div class="span-2"><span class="field-label">File links</span><div class="field-value">{file_links_block}</div></div></div><h2 class="kicker">Linked request</h2>{linked_request_block}</div>
+    </section>
+    <section class="grid two">
+      <div class="panel"><h2>Update draft</h2><form method="post" action="/ui/actions/request-drafts/{int(record.get('id') or 0)}" class="stack"><label>Draft type<select name="draft_type">{_simple_options([('rfq_packaging', 'RFQ packaging'), ('rfq_labels', 'RFQ labels'), ('rfq_printing', 'RFQ printing'), ('service_quote', 'Service quote'), ('sample_request', 'Sample request')], str(record.get('draft_type') or 'rfq_packaging'))}</select></label><label>Customer name<input type="text" name="customer_name" value="{html.escape(record.get('customer_name') or '')}"></label><label>Customer email<input type="text" name="customer_email" value="{html.escape(record.get('customer_email') or '')}"></label><label>Customer phone<input type="text" name="customer_phone" value="{html.escape(record.get('customer_phone') or '')}"></label><label>Item summary<input type="text" name="item_summary" value="{html.escape(record.get('item_summary') or '')}"></label><label>Quantity hint<input type="text" name="quantity_hint" value="{html.escape(record.get('quantity_hint') or '')}"></label><label>City<input type="text" name="city" value="{html.escape(record.get('city') or '')}"></label><label>Requested deadline<input type="text" name="requested_deadline" value="{html.escape(record.get('requested_deadline') or '')}"></label><label>File required<select name="file_required">{_simple_options([('no', 'No'), ('yes', 'Yes')], 'yes' if record.get('file_required') else 'no')}</select></label><label>File links<textarea name="file_links" rows="4" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{html.escape(chr(10).join(record.get('file_links') or []))}</textarea></label><label>Draft status<select name="draft_status">{_simple_options([('', 'Auto from required fields'), ('blocked', 'Blocked'), ('archived', 'Archived')], '')}</select></label><label>Notes<input type="text" name="notes" value="{html.escape(record.get('notes') or '')}"></label><button type="submit">Save request draft</button></form></div>
+      <div class="panel panel-accent"><h2>Submit into request</h2><p class="muted">Only ready drafts should cross into standalone request state.</p><form method="post" action="/ui/actions/request-drafts/{int(record.get('id') or 0)}/submit" class="stack"><label>Source channel<input type="text" name="source_channel" value="manual_operator"></label><label>Customer reference<input type="text" name="customer_reference" value=""></label><label>Request status<select name="request_status">{_simple_options([('new', 'New'), ('needs_review', 'Needs review'), ('needs_clarification', 'Needs clarification'), ('supplier_search', 'Supplier search'), ('offer_prep', 'Offer prep')], 'new')}</select></label><label>Notes<input type="text" name="notes" value="{html.escape(record.get('notes') or '')}"></label><button type="submit">Create request from draft</button></form></div>
+    </section>
+    <section class="panel"><h2>Commercial audit</h2>{_commercial_audit_table(audit)}</section>
+    """
+    return _layout(f"Request draft #{int(record.get('id') or 0)}", body, active="drafts")
+
+
+def _request_detail_page(data: dict[str, Any]) -> str:
+    record = data["request"]
+    company = data.get("company")
+    draft = data.get("request_draft")
+    audit = data.get("audit") or []
+    action_links = ['<a class="button-link ghost" href="/ui/requests">Back to requests</a>']
+    if company:
+        action_links.append(f'<a class="button-link ghost" href="/ui/companies/{int(company.get("id") or 0)}">Back to company workbench</a>')
+    if draft:
+        action_links.append(f'<a class="button-link ghost" href="/ui/request-drafts/{int(draft.get("id") or 0)}">Back to draft</a>')
+    linked_draft_block = '<div class="empty">No draft linkage stored for this request.</div>'
+    if draft:
+        linked_draft_block = _dict_table({
+            "draft_id": draft.get("id"),
+            "draft_type": draft.get("draft_type"),
+            "required_fields_state": draft.get("required_fields_state"),
+            "draft_status": draft.get("draft_status"),
+        })
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Request</p><h1>{html.escape(record.get('request_code') or f'Request #{int(record.get("id") or 0)}')}</h1><p class="lead">Standalone operator request created from a validated intake draft.</p></div><div class="panel panel-tight"><div class="button-row">{' '.join(action_links)}</div></div></section>
+    <section class="grid two">
+      <div class="panel"><h2>Request summary</h2>{_dict_table({"request_code": record.get("request_code"), "request_type": record.get("request_type"), "source_channel": record.get("source_channel"), "customer_name": record.get("customer_name"), "customer_email": record.get("customer_email"), "customer_phone": record.get("customer_phone"), "customer_reference": record.get("customer_reference"), "item_summary": record.get("item_summary"), "quantity_hint": record.get("quantity_hint"), "city": record.get("city"), "requested_deadline": record.get("requested_deadline"), "request_status": record.get("request_status"), "owner": record.get("owner")})}</div>
+      <div class="panel"><h2>Linked draft</h2>{linked_draft_block}<h2 class="kicker">Reasons</h2>{_chips(record.get("reasons") or [], tone='neutral') or '<span class="muted">No reasons recorded</span>'}</div>
+    </section>
+    <section class="grid two">
+      <div class="panel"><h2>Update request</h2><form method="post" action="/ui/actions/requests/{int(record.get('id') or 0)}" class="stack"><label>Request type<select name="request_type">{_simple_options([('rfq_packaging', 'RFQ packaging'), ('rfq_labels', 'RFQ labels'), ('rfq_printing', 'RFQ printing'), ('service_quote', 'Service quote'), ('sample_request', 'Sample request')], str(record.get('request_type') or 'rfq_packaging'))}</select></label><label>Source channel<input type="text" name="source_channel" value="{html.escape(record.get('source_channel') or '')}"></label><label>Customer name<input type="text" name="customer_name" value="{html.escape(record.get('customer_name') or '')}"></label><label>Customer email<input type="text" name="customer_email" value="{html.escape(record.get('customer_email') or '')}"></label><label>Customer phone<input type="text" name="customer_phone" value="{html.escape(record.get('customer_phone') or '')}"></label><label>Customer reference<input type="text" name="customer_reference" value="{html.escape(record.get('customer_reference') or '')}"></label><label>Item summary<input type="text" name="item_summary" value="{html.escape(record.get('item_summary') or '')}"></label><label>Quantity hint<input type="text" name="quantity_hint" value="{html.escape(record.get('quantity_hint') or '')}"></label><label>City<input type="text" name="city" value="{html.escape(record.get('city') or '')}"></label><label>Requested deadline<input type="text" name="requested_deadline" value="{html.escape(record.get('requested_deadline') or '')}"></label><label>Status<select name="request_status">{_simple_options([('new', 'New'), ('needs_review', 'Needs review'), ('needs_clarification', 'Needs clarification'), ('supplier_search', 'Supplier search'), ('offer_prep', 'Offer prep'), ('offer_sent', 'Offer sent'), ('converted_to_order', 'Converted to order'), ('cancelled', 'Cancelled')], str(record.get('request_status') or 'new'))}</select></label><label>Notes<input type="text" name="notes" value="{html.escape(record.get('notes') or '')}"></label><button type="submit">Save request</button></form></div>
+      <div class="panel"><h2>Commercial audit</h2>{_commercial_audit_table(audit)}</div>
+    </section>
+    """
+    return _layout(html.escape(record.get('request_code') or f"Request #{int(record.get('id') or 0)}"), body, active="requests")
 
 
 def _opportunity_detail_page(data: dict[str, Any]) -> str:
@@ -3343,6 +3877,40 @@ def _decision_result_page(data: dict[str, Any]) -> str:
     return _layout("Decision applied", body, active="companies")
 
 
+def _request_draft_result_page(data: dict[str, Any], updated: bool = False) -> str:
+    company = data["company"]
+    record = data["request_draft"]
+    title = "Request draft saved" if updated else "Request draft created"
+    lead = (
+        "The intake draft was updated and its readiness state was recalculated from the required fields."
+        if updated
+        else "The intake draft now exists in standalone and can be promoted into a request only after it passes the required-field checks."
+    )
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Standalone intake action</p><h1>{title}</h1><p class="lead">{lead}</p></div><div class="panel panel-tight"><div class="button-row"><a class="button-link" href="/ui/companies/{int(company.get('id') or 0)}">Back to company workbench</a><a class="button-link ghost" href="/ui/request-drafts/{int(record.get('id') or 0)}">Open request draft</a><a class="button-link ghost" href="/ui/request-drafts?company_id={int(company.get('id') or 0)}">Open draft list</a></div></div></section>
+    <section class="grid two"><div class="panel"><h2>Company</h2>{_dict_table({"canonical_name": company.get("canonical_name"), "canonical_key": company.get("canonical_key")})}</div><div class="panel"><h2>Request draft</h2>{_dict_table({"draft_type": record.get("draft_type"), "item_summary": record.get("item_summary"), "requested_deadline": record.get("requested_deadline"), "required_fields_state": record.get("required_fields_state"), "draft_status": record.get("draft_status"), "blocking_reasons": ", ".join(record.get("blocking_reasons") or []) or "—"})}</div></section>
+    """
+    return _layout(title, body, active="drafts")
+
+
+def _request_result_page(data: dict[str, Any], updated: bool = False, created_from_draft: bool = False) -> str:
+    company = data["company"]
+    record = data["request"]
+    title = "Request saved" if updated else "Request created"
+    if created_from_draft:
+        title = "Request created from draft"
+    lead = (
+        "The standalone request was updated here without collapsing it back into quote or ERP order state."
+        if updated
+        else "The validated intake draft is now a standalone request record and can continue through the operator workflow."
+    )
+    body = f"""
+    <section class="hero compact"><div><p class="eyebrow">Standalone request action</p><h1>{title}</h1><p class="lead">{lead}</p></div><div class="panel panel-tight"><div class="button-row"><a class="button-link" href="/ui/companies/{int(company.get('id') or 0)}">Back to company workbench</a><a class="button-link ghost" href="/ui/requests/{int(record.get('id') or 0)}">Open request</a><a class="button-link ghost" href="/ui/requests?company_id={int(company.get('id') or 0)}">Open request list</a></div></div></section>
+    <section class="grid two"><div class="panel"><h2>Company</h2>{_dict_table({"canonical_name": company.get("canonical_name"), "canonical_key": company.get("canonical_key")})}</div><div class="panel"><h2>Request</h2>{_dict_table({"request_code": record.get("request_code"), "request_type": record.get("request_type"), "source_channel": record.get("source_channel"), "requested_deadline": record.get("requested_deadline"), "request_status": record.get("request_status"), "customer_reference": record.get("customer_reference"), "item_summary": record.get("item_summary")})}</div></section>
+    """
+    return _layout(title, body, active="requests")
+
+
 def _commercial_result_page(data: dict[str, Any]) -> str:
     company = data["company"]
     record = data["commercial_record"]
@@ -3448,6 +4016,8 @@ def _layout(title: str, body: str, active: str) -> str:
             {_nav_link('dashboard', '/', 'Dashboard', active)}
             {_nav_link('companies', '/ui/companies', 'Companies', active)}
             {_nav_link('commercial', '/ui/commercial-pipeline', 'Commercial', active)}
+            {_nav_link('drafts', '/ui/request-drafts', 'Drafts', active)}
+            {_nav_link('requests', '/ui/requests', 'Requests', active)}
             {_nav_link('quotes', '/ui/quote-intents', 'Quotes', active)}
             {_nav_link('handoffs', '/ui/production-handoffs', 'Handoffs', active)}
             {_nav_link('production-board', '/ui/production-board', 'Production', active)}
@@ -3765,6 +4335,10 @@ def _optional_int(value: Any) -> int | None:
     if value in {None, ""}:
         return None
     return int(value)
+
+
+def _split_multiline_values(value: Any) -> list[str]:
+    return [item.strip() for item in re.split(r"[\n,]+", str(value or "")) if item.strip()]
 
 
 def _optional_float(value: Any) -> float | None:
