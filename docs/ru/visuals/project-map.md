@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 08:29 +07``
+Обновлено: ``2026-04-17 08:46 +07``
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
+- Текущий фокус: Audited standalone documentation and removed the remaining English drift from the Russian code map.
+- Последний подтверждённый статус workflow: PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`
+- Главный операционный риск: Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
 
 ## Автоматические контуры контроля
 

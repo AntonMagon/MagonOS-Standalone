@@ -126,10 +126,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 08:29 +07`
-- Current focus: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
+- Auto-synced at: `2026-04-17 08:46 +07`
+- Current focus: Audited standalone documentation and removed the remaining English drift from the Russian code map.
+- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
 - Validated contour:
   - company
   - commercial/customer context

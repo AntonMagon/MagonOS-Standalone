@@ -60,15 +60,25 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 08:29 +07`
+- Updated at: `2026-04-17 08:46 +07`
 - Branch: `develop`
-- Current focus: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
+- Current focus: Audited standalone documentation and removed the remaining English drift from the Russian code map.
+- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 08:46 +07 | develop
+- Summary: Audited standalone documentation and removed the remaining English drift from the Russian code map.
+- Changed:
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/restore_context.sh --check`
+  - PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
 ### 2026-04-17 08:29 +07 | develop
 - Summary: Optimized standalone UI checks for a low-memory MacBook by keeping browser inspection manual, single-window, and outside the default verify path.
 - Changed:
