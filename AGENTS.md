@@ -109,8 +109,8 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 09:10 +07`
-- Current focus: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Auto-synced at: `2026-04-17 09:29 +07`
+- Current focus: Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
 - Biggest operational risk: no additional risk recorded
 - Validated contour:
@@ -134,6 +134,7 @@ A task is done only when:
   - Weekly Release Gate
 - Repo-local operating skills:
   - audit-docs-vs-runtime
+  - automation-context-guard
   - ci-watch-fix
   - docs-sync-curator
   - donor-boundary-audit

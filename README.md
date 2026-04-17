@@ -126,8 +126,8 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 09:10 +07`
-- Current focus: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Auto-synced at: `2026-04-17 09:29 +07`
+- Current focus: Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
 - Biggest operational risk: no additional risk recorded
 - Validated contour:

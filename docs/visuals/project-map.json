@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 09:10 +07`",
+  "generated_at": "`2026-04-17 09:29 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 09:10 +07`",
+    "updated_at": "`2026-04-17 09:29 +07`",
     "branch": "`develop`",
-    "current_focus": "Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.",
+    "current_focus": "Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.",
     "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh`",
     "biggest_operational_risk": "no additional risk recorded"
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 09:29 +07 | develop",
+      "summary": "Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 09:10 +07 | develop",
       "summary": "Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.",
@@ -79,15 +84,11 @@
       "heading": "2026-04-17 08:55 +07 | develop",
       "summary": "Extended the Russian locale guard so it also blocks bad hybrid technical copy in the Russian docs and shell layer.",
       "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 08:46 +07 | develop",
-      "summary": "Audited standalone documentation and removed the remaining English drift from the Russian code map.",
-      "risk": "See worklog entry"
     }
   ],
   "skills": [
     "audit-docs-vs-runtime",
+    "automation-context-guard",
     "ci-watch-fix",
     "docs-sync-curator",
     "donor-boundary-audit",

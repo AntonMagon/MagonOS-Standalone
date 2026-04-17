@@ -108,6 +108,7 @@ task checks:periodic
 - file-watch autosync реагирует сразу на реальные изменения файлов
 - локальный `launchd`-runner каждые `1800` секунд держит тихий maintenance-контур
 - Codex automations работают как inbox-facing аудиты и review, а не как дубль локального runner
+- все Codex automations теперь должны опираться на единый meta-skill `automation-context-guard`, чтобы они тянули один и тот же repo context и одинаковые канонические команды
 
 Правильная хронология теперь такая:
 

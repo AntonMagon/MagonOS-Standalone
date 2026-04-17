@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 09:10 +07``
+Обновлено: ``2026-04-17 09:29 +07``
 
 ## Контур движения
 
@@ -48,7 +48,7 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Текущий фокус: Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.
 - Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`
 - Главный операционный риск: no additional risk recorded
 
@@ -64,6 +64,7 @@ flowchart LR
 ## Активные project skills
 
 - audit-docs-vs-runtime
+- automation-context-guard
 - ci-watch-fix
 - docs-sync-curator
 - donor-boundary-audit

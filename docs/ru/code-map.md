@@ -365,6 +365,15 @@ Installer постоянного Watchman trigger для этого репози
 
 Тут живут Codex cron-автоматизации, которые не заменяют локальный `launchd`, а дают inbox-facing контроль поверх репозитория.
 
+Общий meta-skill для них теперь один:
+- `automation-context-guard`
+
+Его задача:
+- всегда стартовать с `./scripts/restore_context.sh --check`
+- тянуть один и тот же repo context bundle
+- заставлять automation доверять каноническим файлам и командам, а не собственной интерпретации
+- не давать дневным audit/review слоям жить "от башки"
+
 Текущий рабочий набор:
 - `Platform Smoke 2h`
 - `Repo Guard 3h`
