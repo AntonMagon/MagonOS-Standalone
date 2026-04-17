@@ -72,11 +72,14 @@ def main() -> int:
         # RU: Периодический контур intentionally легче полного verify: он держит sync/smoke/perf под контролем без тяжёлого тестового прогона каждые 30 минут.
         results.append(_run(["./.venv/bin/python", "scripts/sync_operating_docs.py"], repo_root))
         results.append(_run(["./.venv/bin/python", "scripts/update_project_visual_map.py"], repo_root))
+        # RU: Локальный русский source-of-truth проверяем всегда, даже если runtime сейчас не поднят: это быстрый guard против полуанглийских docs/messages.
+        results.append(_run(["./.venv/bin/python", "scripts/check_russian_locale_integrity.py", "--static-only"], repo_root))
 
         backend_alive = _alive(f"{backend_url}/health")
         web_alive = _alive(f"{web_url}/")
         if backend_alive and web_alive:
             results.append(_run(["./scripts/platform_smoke_check.sh", backend_url, web_url], repo_root))
+            results.append(_run(["./.venv/bin/python", "scripts/check_russian_locale_integrity.py", "--web-url", web_url], repo_root))
             results.append(_run(["./scripts/run_perf_suite.sh", "smoke"], repo_root))
         else:
             # RU: Периодический runner не должен падать только потому, что локальная платформа сейчас не поднята; это нормальный idle-state машины.

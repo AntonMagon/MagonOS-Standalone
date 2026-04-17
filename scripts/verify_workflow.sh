@@ -42,16 +42,20 @@ bash -n \
   .githooks/pre-push
 
 ./.venv/bin/python -m py_compile \
+  scripts/check_russian_locale_integrity.py \
   scripts/render_launchd_periodic_checks.py \
   scripts/run_repo_autosync.py \
   scripts/run_periodic_checks.py \
   scripts/sync_operating_docs.py \
+  src/magon_standalone/locale_integrity.py \
   src/magon_standalone/launchd_periodic_checks.py \
   src/magon_standalone/observability.py \
   src/magon_standalone/repo_autosync.py \
   src/magon_standalone/operating_docs_sync.py
 
 ./.venv/bin/python scripts/sync_operating_docs.py --check
+# RU: Статический locale-guard режет verify ещё до runtime, если русский source-of-truth снова протёк английскими доменными ярлыками.
+./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
 
 ./.venv/bin/python -m unittest \
   tests.test_persistence \
@@ -61,6 +65,7 @@ bash -n \
   tests.test_deploy \
   tests.test_launchd_periodic_checks \
   tests.test_observability \
+  tests.test_locale_integrity \
   tests.test_repo_autosync \
   tests.test_repo_workflow \
   tests.test_operating_docs_sync \

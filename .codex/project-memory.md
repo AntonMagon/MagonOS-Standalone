@@ -60,15 +60,29 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 06:50 +07`
+- Updated at: `2026-04-17 07:43 +07`
 - Branch: `develop`
-- Current focus: Keep runtime automation green while architecture work continues
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell.
+- Current focus: Keep Russian shell text and docs from drifting while architecture work continues
+- Last verified workflow status: PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Biggest operational risk: The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 07:43 +07 | develop
+- Summary: Added automatic Russian locale guard for source-of-truth and live shell routes
+- Changed:
+  - scripts/check_russian_locale_integrity.py and src/magon_standalone/locale_integrity.py
+  - scripts/verify_workflow.sh and scripts/run_periodic_checks.py locale guard integration
+  - docs/ru current-state and project-map Russian source cleanup
+  - RU Locale Guard Codex automation
+- Verified:
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Risk:
+  - The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
 ### 2026-04-17 06:50 +07 | develop
 - Summary: Stabilized full-project audit runtime across web, perf, and periodic checks
 - Changed:

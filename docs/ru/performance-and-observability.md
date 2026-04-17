@@ -22,9 +22,13 @@
   Лёгкий периодический контур, который:
   - синхронизирует root docs
   - пересобирает visual map
+  - проверяет русский source-of-truth
   - проверяет живость платформы
+  - проверяет русский shell на ключевых маршрутах
   - запускает k6 smoke, если платформа жива
   Его liveness-probe теперь терпимее к холодному dev runtime и не краснеет только из-за первого долгого compile.
+- `scripts/check_russian_locale_integrity.py`
+  Жёсткий locale-guard для `apps/web/messages/ru.json`, `docs/ru/current-project-state.md`, `docs/ru/visuals/*` и живых маршрутов `/`, `/dashboard`, `/ops-workbench`, `/project-map`.
 - `scripts/install_launchd_periodic_checks.sh`
   Ставит локальный macOS LaunchAgent.
 - `scripts/launchd_periodic_checks_status.sh`
@@ -70,6 +74,7 @@ task perf:smoke
 task perf:load
 task perf:stress
 task checks:periodic
+./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
 ```
 
 ## Локальный periodic runner

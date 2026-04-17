@@ -197,6 +197,24 @@ Desktop launcher-обёртка для локального старта с Find
 - `docs/visuals/project-map.md`
 - `docs/visuals/project-map.json`
 
+### `scripts/check_russian_locale_integrity.py`
+
+Жёсткий guard для русского слоя.
+
+Проверяет versioned source-of-truth:
+- `apps/web/messages/ru.json`
+- `docs/ru/current-project-state.md`
+- `docs/ru/visuals/project-map.md`
+- `docs/ru/visuals/project-map.json`
+
+Если передан `--web-url`, дополнительно проходит живые страницы:
+- `/`
+- `/dashboard`
+- `/ops-workbench`
+- `/project-map`
+
+И режет проход, если в русском shell всплыли английские доменные ярлыки вроде `company`, `review queue`, `feedback ledger / projection` или `quote intent / RFQ boundary`.
+
 ### `scripts/run_playwright_cli.sh`
 
 Project-safe wrapper вокруг установленного `playwright` skill.
@@ -243,7 +261,9 @@ Project-safe wrapper вокруг установленного `playwright` skil
 Нужен, чтобы локальная машина сама периодически фиксировала:
 - синхронность root docs
 - актуальность visual map
+- чистоту русского source-of-truth
 - живость платформы
+- утечки английских доменных ярлыков в русском shell
 - k6 smoke при живом runtime
 
 ### `scripts/install_launchd_periodic_checks.sh`

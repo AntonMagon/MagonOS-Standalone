@@ -13,39 +13,39 @@
 
 ## Что уже подтверждено в standalone-контуре
 
-- company
-- commercial/customer context
-- opportunity
-- quote intent / RFQ boundary
-- production handoff
-- production board
+- компания
+- коммерческий контекст клиента
+- сделка
+- заявка на расчёт / граница RFQ
+- передача в производство
+- производственная доска
 
 ## Что уже принадлежит standalone
 
-- supplier intelligence pipeline
-- normalization / enrichment / dedup / scoring
-- review queue
-- routing / qualification decisions
-- feedback ledger / projection
-- workforce estimation
+- конвейер проверки и обогащения поставщиков
+- нормализация / обогащение / дедупликация / скоринг
+- очередь проверки
+- маршрутизация / квалификационные решения
+- журнал обратной связи / проекция
+- оценка трудозатрат
 
 ## Где сейчас опасный overlap
 
 Главный незакрытый overlap сейчас в этих зонах:
-- customer/account identity
-- opportunity/lead ownership
-- RFQ / quote boundary
+- идентичность клиента / аккаунта
+- владение сделкой / лидом
+- граница RFQ / расчёта
 
 Нельзя делать вид, что уже есть полный CRM/quote parity.
 
 ## Что по умолчанию вне scope
 
-- accounting
-- invoice / payment
-- full ERP order management
-- giant generic CRM
-- broad Odoo entity mirroring
-- source repo feature growth
+- бухгалтерия
+- счета / оплаты
+- полное ERP-управление заказами
+- огромная универсальная CRM
+- широкое зеркалирование сущностей Odoo
+- рост функциональности donor-репозитория
 
 ## Канонические команды
 

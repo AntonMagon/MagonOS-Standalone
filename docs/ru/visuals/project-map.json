@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 06:50 +07`",
+  "generated_at": "`2026-04-17 07:43 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -13,12 +13,12 @@
     "production board"
   ],
   "validated_contour_ru": [
-    "company",
-    "commercial/customer context",
-    "opportunity",
-    "quote intent / RFQ boundary",
-    "production handoff",
-    "production board"
+    "компания",
+    "коммерческий контекст клиента",
+    "сделка",
+    "заявка на расчёт / граница RFQ",
+    "передача в производство",
+    "производственная доска"
   ],
   "owned_capabilities_en": [
     "supplier intelligence pipeline",
@@ -29,12 +29,12 @@
     "workforce estimation"
   ],
   "owned_capabilities_ru": [
-    "supplier intelligence pipeline",
-    "normalization / enrichment / dedup / scoring",
-    "review queue",
-    "routing / qualification decisions",
-    "feedback ledger / projection",
-    "workforce estimation"
+    "конвейер проверки и обогащения поставщиков",
+    "нормализация / обогащение / дедупликация / скоринг",
+    "очередь проверки",
+    "маршрутизация / квалификационные решения",
+    "журнал обратной связи / проекция",
+    "оценка трудозатрат"
   ],
   "danger_overlap_en": [
     "customer/account identity",
@@ -42,9 +42,9 @@
     "RFQ / quote boundary"
   ],
   "danger_overlap_ru": [
-    "customer/account identity",
-    "opportunity/lead ownership",
-    "RFQ / quote boundary"
+    "идентичность клиента / аккаунта",
+    "владение сделкой / лидом",
+    "граница RFQ / расчёта"
   ],
   "out_of_scope_en": [
     "accounting",
@@ -55,21 +55,26 @@
     "source repo feature growth"
   ],
   "out_of_scope_ru": [
-    "accounting",
-    "invoice / payment",
-    "full ERP order management",
-    "giant generic CRM",
-    "broad Odoo entity mirroring",
-    "source repo feature growth"
+    "бухгалтерия",
+    "счета / оплаты",
+    "полное ERP-управление заказами",
+    "огромная универсальная CRM",
+    "широкое зеркалирование сущностей Odoo",
+    "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 06:50 +07`",
+    "updated_at": "`2026-04-17 07:43 +07`",
     "branch": "`develop`",
-    "current_focus": "Keep runtime automation green while architecture work continues",
-    "last_verified_workflow_status": "PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell."
+    "current_focus": "Keep Russian shell text and docs from drifting while architecture work continues",
+    "last_verified_workflow_status": "PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`",
+    "biggest_operational_risk": "The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 07:43 +07 | develop",
+      "summary": "Added automatic Russian locale guard for source-of-truth and live shell routes",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 06:50 +07 | develop",
       "summary": "Stabilized full-project audit runtime across web, perf, and periodic checks",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 06:08 +07 | develop",
       "summary": "Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 05:58 +07 | develop",
-      "summary": "Added periodic-run overlap lock and staggered Codex automation cadence",
       "risk": "See worklog entry"
     }
   ],
@@ -103,6 +103,7 @@
   "automations": [
     "Hourly Repo Guard",
     "Hourly Platform Smoke",
+    "RU Locale Guard",
     "Hourly Visual Map",
     "Weekly Release Gate",
     "Launchd Periodic Checks"

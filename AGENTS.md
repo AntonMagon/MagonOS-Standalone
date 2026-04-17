@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 06:50 +07`
-- Current focus: Keep runtime automation green while architecture work continues
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell.
+- Auto-synced at: `2026-04-17 07:43 +07`
+- Current focus: Keep Russian shell text and docs from drifting while architecture work continues
+- Last verified workflow status: PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Biggest operational risk: The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
 - Validated contour:
   - company
   - commercial/customer context
@@ -124,6 +124,7 @@ A task is done only when:
   - Platform Smoke 2h
   - Repo Guard 3h
   - Visual Map 6h
+  - RU Locale Guard
   - Weekly Release Gate
 - Repo-local operating skills:
   - audit-docs-vs-runtime

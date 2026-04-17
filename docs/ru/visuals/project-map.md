@@ -1,61 +1,62 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 06:50 +07``
+Обновлено: ``2026-04-17 07:43 +07``
 
 ## Контур движения
 
 ```mermaid
 flowchart LR
-  Company["Company"] --> Customer["Customer Account"]
-  Customer --> Opportunity["Opportunity"]
-  Opportunity --> Quote["Quote Intent / RFQ"]
-  Quote --> Handoff["Production Handoff"]
-  Handoff --> Board["Production Board"]
+  Company["Компания"] --> Customer["Клиентский аккаунт"]
+  Customer --> Opportunity["Сделка"]
+  Opportunity --> Quote["Заявка на расчёт / RFQ"]
+  Quote --> Handoff["Передача в производство"]
+  Handoff --> Board["Производственная доска"]
 ```
 
 ## Что уже принадлежит standalone
 
-- supplier intelligence pipeline
-- normalization / enrichment / dedup / scoring
-- review queue
-- routing / qualification decisions
-- feedback ledger / projection
-- workforce estimation
+- конвейер проверки и обогащения поставщиков
+- нормализация / обогащение / дедупликация / скоринг
+- очередь проверки
+- маршрутизация / квалификационные решения
+- журнал обратной связи / проекция
+- оценка трудозатрат
 
 ## Что сейчас является ядром контура
 
-- company
-- commercial/customer context
-- opportunity
-- quote intent / RFQ boundary
-- production handoff
-- production board
+- компания
+- коммерческий контекст клиента
+- сделка
+- заявка на расчёт / граница RFQ
+- передача в производство
+- производственная доска
 
 ## Где остаётся риск overlap
 
-- customer/account identity
-- opportunity/lead ownership
-- RFQ / quote boundary
+- идентичность клиента / аккаунта
+- владение сделкой / лидом
+- граница RFQ / расчёта
 
 ## Что не должно расползаться в scope
 
-- accounting
-- invoice / payment
-- full ERP order management
-- giant generic CRM
-- broad Odoo entity mirroring
-- source repo feature growth
+- бухгалтерия
+- счета / оплаты
+- полное ERP-управление заказами
+- огромная универсальная CRM
+- широкое зеркалирование сущностей Odoo
+- рост функциональности donor-репозитория
 
 ## Активный контекст
 
-- Current focus: Keep runtime automation green while architecture work continues
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`, PASS `cd apps/web && npm run build`, PASS `./scripts/platform_smoke_check.sh`, PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell.
+- Текущий фокус: Keep Russian shell text and docs from drifting while architecture work continues
+- Последний подтверждённый статус workflow: PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Главный операционный риск: The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
 
 ## Автоматические контуры контроля
 
 - Hourly Repo Guard
 - Hourly Platform Smoke
+- RU Locale Guard
 - Hourly Visual Map
 - Weekly Release Gate
 - Launchd Periodic Checks

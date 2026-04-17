@@ -236,9 +236,9 @@
     "recentLabel": "Последние движения",
     "recentTitle": "Что недавно менялось в проекте",
     "metrics": {
-      "skills": "Skills",
+      "skills": "Скиллы",
       "skillsDetail": "Активные project-specific skills",
-      "automations": "Automations",
+      "automations": "Автоматизации",
       "automationsDetail": "Контуры автоматического контроля",
       "worklog": "Worklog",
       "worklogDetail": "Последние зафиксированные изменения"
