@@ -60,15 +60,27 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 08:46 +07`
+- Updated at: `2026-04-17 08:55 +07`
 - Branch: `develop`
-- Current focus: Audited standalone documentation and removed the remaining English drift from the Russian code map.
-- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
+- Current focus: Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Biggest operational risk: The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 08:55 +07 | develop
+- Summary: Extended the Russian locale guard so it also blocks bad hybrid technical copy in the Russian docs and shell layer.
+- Changed:
+  - src/magon_standalone/locale_integrity.py
+  - tests/test_locale_integrity.py
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`
+  - PASS `./scripts/verify_workflow.sh`
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Risk:
+  - The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
 ### 2026-04-17 08:46 +07 | develop
 - Summary: Audited standalone documentation and removed the remaining English drift from the Russian code map.
 - Changed:

@@ -37,10 +37,27 @@ FORBIDDEN_RU_LEAKS = (
     "automations",
 )
 
+DISCOURAGED_RU_COPY = (
+    "automation loops",
+    "verified changes",
+    "scope guard",
+    "worklog",
+    "technical log",
+    "project-memory dump",
+    "runtime/dashboard",
+)
+
 
 def detect_forbidden_leaks(text: str, forbidden_terms: tuple[str, ...] = FORBIDDEN_RU_LEAKS) -> list[str]:
     lowered = text.casefold()
     matches = [term for term in forbidden_terms if term in lowered]
+    return sorted(set(matches))
+
+
+def detect_discouraged_copy(text: str, discouraged_terms: tuple[str, ...] = DISCOURAGED_RU_COPY) -> list[str]:
+    lowered = text.casefold()
+    # RU: Здесь режем не только чистые английские утечки, но и кривые полуинженерные формулировки, которые не должны попадать в русский docs/UI слой.
+    matches = [term for term in discouraged_terms if term in lowered]
     return sorted(set(matches))
 
 
@@ -97,6 +114,9 @@ def scan_source_files(repo_root: Path, relative_paths: tuple[str, ...] = RU_SOUR
         matches = detect_forbidden_leaks(text)
         for match in matches:
             issues.append(f"{relative_path}: forbidden English locale leak `{match}`")
+        discouraged = detect_discouraged_copy(text)
+        for match in discouraged:
+            issues.append(f"{relative_path}: discouraged Russian copy phrase `{match}`")
     return issues
 
 
@@ -119,6 +139,9 @@ def scan_runtime_routes(
         matches = detect_forbidden_leaks(visible_text)
         for match in matches:
             issues.append(f"{url}: forbidden English locale leak `{match}`")
+        discouraged = detect_discouraged_copy(visible_text)
+        for match in discouraged:
+            issues.append(f"{url}: discouraged Russian copy phrase `{match}`")
     return issues
 
 

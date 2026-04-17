@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 08:46 +07`",
+  "generated_at": "`2026-04-17 08:55 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 08:46 +07`",
+    "updated_at": "`2026-04-17 08:55 +07`",
     "branch": "`develop`",
-    "current_focus": "Audited standalone documentation and removed the remaining English drift from the Russian code map.",
-    "last_verified_workflow_status": "PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`",
-    "biggest_operational_risk": "Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text."
+    "current_focus": "Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.",
+    "last_verified_workflow_status": "PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`",
+    "biggest_operational_risk": "The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 08:55 +07 | develop",
+      "summary": "Extended the Russian locale guard so it also blocks bad hybrid technical copy in the Russian docs and shell layer.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 08:46 +07 | develop",
       "summary": "Audited standalone documentation and removed the remaining English drift from the Russian code map.",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 08:29 +07 | develop",
       "summary": "Optimized standalone UI checks for a low-memory MacBook by keeping browser inspection manual, single-window, and outside the default verify path.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 07:59 +07 | develop",
-      "summary": "Cleaned standalone web layout and semantic load on the Russian home and project map surfaces.",
       "risk": "See worklog entry"
     }
   ],

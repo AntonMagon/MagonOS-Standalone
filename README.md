@@ -126,10 +126,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 08:46 +07`
-- Current focus: Audited standalone documentation and removed the remaining English drift from the Russian code map.
-- Last verified workflow status: PASS `./scripts/restore_context.sh --check`, PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
+- Auto-synced at: `2026-04-17 08:55 +07`
+- Current focus: Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Biggest operational risk: The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
 - Validated contour:
   - company
   - commercial/customer context

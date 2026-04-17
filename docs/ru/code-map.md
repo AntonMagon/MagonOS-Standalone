@@ -219,6 +219,12 @@ Desktop launcher-обёртка для локального старта с Find
 
 И режет проход, если в русском shell всплыли английские доменные ярлыки вроде `company`, `review queue`, `feedback ledger / projection` или `quote intent / RFQ boundary`.
 
+Дополнительно режет плохие гибридные формулировки в русском слое вроде:
+- `worklog`
+- `scope guard`
+- `technical log`
+- `project-memory dump`
+
 ### `scripts/run_playwright_cli.sh`
 
 Project-safe wrapper вокруг установленного `playwright` skill.
