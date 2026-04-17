@@ -799,3 +799,41 @@
 - async supplier ingest имеет устойчивые failure/retry states;
 - environment boot остаётся консистентным через migration/seed/api/web/smoke path;
 - wave1 contour теперь можно демонстрировать целиком без ручного "доклеивания" пробелов по runtime.
+
+## 2026-04-17: CI runner python fallback для verification/smoke
+
+### Что было не так
+
+- GitHub Actions падал не на продукт-коде, а на repo verification entrypoint.
+- Причина была узкая:
+  - `scripts/verify_workflow.sh`
+  - `scripts/foundation_migration_check.sh`
+  - канонические foundation smoke scripts
+  жёстко ожидали локальную `./.venv/bin/python` и `./.venv/bin/alembic`.
+- На GitHub runner зависимости уже ставятся в job environment через `pip install -e .`, поэтому `.venv` там не существует как обязательная точка входа.
+
+### Что изменено
+
+- Добавлен helper `scripts/lib_repo_python.sh`.
+- Helper резолвит python так:
+  - явный override через `MAGON_REPO_PYTHON_BIN`
+  - затем локальная `.venv`
+  - затем `python3`
+  - затем `python`
+- `alembic` теперь в CI-path вызывается через `python -m alembic`, а не через жёсткий бинарник из `.venv`.
+- На helper переведены:
+  - `scripts/verify_workflow.sh`
+  - `scripts/foundation_migration_check.sh`
+  - `scripts/foundation_supplier_smoke_check.sh`
+  - `scripts/foundation_request_smoke_check.sh`
+  - `scripts/foundation_offer_smoke_check.sh`
+  - `scripts/foundation_order_smoke_check.sh`
+  - `scripts/foundation_files_documents_smoke_check.sh`
+  - `scripts/foundation_messages_dashboards_smoke_check.sh`
+  - `scripts/foundation_wave1_demo_smoke_check.sh`
+
+### Что подтверждено
+
+- Локальный wave1 verification остаётся зелёным.
+- Override path helper-а тоже подтверждён отдельным migration check.
+- Изменение не расширяет scope первой волны: оно только делает CI/verification contract переносимым между local shell и GitHub runner.

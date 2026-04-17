@@ -74,15 +74,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 20:27 +07`
-- Branch: `codex/wave1-foundation`
-- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
-- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+- Updated at: `2026-04-17 22:25 +07`
+- Branch: `codex/wave1-acceptance-pr`
+- Current focus: Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
+- Biggest operational risk: GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 22:25 +07 | codex/wave1-acceptance-pr
+- Summary: fix CI verification to resolve python without local .venv
+- Changed:
+  - scripts/lib_repo_python.sh
+  - scripts/verify_workflow.sh
+  - scripts/foundation migration and smoke entrypoints
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
+- Risk:
+  - GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
 ### 2026-04-17 20:27 +07 | codex/wave1-foundation
 - Summary: Closed the main wave1 acceptance gaps and hardened the demo-ready contour
 - Changed:

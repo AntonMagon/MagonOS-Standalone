@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 20:27 +07``
+Обновлено: ``2026-04-17 22:25 +07``
 
 ## Контур движения
 
@@ -57,9 +57,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
-- Главный операционный риск: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+- Текущий фокус: Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
+- Главный операционный риск: GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
 
 ## Автоматические контуры контроля
 

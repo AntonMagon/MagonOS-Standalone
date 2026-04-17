@@ -8,6 +8,9 @@ DB_FILE="$TMPDIR/foundation.sqlite3"
 PORT="${MAGON_FOUNDATION_PORT:-18194}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
+# RU: Request smoke держим переносимым, чтобы CI проверял сам flow, а не локальную форму запуска python.
+source "$REPO_ROOT/scripts/lib_repo_python.sh"
+PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then
@@ -27,9 +30,9 @@ export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
 
-"$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-request-seed.json
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-request-api.log 2>&1 &
+run_repo_alembic "$REPO_ROOT" upgrade head >/dev/null
+"$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-request-seed.json
+"$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-request-api.log 2>&1 &
 API_PID=$!
 
 for _ in $(seq 1 30); do
@@ -39,7 +42,7 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-TOKEN="$(curl -fsS -X POST "$BASE_URL/api/v1/auth/login" -H 'content-type: application/json' -d '{"email":"operator@example.com","password":"operator123"}' | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+TOKEN="$(curl -fsS -X POST "$BASE_URL/api/v1/auth/login" -H 'content-type: application/json' -d '{"email":"operator@example.com","password":"operator123"}' | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
 
 DRAFT_JSON="$(curl -fsS -X POST "$BASE_URL/api/v1/public/draft-requests" \
   -H 'content-type: application/json' \
@@ -48,7 +51,7 @@ echo "[request-smoke] draft"
 echo "$DRAFT_JSON"
 echo
 
-DRAFT_CODE="$(printf '%s' "$DRAFT_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; print(json.load(sys.stdin)["item"]["code"])')"
+DRAFT_CODE="$(printf '%s' "$DRAFT_JSON" | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["item"]["code"])')"
 
 REQUEST_JSON="$(curl -fsS -X POST "$BASE_URL/api/v1/public/draft-requests/$DRAFT_CODE/submit" \
   -H 'content-type: application/json' \
@@ -57,7 +60,7 @@ echo "[request-smoke] request"
 echo "$REQUEST_JSON"
 echo
 
-REQUEST_CODE="$(printf '%s' "$REQUEST_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; print(json.load(sys.stdin)["request"]["code"])')"
+REQUEST_CODE="$(printf '%s' "$REQUEST_JSON" | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["request"]["code"])')"
 
 echo "[request-smoke] transition to needs_review"
 curl -fsS -X POST "$BASE_URL/api/v1/operator/requests/$REQUEST_CODE/transition" \

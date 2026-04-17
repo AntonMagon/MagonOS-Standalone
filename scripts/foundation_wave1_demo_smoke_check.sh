@@ -11,6 +11,9 @@ FILE_V2="$TMPDIR/wave1-demo-v2.txt"
 PORT="${MAGON_FOUNDATION_PORT:-18198}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
+# RU: Demo smoke обязан быть исполним и на CI runner, иначе protected merge нельзя закрыть даже при зелёном локальном runtime.
+source "$REPO_ROOT/scripts/lib_repo_python.sh"
+PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then
@@ -35,9 +38,9 @@ export MAGON_FOUNDATION_HOST="$HOST"
 printf 'wave1-demo-v1' >"$FILE_V1"
 printf 'wave1-demo-v2' >"$FILE_V2"
 
-"$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-wave1-demo-seed.json
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-wave1-demo-api.log 2>&1 &
+run_repo_alembic "$REPO_ROOT" upgrade head >/dev/null
+"$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-wave1-demo-seed.json
+"$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-wave1-demo-api.log 2>&1 &
 API_PID=$!
 
 for _ in $(seq 1 30); do
@@ -49,7 +52,7 @@ done
 
 json_get() {
   local expr="$1"
-  "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; data=json.load(sys.stdin); expr=sys.argv[1]; print(eval(expr, {"data": data}))' "$expr"
+  "$PYTHON_BIN" -c 'import json,sys; data=json.load(sys.stdin); expr=sys.argv[1]; print(eval(expr, {"data": data}))' "$expr"
 }
 
 OPERATOR_TOKEN="$(curl -fsS -X POST "$BASE_URL/api/v1/auth/login" -H 'content-type: application/json' -d '{"email":"operator@example.com","password":"operator123"}' | json_get 'data["token"]')"
@@ -154,7 +157,7 @@ INGEST_DETAIL="$(curl -fsS "$BASE_URL/api/v1/operator/supplier-ingests/$INGEST_C
 
 export PUBLIC_REQUEST CUSTOMER_DASHBOARD TIMELINE AUDIT ADMIN_DASHBOARD SUPPLY_DASHBOARD PROCESSING_DASHBOARD INGEST_DETAIL
 
-"$REPO_ROOT/.venv/bin/python" - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 import json
 import os
 

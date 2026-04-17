@@ -3,6 +3,9 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WITH_WEB="0"
+# RU: Verification path должен одинаково работать локально и в CI, даже если runner не поднимает repo-local .venv.
+source "$REPO_ROOT/scripts/lib_repo_python.sh"
+PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,7 +46,7 @@ bash -n \
   .githooks/pre-commit \
   .githooks/pre-push
 
-./.venv/bin/python -m py_compile \
+"$PYTHON_BIN" -m py_compile \
   scripts/check_russian_locale_integrity.py \
   scripts/render_launchd_periodic_checks.py \
   scripts/run_repo_autosync.py \
@@ -55,15 +58,15 @@ bash -n \
   src/magon_standalone/repo_autosync.py \
   src/magon_standalone/operating_docs_sync.py
 
-./.venv/bin/python scripts/sync_operating_docs.py --check
+"$PYTHON_BIN" scripts/sync_operating_docs.py --check
 # RU: Статический locale-guard режет verify ещё до runtime, если русский source-of-truth снова протёк английскими доменными ярлыками.
-./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
+"$PYTHON_BIN" scripts/check_russian_locale_integrity.py --static-only
 # RU: Имена repo-local skills тоже держим под guard, чтобы automation и ручной вызов skills опирались на один читаемый naming-contract.
-./.venv/bin/python scripts/check_skill_naming.py
+"$PYTHON_BIN" scripts/check_skill_naming.py
 # RU: Живые Codex automation тоже считаются частью operating-layer, поэтому их id/prompt/cwd/rrule не должны уплывать мимо общего контекста проекта.
-./.venv/bin/python scripts/check_automation_contract.py
+"$PYTHON_BIN" scripts/check_automation_contract.py
 
-./.venv/bin/python -m unittest \
+"$PYTHON_BIN" -m unittest \
   tests.test_foundation_api \
   tests.test_foundation_suppliers \
   tests.test_foundation_catalog \

@@ -5,6 +5,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
 DB_FILE="$TMPDIR/foundation.sqlite3"
+# RU: Migration check обязан быть переносимым между local shell и GitHub runner, поэтому python/alembic берём через repo helper.
+source "$REPO_ROOT/scripts/lib_repo_python.sh"
+PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
 
 cleanup() {
   rm -rf "$TMPDIR"
@@ -18,8 +21,8 @@ export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
 export MAGON_FOUNDATION_LEGACY_ENABLED=0
 
-"$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
-"$REPO_ROOT/.venv/bin/python" - <<'PY'
+run_repo_alembic "$REPO_ROOT" upgrade head >/dev/null
+"$PYTHON_BIN" - <<'PY'
 import os
 import sqlite3
 from pathlib import Path
