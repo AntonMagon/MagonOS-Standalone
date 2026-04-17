@@ -4,14 +4,43 @@
 - Active product repo: `/Users/anton/Desktop/MagonOS-Standalone`
 - Legacy donor / bridge repo: `/Users/anton/Desktop/MagonOS/MagonOS`
 
+## Planning truth
+- Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
+- Global architecture source-of-truth: `gpt_doc/platform_architecture_report_ru.docx`
+- Broader planning/roadmap sync pack: `gpt_doc/platform_documentation_pack_ru.docx`
+- This file remains the runtime/verification truth, but product planning for the new contour must follow `gpt_doc/*`.
+
 ## Runtime truth
 - Standalone is the primary platform-of-record.
 - Odoo is donor/bridge only, not the future runtime.
 - Default work happens only in the standalone repo.
 - Source repo is read-only unless the task explicitly requires donor inspection or boundary work.
+- Foundation wave1 target runtime is the new FastAPI modular-monolith stack on PostgreSQL/Redis/Celery/Caddy/Compose.
+- Default wave1 runtime starts without the legacy standalone WSGI bridge.
+- Legacy standalone WSGI may still be mounted as an explicit compatibility bridge through `MAGON_FOUNDATION_LEGACY_ENABLED=true`, but it is not the target execution model for wave1.
+
+## Verified stack baseline
+- web runtime: `Node v22.22.2`
+- web package manager: `npm 10.9.7`
+- web app layer: `Next 15.5.15`, `React 19.2.5`, `React DOM 19.2.5`
+- api/core runtime: `Python 3.10.20`
+- api/core packages: `FastAPI 0.136.0`, `SQLAlchemy 2.0.49`, `Alembic 1.18.4`, `Celery 5.6.3`, `redis-py 7.4.0`, `psycopg 3.3.3`, `uvicorn 0.44.0`, `sentry-sdk 2.58.0`
+- infra images: `PostgreSQL 16.13`, `Redis 7.4.8`, `Caddy 2.8.4`
+- Update policy: no forced stack upgrade is required right now because the verified contour is internally consistent and green on the live compose runtime. Prefer controlled upgrades only when a concrete compatibility/security/runtime need appears.
+
+## Resource baseline
+- Current Colima profile: `2 CPU / 2 GB RAM / 20 GB disk`
+- Verified steady-state compose usage is roughly `430-450 MiB` total across `api + worker + web + db + redis + caddy`
+- Current runtime therefore has about `1.4 GiB` free headroom inside the VM
+- Recommended sizing:
+  - `2 GB`: normal local runtime, smoke checks, login/health verification, routine rebuilds
+  - `3 GB`: concurrent rebuilds plus browser-heavy local work on the same host
+  - `4 GB`: Playwright/browser automation, extra services, or materially heavier frontend builds
+  - `6 GB`: not needed for the current wave1 contour
 
 ## Validated standalone contour
 - company
+- request draft / intake boundary
 - commercial/customer context
 - opportunity
 - quote intent / RFQ boundary
@@ -19,9 +48,17 @@
 - production board
 
 Also already standalone-owned:
+- company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
 - normalization / enrichment / dedup / scoring
-- review queue
+- limited catalog / showcase contour with guest draft + RFQ entry
+- draft autosave / abandoned / archive-ready intake layer
+- central request review queue with blocker/clarification flow
+- request draft -> request submit flow with required-field gating
+- versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
+- order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
+- managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+- foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection
 - workforce estimation
@@ -43,24 +80,65 @@ Do not pretend full CRM/quote parity exists.
 - source repo feature growth
 
 ## Canonical commands
-- unified platform:
-  - `./scripts/run_unified_platform.sh --fresh`
-- backend only:
-  - `./scripts/run_platform.sh --fresh --port 8091`
+- foundation backend:
+  - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+- unified foundation local-up:
+  - `./scripts/run_foundation_unified.sh --fresh`
+- foundation migrate + seed:
+  - `./scripts/run_foundation_migrations.sh`
+  - `./.venv/bin/python scripts/seed_foundation.py`
+- supplier demo pipeline:
+  - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - fixture pipeline:
   - `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
 - backend verification:
   - `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
+- foundation verification:
+  - `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - `./.venv/bin/python -m unittest tests.test_foundation_catalog`
+  - `./.venv/bin/python -m unittest tests.test_foundation_draft_request`
+  - `./.venv/bin/python -m unittest tests.test_foundation_offers`
+  - `./.venv/bin/python -m unittest tests.test_foundation_orders`
+  - `./.venv/bin/python -m unittest tests.test_foundation_files_documents`
+  - `./scripts/foundation_smoke_check.sh`
+  - `./scripts/foundation_supplier_smoke_check.sh`
+  - `./scripts/foundation_catalog_smoke_check.sh`
+  - `./scripts/foundation_request_smoke_check.sh`
+  - `./scripts/foundation_offer_smoke_check.sh`
+  - `./scripts/foundation_order_smoke_check.sh`
+  - `./scripts/foundation_files_documents_smoke_check.sh`
+- compatibility-only startup when the old shell is explicitly needed:
+  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
+  - `./scripts/run_unified_platform.sh --fresh`
+  - `./scripts/run_platform.sh --fresh --port 8091`
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
 ## Runtime surfaces
 - public shell: `http://127.0.0.1:3000/`
-- dashboard: `http://127.0.0.1:3000/dashboard`
-- ops workbench: `http://127.0.0.1:3000/ops-workbench`
-- operator console: `http://127.0.0.1:3000/ops`
-- operator pages: `http://127.0.0.1:3000/ui/*`
+- public showcase: `http://127.0.0.1:3000/catalog`
+- public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
+- public RFQ entry: `http://127.0.0.1:3000/rfq`
+- public draft editor: `http://127.0.0.1:3000/drafts/{draftCode}`
+- public request view: `http://127.0.0.1:3000/requests/{customerRef}`
+- public request offer compare: `http://127.0.0.1:3000/requests/{customerRef}` (compare block on the same page)
+- foundation login: `http://127.0.0.1:3000/login`
+- operator request workbench: `http://127.0.0.1:3000/request-workbench`
+- operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
+- operator offer compare / revision: `http://127.0.0.1:3000/request-workbench/{requestCode}` (commercial block on the same page)
+- managed request files/documents: `http://127.0.0.1:3000/request-workbench/{requestCode}` and `http://127.0.0.1:3000/requests/{customerRef}`
+- operator order workbench: `http://127.0.0.1:3000/orders`
+- operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
+- managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
+- supplier workbench: `http://127.0.0.1:3000/suppliers`
+- supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
+- supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - direct backend debug: `http://127.0.0.1:8091/`
+- compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
+  - `http://127.0.0.1:3000/ops-workbench`
+  - `http://127.0.0.1:3000/ops`
+  - `http://127.0.0.1:3000/ui/*`
 
 ## Working rules
 - Trust code, tests, and runtime over stale docs.

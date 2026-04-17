@@ -1,3 +1,4 @@
+// RU: Файл входит в проверенный контур первой волны.
 import Link from 'next/link';
 import {getTranslations} from 'next-intl/server';
 import {ArrowRight, AudioWaveform, Boxes, Orbit, ShieldCheck, SlidersHorizontal, Workflow} from 'lucide-react';
@@ -51,6 +52,11 @@ export default async function HomePage() {
               </div>
               <SectionIntro eyebrow={t('eyebrow')} title={t('title')} text={t('text')} className="max-w-4xl" />
               <div className="flex flex-wrap items-center gap-3">
+                <Link href="/catalog">
+                  <ShinyButton className="border-white/12 bg-white/8 text-foreground hover:bg-white/12">
+                    {t('openCatalog')}
+                  </ShinyButton>
+                </Link>
                 <Link href="/dashboard">
                   <MagneticButton className="group min-w-[11rem]">
                     {t('openDashboard')}

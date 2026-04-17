@@ -5,15 +5,47 @@
 - Активный продуктовый репозиторий: `/Users/anton/Desktop/MagonOS-Standalone`
 - Donor / bridge-репозиторий: `/Users/anton/Desktop/MagonOS/MagonOS`
 
+## Что является плановой истиной
+
+- Жёсткая спецификация первой волны: `gpt_doc/codex_wave1_spec_ru.docx`
+- Глобальная архитектурная фиксация: `gpt_doc/platform_architecture_report_ru.docx`
+- Общий пакет документации и roadmap: `gpt_doc/platform_documentation_pack_ru.docx`
+- Этот файл остаётся правдой по runtime и проверке, но плановую архитектуру нового контура нужно читать из `gpt_doc/*`.
+
 ## Что является правдой рантайма
 
 - `Standalone` — основной platform-of-record.
 - Odoo — только donor / bridge, но не целевой runtime.
 - По умолчанию работа и изменения идут только в standalone-репозитории.
+- Целевой runtime первой волны — новый стек `FastAPI + PostgreSQL + Redis + Celery + Caddy + Docker Compose`.
+- По умолчанию runtime первой волны стартует без legacy standalone WSGI bridge.
+- Legacy standalone WSGI runtime может жить только как явный compatibility bridge через `MAGON_FOUNDATION_LEGACY_ENABLED=true`, но это не целевая execution-модель первой волны.
+
+## Какая baseline-версия стека подтверждена
+
+- web runtime: `Node v22.22.2`
+- web package manager: `npm 10.9.7`
+- web app layer: `Next 15.5.15`, `React 19.2.5`, `React DOM 19.2.5`
+- api/core runtime: `Python 3.10.20`
+- api/core packages: `FastAPI 0.136.0`, `SQLAlchemy 2.0.49`, `Alembic 1.18.4`, `Celery 5.6.3`, `redis-py 7.4.0`, `psycopg 3.3.3`, `uvicorn 0.44.0`, `sentry-sdk 2.58.0`
+- infra images: `PostgreSQL 16.13`, `Redis 7.4.8`, `Caddy 2.8.4`
+- Политика обновления: принудительно обновлять стек прямо сейчас не нужно, потому что подтверждённый contour согласован и зелёный на живом compose runtime. Обновление делаем только при явной причине: совместимость, безопасность или реальная runtime-проблема.
+
+## Какой ресурсный baseline подтверждён
+
+- Текущий профиль `Colima`: `2 CPU / 2 GB RAM / 20 GB disk`
+- Подтверждённое steady-state потребление compose runtime сейчас около `430-450 MiB` суммарно по `api + worker + web + db + redis + caddy`
+- Значит внутри VM сейчас остаётся примерно `1.4 GiB` живого запаса
+- Рекомендованный sizing:
+  - `2 GB`: обычный локальный runtime, smoke-check, login/health, обычные rebuild
+  - `3 GB`: параллельные rebuild плюс тяжёлая локальная работа в браузере на том же хосте
+  - `4 GB`: Playwright/браузерная автоматизация, дополнительные сервисы или заметно более тяжёлые frontend-build задачи
+  - `6 GB`: для текущего contour первой волны не нужно
 
 ## Что уже подтверждено в standalone-контуре
 
 - компания
+- граница черновика запроса / intake-заявки
 - коммерческий контекст клиента
 - сделка
 - заявка на расчёт / граница RFQ
@@ -22,9 +54,17 @@
 
 ## Что уже принадлежит standalone
 
+- контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
 - нормализация / обогащение / дедупликация / скоринг
-- очередь проверки
+- ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
+- autosave / abandoned / archive-ready слой Draft
+- центральная операторская очередь Review для Request с blocker/clarification flow
+- переход `draft -> request` с блокировкой по обязательным полям
+- versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order
+- слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
+- управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
+- foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
 - оценка трудозатрат
@@ -49,14 +89,38 @@
 
 ## Канонические команды
 
-- поднять unified platform:
-  - `./scripts/run_unified_platform.sh --fresh`
-- поднять backend отдельно:
-  - `./scripts/run_platform.sh --fresh --port 8091`
+- поднять foundation backend:
+  - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+- поднять unified foundation локально:
+  - `./scripts/run_foundation_unified.sh --fresh`
+- foundation migrate + seed:
+  - `./scripts/run_foundation_migrations.sh`
+  - `./.venv/bin/python scripts/seed_foundation.py`
+- прогнать supplier demo pipeline:
+  - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - прогнать fixture pipeline:
   - `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
 - проверить backend/workflow:
   - `./scripts/verify_workflow.sh`
+- проверить foundation:
+  - `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - `./.venv/bin/python -m unittest tests.test_foundation_catalog`
+  - `./.venv/bin/python -m unittest tests.test_foundation_draft_request`
+  - `./.venv/bin/python -m unittest tests.test_foundation_offers`
+  - `./.venv/bin/python -m unittest tests.test_foundation_orders`
+  - `./.venv/bin/python -m unittest tests.test_foundation_files_documents`
+  - `./scripts/foundation_smoke_check.sh`
+  - `./scripts/foundation_supplier_smoke_check.sh`
+  - `./scripts/foundation_catalog_smoke_check.sh`
+  - `./scripts/foundation_request_smoke_check.sh`
+  - `./scripts/foundation_offer_smoke_check.sh`
+  - `./scripts/foundation_order_smoke_check.sh`
+  - `./scripts/foundation_files_documents_smoke_check.sh`
+- compatibility-only запуск старого контура, если он реально нужен:
+  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
+  - `./scripts/run_unified_platform.sh --fresh`
+  - `./scripts/run_platform.sh --fresh --port 8091`
 - если менялся web:
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
@@ -64,7 +128,25 @@
 ## Локальные поверхности
 
 - public shell: `http://127.0.0.1:3000/`
-- dashboard: `http://127.0.0.1:3000/dashboard`
-- ops workbench: `http://127.0.0.1:3000/ops-workbench`
-- operator pages: `http://127.0.0.1:3000/ui/*`
+- public витрина: `http://127.0.0.1:3000/catalog`
+- карточка витрины: `http://127.0.0.1:3000/catalog/{itemCode}`
+- public RFQ-вход: `http://127.0.0.1:3000/rfq`
+- public draft editor: `http://127.0.0.1:3000/drafts/{draftCode}`
+- customer request view: `http://127.0.0.1:3000/requests/{customerRef}`
+- customer compare block предложений: `http://127.0.0.1:3000/requests/{customerRef}`
+- foundation login: `http://127.0.0.1:3000/login`
+- operator request workbench: `http://127.0.0.1:3000/request-workbench`
+- operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
+- operator compare / revision block предложений: `http://127.0.0.1:3000/request-workbench/{requestCode}`
+- managed request files/documents: `http://127.0.0.1:3000/request-workbench/{requestCode}` и `http://127.0.0.1:3000/requests/{customerRef}`
+- operator order workbench: `http://127.0.0.1:3000/orders`
+- operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
+- managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
+- supplier workbench: `http://127.0.0.1:3000/suppliers`
+- supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
+- supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - direct backend debug: `http://127.0.0.1:8091/`
+- legacy-поверхности только при явном `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
+  - `http://127.0.0.1:3000/ops-workbench`
+  - `http://127.0.0.1:3000/ops`
+  - `http://127.0.0.1:3000/ui/*`

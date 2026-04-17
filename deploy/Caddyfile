@@ -1,0 +1,17 @@
+:3000 {
+  @platform_api path /platform-api/*
+  handle @platform_api {
+    # RU: Web shell обращается к backend через `/platform-api/*`, поэтому в Caddy нужно снять префикс до reverse proxy, иначе FastAPI получает несуществующий маршрут.
+    uri strip_prefix /platform-api
+    reverse_proxy api:8091
+  }
+
+  @api path /health* /observability/* /api/* /status /companies /ui* /ops*
+  handle @api {
+    reverse_proxy api:8091
+  }
+
+  handle {
+    reverse_proxy web:3000
+  }
+}

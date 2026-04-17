@@ -1,0 +1,96 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-magon}
+      POSTGRES_USER: ${POSTGRES_USER:-magon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-magon}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-magon} -d ${POSTGRES_DB:-magon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - redis-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
+    environment:
+      MAGON_ENV: ${MAGON_ENV:-prod}
+      MAGON_FOUNDATION_DATABASE_URL: ${MAGON_FOUNDATION_DATABASE_URL:-postgresql+psycopg://magon:magon@db:5432/magon}
+      MAGON_FOUNDATION_REDIS_URL: ${MAGON_FOUNDATION_REDIS_URL:-redis://redis:6379/0}
+      MAGON_FOUNDATION_CELERY_BROKER_URL: ${MAGON_FOUNDATION_CELERY_BROKER_URL:-redis://redis:6379/1}
+      MAGON_FOUNDATION_CELERY_RESULT_BACKEND: ${MAGON_FOUNDATION_CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL: ${MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL:-admin@example.com}
+      MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD: ${MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD:-admin123}
+      MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL: ${MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL:-operator@example.com}
+      MAGON_FOUNDATION_DEFAULT_OPERATOR_PASSWORD: ${MAGON_FOUNDATION_DEFAULT_OPERATOR_PASSWORD:-operator123}
+      MAGON_FOUNDATION_DEFAULT_CUSTOMER_EMAIL: ${MAGON_FOUNDATION_DEFAULT_CUSTOMER_EMAIL:-customer@example.com}
+      MAGON_FOUNDATION_DEFAULT_CUSTOMER_PASSWORD: ${MAGON_FOUNDATION_DEFAULT_CUSTOMER_PASSWORD:-customer123}
+      MAGON_FOUNDATION_LEGACY_ENABLED: ${MAGON_FOUNDATION_LEGACY_ENABLED:-false}
+      MAGON_STANDALONE_DB_PATH: /app/data/platform.sqlite3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -lc "alembic upgrade head &&
+      python scripts/seed_foundation.py &&
+      uvicorn magon_standalone.foundation.app:create_app --factory --host 0.0.0.0 --port 8091"
+    volumes:
+      - ./data:/app/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
+    environment:
+      MAGON_ENV: ${MAGON_ENV:-prod}
+      MAGON_FOUNDATION_DATABASE_URL: ${MAGON_FOUNDATION_DATABASE_URL:-postgresql+psycopg://magon:magon@db:5432/magon}
+      MAGON_FOUNDATION_REDIS_URL: ${MAGON_FOUNDATION_REDIS_URL:-redis://redis:6379/0}
+      MAGON_FOUNDATION_CELERY_BROKER_URL: ${MAGON_FOUNDATION_CELERY_BROKER_URL:-redis://redis:6379/1}
+      MAGON_FOUNDATION_CELERY_RESULT_BACKEND: ${MAGON_FOUNDATION_CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+    depends_on:
+      api:
+        condition: service_started
+    command: ["celery", "-A", "magon_standalone.foundation.celery_app.celery_app", "worker", "--loglevel=INFO"]
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    environment:
+      MAGON_API_BASE_URL: http://api:8091
+    depends_on:
+      api:
+        condition: service_started
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "3000:3000"
+    depends_on:
+      web:
+        condition: service_started
+      api:
+        condition: service_started
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+
+volumes:
+  postgres-data:
+  redis-data:

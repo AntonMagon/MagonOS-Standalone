@@ -5,8 +5,13 @@
   },
   "nav": {
     "overview": "Home",
+    "catalog": "Showcase",
+    "requests": "Intake",
+    "orders": "Orders",
     "dashboard": "Runtime",
+    "suppliers": "Suppliers",
     "ops": "Ops",
+    "login": "Login",
     "projectMap": "Map",
     "personalize": "Boundary"
   },
@@ -68,6 +73,7 @@
     "eyebrow": "Company intelligence and ops",
     "title": "MagonOS moves a company from canonical intake and operator review into commercial context and production handoff.",
     "text": "This is no longer a shell sitting on top of Odoo. The active contour now lives in standalone: company intelligence, review, customer context, opportunity tracking, and quote intent. Internal ERP bridges still exist, but they no longer define the product layer.",
+    "openCatalog": "Open showcase",
     "openDashboard": "Open runtime view",
     "openOps": "Open ops workbench",
     "highlights": {
@@ -267,6 +273,89 @@
       "worklog": "Worklog",
       "worklogDetail": "Recent recorded changes"
     }
+  },
+  "catalogShowcase": {
+    "eyebrow": "Limited wave1 showcase",
+    "title": "Show clear directions and a constrained set of products instead of pretending to be a marketplace for everything.",
+    "text": "This showcase exists for guest draft/RFQ intake. It contains only a curated wave1 set: understandable cards, indicative pricing, and a direct path into a request without forced registration.",
+    "openRfq": "Open complex RFQ",
+    "itemsCount": "items",
+    "directionLabel": "Direction",
+    "pricingLabel": "Pricing model",
+    "priceFrom": "Indicative: {amount} {currency}",
+    "viewDetail": "Open card",
+    "startDraft": "Start draft",
+    "modes": {
+      "ready": "Ready direction",
+      "config": "Configurable variant",
+      "rfq": "RFQ only"
+    },
+    "pricingModes": {
+      "fixed": "Fixed base",
+      "from": "Starts from a base model",
+      "estimate": "Indicative estimate",
+      "rfq": "On request"
+    }
+  },
+  "catalogDetail": {
+    "loading": "Loading showcase card...",
+    "backToCatalog": "Back to showcase",
+    "openRfq": "Open RFQ",
+    "optionsLabel": "What can be specified",
+    "optionsTitle": "Commercially clear wave1 options",
+    "pricingLabel": "How pricing should be read",
+    "priceFrom": "Indicative: {amount} {currency}",
+    "priceOnRequest": "Pricing is confirmed only after manual estimation",
+    "draftSummary": "We need a fast estimate for this card. Please confirm size, material, volume, and deadlines.",
+    "rfqSummary": "We need a custom project with manual review. Describe the product, volume, deadlines, materials, and constraints.",
+    "modes": {
+      "ready": "Ready direction",
+      "config": "Configurable variant",
+      "rfq": "RFQ only"
+    },
+    "pricingModes": {
+      "fixed": "Fixed base",
+      "from": "Starts from a base model",
+      "estimate": "Indicative estimate",
+      "rfq": "On request"
+    }
+  },
+  "catalogForms": {
+    "labels": {
+      "catalog_ready": "Fast draft from a card",
+      "catalog_config": "Configurable request",
+      "rfq_public": "Complex RFQ"
+    },
+    "compactTitle": "Send a request without registration",
+    "fullTitle": "Send a complex request into manual review",
+    "linkedItem": "The context is already tied to this card: {title}",
+    "generalLead": "Submit as a guest. An operator will review the input and move it into the request contour without forcing registration.",
+    "customerName": "Name",
+    "companyName": "Company / brand",
+    "email": "Email",
+    "phone": "Phone / WhatsApp",
+    "title": "Request title",
+    "summary": "What you need",
+    "context": "Item / service context",
+    "city": "City / delivery point",
+    "deadline": "Target deadline",
+    "titlePrefill": "Request for: {title}",
+    "rfqTitlePrefill": "Complex packaging / production RFQ",
+    "contextPrefill": "Need manual review and estimation for: {title}",
+    "contextPlaceholder": "Briefly describe the item or service around which this request is built.",
+    "summaryPlaceholder": "Describe the product, size, material, volume, deadlines, and constraints.",
+    "websiteTrap": "If you are a bot, fill this field",
+    "submitting": "Submitting...",
+    "submit": "Create draft",
+    "privacyHint": "No registration required. This is a manual-first wave1 intake entry point.",
+    "success": "Draft created: {code}. The standalone draft editor with autosave and submit guards will open next."
+  },
+  "rfqPage": {
+    "eyebrow": "Complex request",
+    "title": "RFQ stays a separate entry point when a product card cannot honestly promise a final price.",
+    "text": "If the project is non-standard, we do not fake a calculator. The request goes into manual intake so the operator can review context, constraints, and feasibility before moving it into request/offer.",
+    "backToCatalog": "Back to showcase",
+    "defaultSummary": "Describe the product, task, volume, deadlines, materials, production constraints, and what matters most for evaluation."
   },
   "common": {
     "brand": "MagonOS",

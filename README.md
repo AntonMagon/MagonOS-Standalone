@@ -10,6 +10,7 @@ Included:
 - fixture-backed standalone runtime
 - standalone SQLite persistence
 - standalone HTTP API
+- foundation FastAPI modular-monolith skeleton
 - operator console
 - unified public web shell (`apps/web`)
 - narrow downstream feedback ingestion
@@ -26,6 +27,48 @@ Not included:
 - accounting / invoice / payment ERP ownership
 - full Odoo CRM / ERP replacement
 
+## Wave1 foundation
+Foundation skeleton for the first Codex wave now lives in the same repo and adds:
+
+- FastAPI modular monolith
+- Alembic migrations
+- PostgreSQL/Redis/Celery/Caddy compose skeleton
+- minimal auth/authz with roles `guest / customer / operator / admin`
+- audit / health / telemetry baseline
+- separate entities for `draft_request / request / offer / order`
+
+Planning source-of-truth for this contour:
+- `gpt_doc/codex_wave1_spec_ru.docx`
+- `gpt_doc/platform_architecture_report_ru.docx`
+- `gpt_doc/platform_documentation_pack_ru.docx`
+
+The intended wave1 runtime is the new stack itself. Any mounted legacy standalone contour should be treated only as a temporary compatibility bridge during transition.
+
+Quick path:
+
+```bash
+./scripts/run_foundation_migrations.sh
+./.venv/bin/python scripts/seed_foundation.py
+./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091
+```
+
+Unified local path:
+
+```bash
+./scripts/run_foundation_unified.sh --fresh
+```
+
+Legacy bridge is opt-in only:
+
+```bash
+MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh
+```
+
+Runbook:
+
+- Russian runbook: `docs/ru/foundation-runbook.md`
+- Implementation log: `docs/implementation-log-wave1-foundation.md`
+
 ## Setup
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
@@ -37,13 +80,13 @@ pip install -e .
 pip install -e .[live]
 ```
 
-## Local platform start
+## Legacy compatibility start
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
 ./scripts/run_platform.sh --fresh --port 8091
 ```
 
-## Unified platform start
+## Legacy compatibility all-in-one start
 One command starts:
 - public Next.js shell on `http://127.0.0.1:3000/`
 - operator/runtime surfaces under the same shell at `/ops`, `/ui/...`
@@ -67,20 +110,23 @@ MAGON_STANDALONE_BOOTSTRAP_FIXTURE=tests/fixtures/vn_suppliers_raw.json PORT=809
 
 ## Local URLs
 - public shell: http://127.0.0.1:3000/
-- platform dashboard: http://127.0.0.1:3000/dashboard
-- ops workspace: http://127.0.0.1:3000/ops-workbench
-- operator console: http://127.0.0.1:3000/ops
-- company workbench: http://127.0.0.1:3000/ui/companies
-- commercial pipeline: http://127.0.0.1:3000/ui/commercial-pipeline
-- quote intents: http://127.0.0.1:3000/ui/quote-intents
-- production handoffs: http://127.0.0.1:3000/ui/production-handoffs
-- production board: http://127.0.0.1:3000/ui/production-board
-- review queue: http://127.0.0.1:3000/ui/review-queue
-- feedback status: http://127.0.0.1:3000/ui/feedback-status
-- feedback audit: http://127.0.0.1:3000/ui/feedback-events
+- foundation login: http://127.0.0.1:3000/login
 
 Direct backend URLs still exist for debugging:
 - http://127.0.0.1:8091/
+
+Legacy compatibility surfaces exist only when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
+- http://127.0.0.1:3000/dashboard
+- http://127.0.0.1:3000/ops-workbench
+- http://127.0.0.1:3000/ops
+- http://127.0.0.1:3000/ui/companies
+- http://127.0.0.1:3000/ui/commercial-pipeline
+- http://127.0.0.1:3000/ui/quote-intents
+- http://127.0.0.1:3000/ui/production-handoffs
+- http://127.0.0.1:3000/ui/production-board
+- http://127.0.0.1:3000/ui/review-queue
+- http://127.0.0.1:3000/ui/feedback-status
+- http://127.0.0.1:3000/ui/feedback-events
 - http://127.0.0.1:8091/ui/companies
 
 ## Core API endpoints
@@ -126,21 +172,30 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 09:51 +07`
-- Current focus: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: no additional risk recorded
+- Auto-synced at: `2026-04-17 16:44 +07`
+- Current focus: Implemented wave1 managed files and documents contour
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents && bash ./scripts/foundation_files_documents_smoke_check.sh && (cd apps/web && npm run typecheck) && ./scripts/verify_workflow.sh`
+- Biggest operational risk: legacy thin catalog/supplier references still coexist with new foundation entities outside the already verified wave1 boundaries
 - Validated contour:
   - company
+  - request draft / intake boundary
   - commercial/customer context
   - opportunity
   - quote intent / RFQ boundary
   - production handoff
   - production board
 - Standalone-owned capabilities:
+  - company/supplier/site registry contour with raw -> normalized -> confirmed layering
   - supplier intelligence pipeline
   - normalization / enrichment / dedup / scoring
-  - review queue
+  - limited catalog / showcase contour with guest draft + RFQ entry
+  - draft autosave / abandoned / archive-ready intake layer
+  - central request review queue with blocker/clarification flow
+  - request draft -> request submit flow with required-field gating
+  - versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
+  - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
+  - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+  - foundation FastAPI skeleton with separate draft/request/offer/order entities
   - routing / qualification decisions
   - feedback ledger / projection
   - workforce estimation
@@ -158,19 +213,37 @@ Detailed workflow: `docs/repo-workflow.md`
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
-  - dashboard: `http://127.0.0.1:3000/dashboard`
-  - ops workbench: `http://127.0.0.1:3000/ops-workbench`
-  - operator console: `http://127.0.0.1:3000/ops`
-  - operator pages: `http://127.0.0.1:3000/ui/*`
+  - public showcase: `http://127.0.0.1:3000/catalog`
+  - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
+  - public RFQ entry: `http://127.0.0.1:3000/rfq`
+  - public draft editor: `http://127.0.0.1:3000/drafts/{draftCode}`
+  - public request view: `http://127.0.0.1:3000/requests/{customerRef}`
+  - public request offer compare: `http://127.0.0.1:3000/requests/{customerRef}` (compare block on the same page)
+  - foundation login: `http://127.0.0.1:3000/login`
+  - operator request workbench: `http://127.0.0.1:3000/request-workbench`
+  - operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
+  - operator offer compare / revision: `http://127.0.0.1:3000/request-workbench/{requestCode}` (commercial block on the same page)
+  - managed request files/documents: `http://127.0.0.1:3000/request-workbench/{requestCode}` and `http://127.0.0.1:3000/requests/{customerRef}`
+  - operator order workbench: `http://127.0.0.1:3000/orders`
+  - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
+  - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
+  - supplier workbench: `http://127.0.0.1:3000/suppliers`
+  - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
+  - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
   - direct backend debug: `http://127.0.0.1:8091/`
+  - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
+  - `http://127.0.0.1:3000/ops-workbench`
+  - `http://127.0.0.1:3000/ops`
+  - `http://127.0.0.1:3000/ui/*`
 <!-- AUTO-SYNC:README:END -->
 
 ## Deploy notes
 - This repo is the official product runtime.
 - The source Odoo repo is no longer the official startup path.
-- `scripts/run_platform.sh` is for local product use.
-- `scripts/run_unified_platform.sh` is the official local all-in-one startup path.
+- `scripts/run_platform.sh` is legacy compatibility-only.
+- `scripts/run_unified_platform.sh` is legacy compatibility-only.
 - `scripts/run_deploy.sh` is the deploy/runtime entrypoint.
 - `Procfile` points at the production entrypoint.
 - The app is independent from Odoo runtime.
-- SQLite is still the production constraint; this setup is fine for one-node deployment, staging, and internal use.
+- Legacy standalone contour may still exist as a temporary compatibility surface, but it is opt-in.
+- Foundation wave1 skeleton is the forward runtime base and is already running on the target stack through PostgreSQL + Redis + Alembic + Docker Compose.
