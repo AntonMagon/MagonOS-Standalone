@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 22:25 +07``
+Обновлено: ``2026-04-17 22:34 +07``
 
 ## Контур движения
 
@@ -57,9 +57,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
-- Главный операционный риск: GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
+- Текущий фокус: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: no additional risk recorded
 
 ## Автоматические контуры контроля
 

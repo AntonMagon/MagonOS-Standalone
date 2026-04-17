@@ -74,15 +74,23 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 22:25 +07`
+- Updated at: `2026-04-17 22:34 +07`
 - Branch: `codex/wave1-acceptance-pr`
-- Current focus: Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
-- Biggest operational risk: GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
+- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: no additional risk recorded
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 22:34 +07 | codex/wave1-acceptance-pr
+- Summary: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Changed:
+  - src/magon_standalone/operating_docs_sync.py,tests/test_operating_docs_sync.py,docs/implementation-log-wave1-foundation.md,docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - no additional risk recorded
 ### 2026-04-17 22:25 +07 | codex/wave1-acceptance-pr
 - Summary: fix CI verification to resolve python without local .venv
 - Changed:

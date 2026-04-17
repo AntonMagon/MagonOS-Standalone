@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 22:25 +07`",
+  "generated_at": "`2026-04-17 22:34 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -81,13 +81,18 @@
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 22:25 +07`",
+    "updated_at": "`2026-04-17 22:34 +07`",
     "branch": "`codex/wave1-acceptance-pr`",
-    "current_focus": "Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN=\"/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python\" bash ./scripts/foundation_migration_check.sh`",
-    "biggest_operational_risk": "GitHub PR merge is still blocked until the refreshed required checks complete on the new commit."
+    "current_focus": "Make operating-doc sync deterministic on CI runners without local Codex automations",
+    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "no additional risk recorded"
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 22:34 +07 | codex/wave1-acceptance-pr",
+      "summary": "Make operating-doc sync deterministic on CI runners without local Codex automations",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 22:25 +07 | codex/wave1-acceptance-pr",
       "summary": "fix CI verification to resolve python without local .venv",
@@ -96,11 +101,6 @@
     {
       "heading": "2026-04-17 20:27 +07 | codex/wave1-foundation",
       "summary": "Closed the main wave1 acceptance gaps and hardened the demo-ready contour",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 20:08 +07 | codex/wave1-foundation",
-      "summary": "Aligned Start_Platform.command with foundation runtime",
       "risk": "See worklog entry"
     }
   ],

@@ -837,3 +837,22 @@
 - Локальный wave1 verification остаётся зелёным.
 - Override path helper-а тоже подтверждён отдельным migration check.
 - Изменение не расширяет scope первой волны: оно только делает CI/verification contract переносимым между local shell и GitHub runner.
+
+## 2026-04-17: deterministic operating-doc sync fallback для CI
+
+### Что было не так
+
+- GitHub runner продолжал валить `./scripts/verify_workflow.sh` уже после python-fallback фикса.
+- Root cause был в `scripts/sync_operating_docs.py --check`: рендер `AGENTS.md` и `README.md` зависел от локального `~/.codex/automations`.
+- На GitHub runner этот каталог обычно пустой или отсутствует, поэтому generated block расходился с закоммиченным repo state.
+
+### Что изменено
+
+- `src/magon_standalone/operating_docs_sync.py` больше не деградирует в CI на пустой home-level automation state.
+- Если локальные automations недоступны, sync использует repo-backed fallback и сохраняет committed список `Active repo automations` из root docs.
+- Добавлен regression test на case "runner without local Codex automations".
+
+### Что подтверждено
+
+- `PYTHONPATH=src python3 -m unittest tests.test_operating_docs_sync`
+- `./scripts/verify_workflow.sh --with-web`

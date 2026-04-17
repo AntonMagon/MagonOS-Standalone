@@ -66,13 +66,16 @@ def _section_bullets(text: str, heading: str) -> list[str]:
 def _label_bullets(text: str, label: str) -> list[str]:
     bullets: list[str] = []
     armed = False
+    active_label_variants = {f"{label}:", f"- {label}:"}
     for raw in text.splitlines():
         line = raw.strip()
-        if line == f"{label}:":
+        if line in active_label_variants:
             armed = True
             continue
         if not armed:
             continue
+        if line.startswith("- ") and line.endswith(":") and line not in active_label_variants:
+            break
         if line.startswith("- "):
             bullets.append(line[2:].strip())
             continue
@@ -124,12 +127,24 @@ def _active_automation_names(codex_home: Path) -> list[str]:
     return names
 
 
+def _fallback_active_automations(repo_root: Path) -> list[str]:
+    for path in (repo_root / "AGENTS.md", repo_root / "README.md"):
+        if not path.is_file():
+            continue
+        bullets = _label_bullets(_read(path), "Active repo automations")
+        if bullets:
+            return bullets
+    return []
+
+
 def build_payload(repo_root: Path) -> OperatingDocsPayload:
     current_state = _read(repo_root / "docs/current-project-state.md")
     memory_text = _read(repo_root / ".codex/project-memory.md")
     active = _active_context(memory_text)
     codex_home = Path.home() / ".codex"
+    active_automations = _active_automation_names(codex_home) or _fallback_active_automations(repo_root)
     # RU: Корневые docs собираются из канонической repo truth, а не из ручных правок в AGENTS/README.
+    # RU: В CI у runner обычно нет локального ~/.codex/automations, поэтому для стабильного check-mode держим repo-backed fallback.
     return OperatingDocsPayload(
         updated_at=_strip_wrapping_backticks(active.get("updated_at", "unknown")),
         focus=active.get("current_focus", "unknown"),
@@ -139,7 +154,7 @@ def build_payload(repo_root: Path) -> OperatingDocsPayload:
         owned_capabilities=_label_bullets(current_state, "Also already standalone-owned"),
         runtime_surfaces=_section_bullets(current_state, "Runtime surfaces"),
         repo_skills=_repo_skill_names(repo_root),
-        active_automations=_active_automation_names(codex_home),
+        active_automations=active_automations,
     )
 
 

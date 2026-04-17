@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 22:25 +07`
-- Current focus: Unblock protected-branch publication by making wave1 CI verification portable across local and GitHub runner python layouts.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`, PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
-- Biggest operational risk: GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
+- Auto-synced at: `2026-04-17 22:34 +07`
+- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: no additional risk recorded
 - Validated contour:
   - company
   - request draft / intake boundary
