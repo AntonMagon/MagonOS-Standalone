@@ -74,15 +74,75 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-18 03:33 +07`
-- Branch: `main`
-- Current focus: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
-- Last verified workflow status: PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
+- Updated at: `2026-04-18 04:55 +07`
+- Branch: `codex/entity-help-reference`
+- Current focus: Keep the standalone launcher operationally reliable so detached starts survive the parent shell exit.
+- Last verified workflow status: PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-18 04:55 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:54 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:47 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:32 +07 | codex/entity-help-reference
+- Summary: Fix the Chrome-only Playwright wrapper regression, harden the detached launcher shell path, and document the verified tooling fault-pass results.
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - Start_Platform.command
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash scripts/run_playwright_cli.sh list`
+  - PASS `bash -lc "bash scripts/run_playwright_cli.sh --browser=firefox --help >/tmp/chrome-only.out 2>/tmp/chrome-only.err; test \$? -eq 2"`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - no additional risk recorded
 ### 2026-04-18 03:33 +07 | main
 - Summary: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
 - Changed:
@@ -1155,3 +1215,37 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `bash scripts/run_playwright_cli.sh --help`
 - Risk:
   - old Playwright caches can still exist on disk until they are explicitly removed, but they are no longer part of the supported repo workflow
+### 2026-04-18 04:31 +07 | codex/entity-help-reference
+- Summary: fixed the Chrome-only Playwright wrapper regression so browser meta-commands keep working, and hardened the detached launcher shell path without changing the verified foundation product contour
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - Start_Platform.command
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash scripts/run_playwright_cli.sh list`
+  - PASS `bash scripts/run_playwright_cli.sh --help`
+  - PASS `bash scripts/run_playwright_cli.sh --browser=firefox --help`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - detached launcher reaping still cannot be proven from the Codex tool runner alone because this environment may reap child processes after the parent command exits; runtime truth should continue to be judged by canonical verification and a real user shell session
+### 2026-04-18 04:47 +07 | codex/entity-help-reference
+- Summary: fixed the detached launcher for real by moving `Start_Platform.command --detach` to a repo-local double-fork daemon helper so backend/web stay alive after the parent shell exits
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `curl http://127.0.0.1:8091/health/ready` -> `200` after 6s and 18s
+  - PASS `curl http://127.0.0.1:3000/login` -> `200` after 6s and 18s
+  - PASS backend/web pid show `PPID 1` after launcher shell exit
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - detached runtime is now stable on the default local ports, but changing `8091/3000` still requires explicit launcher/watchdog reconfiguration

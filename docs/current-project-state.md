@@ -88,6 +88,8 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/run_foundation_unified.sh --fresh`
 - desktop launcher for the same local contour:
   - `./Start_Platform.command`
+  - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - detached mode now uses the repo-local double-fork helper `scripts/run_detached_command.py`, so backend/web must remain alive after the launcher shell exits instead of depending on the parent terminal session
 - hourly self-heal watchdog for the launcher:
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
@@ -125,6 +127,7 @@ Do not pretend full CRM/quote parity exists.
 ## Browser automation rule
 - Project browser automation is Chrome-only.
 - Use `./scripts/run_playwright_cli.sh` only with Google Chrome.
+- Chrome pinning applies only to browser-driven commands; meta-commands like `list`, `close-all`, and `kill-all` must stay usable without an injected `--browser` flag.
 - Do not start Firefox, WebKit, or alternate Playwright browser runtimes for this repo.
 - If old Playwright browser caches exist, they should be removed instead of reused.
 

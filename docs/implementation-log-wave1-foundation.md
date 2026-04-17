@@ -1070,3 +1070,47 @@
 - PASS `cd apps/web && npm run typecheck`
 - PASS `cd apps/web && npm run build`
 - PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — fault pass for wrapper/runtime tooling
+
+### Что было найдено
+
+- `scripts/run_playwright_cli.sh` регрессировал после chrome-only фиксации: meta-команда `list` получала лишний `--browser=chrome` и падала с `Unknown option: --browser`.
+- Основной product contour при этом оставался зелёным; сбой был в operator/tooling слое, а не в foundation API или web shell.
+
+### Что было доведено
+
+- Browser wrapper теперь различает browser-driven команды и meta-команды.
+- `--browser=chrome` автоматически добавляется только туда, где это действительно допустимо.
+- Команды `list`, `close-all`, `kill-all`, `--help` и похожие meta-path больше не ломаются из-за chrome-only policy.
+- Detached launcher дополнительно ужесточён через `nohup + disown`, чтобы локальный desktop shell не резал child-процессы сразу после выхода convenience launcher.
+
+### Что проверено
+
+- PASS `bash scripts/run_playwright_cli.sh list`
+- PASS `bash scripts/run_playwright_cli.sh --help`
+- PASS `bash scripts/run_playwright_cli.sh --browser=firefox --help`
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — detached launcher fixed through double-fork daemon helper
+
+### Что было найдено
+
+- Подтверждённый operational bug жил в `Start_Platform.command --detach`: backend и web успевали стартовать, но потом умирали вместе с родительским shell-процессом.
+- Попытка увести detached runtime в `launchd` не подошла для этого repo-path: процессы упирались в системное ограничение `getcwd: Operation not permitted`.
+- Отдельно обнаружился drift в `scripts/verify_workflow.sh`: он ошибочно гонял `bash -n` по Python helper-файлу.
+
+### Что было доведено
+
+- Добавлен `scripts/run_detached_command.py` с double-fork daemonization.
+- Detached-ветка `Start_Platform.command` переведена на новый helper вместо `nohup`/launchd-обходов.
+- `scripts/verify_workflow.sh` очищен от ошибочного `bash -n` по Python helper.
+
+### Что проверено
+
+- PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+- PASS повторные HTTP-проверки после выхода launcher shell:
+  - `http://127.0.0.1:8091/health/ready` -> `200` через 6 и 18 секунд
+  - `http://127.0.0.1:3000/login` -> `200` через 6 и 18 секунд
+- PASS `ps` по backend/web pid показал `PPID 1`, то есть detached-процессы переживают завершение launcher shell
+- PASS `./scripts/verify_workflow.sh --with-web`

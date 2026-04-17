@@ -77,13 +77,13 @@ kill_port() {
 start_detached() {
   local log_file="$1"
   local pid_file="$2"
-  shift 2
-  if command -v setsid >/dev/null 2>&1; then
-    setsid "$@" >"$log_file" 2>&1 < /dev/null &
-  else
-    nohup "$@" >"$log_file" 2>&1 < /dev/null &
-  fi
-  echo $! >"$pid_file"
+  local working_directory="$3"
+  shift 3
+  "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_detached_command.py" \
+    --cwd "$working_directory" \
+    --pid-file "$pid_file" \
+    --log-file "$log_file" \
+    -- "$@"
 }
 
 wait_for_url() {
@@ -125,7 +125,7 @@ kill_port "$WEB_PORT"
 kill_port "$BACKEND_PORT"
 
 rm -f "$BACKEND_LOG" "$WEB_LOG" "$UNIFIED_LOG"
-rm -f /tmp/magon-foundation-unified.pid
+rm -f /tmp/magon-foundation-unified.pid /tmp/magon-foundation-backend.pid /tmp/magon-foundation-web.pid
 rm -rf "$REPO_ROOT/apps/web/.next"
 
 if [[ "$KEEP_DB" == "0" ]]; then
@@ -160,14 +160,14 @@ if [[ "$DETACH" == "1" ]]; then
   fi
 
   echo "[magon-restart] starting foundation backend on http://$BACKEND_HOST:$BACKEND_PORT"
-  start_detached "$BACKEND_LOG" /tmp/magon-foundation-backend.pid \
+  start_detached "$BACKEND_LOG" /tmp/magon-foundation-backend.pid "$REPO_ROOT" \
     "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$BACKEND_HOST" --port "$BACKEND_PORT"
   wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health/ready" "foundation backend"
 
   echo "[magon-restart] starting foundation web on http://$WEB_HOST:$WEB_PORT"
   # RU: Detach-ветка должна поднимать тот же foundation web runtime, но без foreground trap из run_foundation_unified.sh, иначе launcher сам убивает уже готовые процессы.
-  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid \
-    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' MAGON_WEB_DIST_DIR='.next-dev' WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
+  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid "$REPO_ROOT/apps/web" \
+    /usr/bin/env "MAGON_API_BASE_URL=http://$BACKEND_HOST:$BACKEND_PORT" "MAGON_WEB_DIST_DIR=.next-dev" "WATCHPACK_POLLING=true" "WATCHPACK_POLLING_INTERVAL=1000" npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
   wait_for_url "http://$WEB_HOST:$WEB_PORT/login" "foundation web"
 
   echo

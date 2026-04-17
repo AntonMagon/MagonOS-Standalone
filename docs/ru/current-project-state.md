@@ -98,6 +98,9 @@
   - `./scripts/run_foundation_unified.sh --fresh`
 - desktop launcher для того же локального контура:
   - `./Start_Platform.command`
+  - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - detach-режим теперь опирается на локальный double-fork helper `scripts/run_detached_command.py`, поэтому backend/web обязаны оставаться живыми и после завершения launcher shell, а не зависеть от родительского терминала
+  - detached path подтверждён живой проверкой: backend `/health/ready` и web `/login` остаются на `200` после выхода launcher shell
 - hourly self-heal watchdog для launcher:
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
@@ -137,6 +140,7 @@
 
 - В этом репозитории browser automation жёстко фиксируется на `Google Chrome`.
 - Канонический вход один: `./scripts/run_playwright_cli.sh`
+- Chrome pinning применяется только к browser-driven командам; meta-команды вроде `list`, `close-all` и `kill-all` обязаны работать без принудительного `--browser`.
 - Firefox, WebKit и любые альтернативные Playwright browser runtimes для этого проекта не поднимаем.
 - Если от старых прогонов остались browser caches, их удаляем, а не сохраняем как часть рабочего контура.
 

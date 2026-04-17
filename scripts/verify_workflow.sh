@@ -48,10 +48,12 @@ bash -n \
   .githooks/pre-commit \
   .githooks/pre-push
 
+# RU: Detached daemon-helper проверяем как Python entrypoint отдельно от bash syntax-check, иначе launcher drift снова пройдёт мимо канонического verify.
 ./.venv/bin/python -m py_compile \
   scripts/check_russian_locale_integrity.py \
   scripts/render_launchd_launcher_watchdog.py \
   scripts/render_launchd_periodic_checks.py \
+  scripts/run_detached_command.py \
   scripts/run_launcher_watchdog.py \
   scripts/run_repo_autosync.py \
   scripts/run_periodic_checks.py \
