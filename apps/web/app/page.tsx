@@ -1,8 +1,8 @@
+// RU: Файл входит в проверенный контур первой волны.
 import Link from 'next/link';
 import {getTranslations} from 'next-intl/server';
-import {ArrowRight, AudioWaveform, Orbit, ShieldCheck, SlidersHorizontal} from 'lucide-react';
+import {ArrowRight, AudioWaveform, Boxes, Orbit, ShieldCheck, SlidersHorizontal, Workflow} from 'lucide-react';
 
-import {OrbScene} from '@/components/3d/orb-scene';
 import {MagneticButton} from '@/components/lightswind/magnetic-button';
 import {InteractiveGlassCard} from '@/components/lightswind/interactive-glass-card';
 import {SectionIntro} from '@/components/sections/section-intro';
@@ -52,6 +52,11 @@ export default async function HomePage() {
               </div>
               <SectionIntro eyebrow={t('eyebrow')} title={t('title')} text={t('text')} className="max-w-4xl" />
               <div className="flex flex-wrap items-center gap-3">
+                <Link href="/catalog">
+                  <ShinyButton className="border-white/12 bg-white/8 text-foreground hover:bg-white/12">
+                    {t('openCatalog')}
+                  </ShinyButton>
+                </Link>
                 <Link href="/dashboard">
                   <MagneticButton className="group min-w-[11rem]">
                     {t('openDashboard')}
@@ -73,8 +78,8 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-              <MagicCard className="min-h-[22rem] rounded-[2rem] border-white/15" mode="orb" glowFrom="#ee4f27" glowTo="#54d2b5">
+            <div className="grid gap-4">
+              <MagicCard className="rounded-[2rem] border-white/15" mode="orb" glowFrom="#ee4f27" glowTo="#54d2b5">
                 <div className="relative flex h-full flex-col justify-between p-6">
                   <div>
                     <p className="text-sm text-muted-foreground">{t('focusLabel')}</p>
@@ -98,8 +103,42 @@ export default async function HomePage() {
                 </div>
               </MagicCard>
 
-              <div className="glass-panel relative overflow-hidden rounded-[2rem] border-white/15 p-3 md:p-4">
-                <OrbScene />
+              <div className="glass-panel relative overflow-hidden rounded-[2rem] border-white/15 p-5 md:p-6">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(84,210,181,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(238,79,39,0.16),transparent_26%)]" />
+                <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+                  <div className="space-y-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/12 bg-white/10 text-primary">
+                      <Boxes className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">{t('surfacesLabel')}</p>
+                      <h3 className="text-2xl leading-tight">{t('surfacesTitle')}</h3>
+                      <p className="text-sm leading-6 text-foreground/80">{t('surfacesText')}</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-3">
+                    {(['dashboard', 'ops', 'map'] as const).map((item) => (
+                      <div key={item} className="rounded-[1.3rem] border border-white/12 bg-white/10 p-4 backdrop-blur-xl">
+                        <div className="text-sm font-semibold leading-6">{t(`surfaces.${item}.title`)}</div>
+                        <div className="mt-1 text-sm leading-6 text-foreground/72">{t(`surfaces.${item}.body`)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-[1.5rem] border border-white/12 bg-black/10 p-4">
+                    {/* RU: На главной справа нужен не "красивый пустой блок", а короткий ориентир, куда пользователь идёт дальше по рабочему контуру. */}
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Workflow className="h-4 w-4 text-primary" />
+                      {t('flowPreviewTitle')}
+                    </div>
+                    <div className="grid gap-2">
+                      {(['one', 'two', 'three'] as const).map((item) => (
+                        <div key={item} className="rounded-2xl border border-white/10 bg-white/6 px-3 py-3 text-sm leading-6 text-foreground/76">
+                          {t(`flowPreview.${item}`)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

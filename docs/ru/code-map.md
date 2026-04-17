@@ -23,6 +23,7 @@
   Визуальная папка проекта: сгенерированные графические карты и структурные схемы.
 - `skills/`
   Локальные project-specific skills для типовых режимов работы по этому репозиторию.
+  Новый bootstrap-навык для создания таких skills по repo contract лежит в `skills/skill-project-bootstrap/`.
 - `.codex/`
   Project memory и repo-level config для агентного workflow.
 - `.githooks/`
@@ -85,8 +86,12 @@ App Router страницы Next.js:
 - `page.tsx` — главная витрина
 - `dashboard/page.tsx` — runtime/dashboard
 - `ops-workbench/page.tsx` — операторский вход
-- `project-map/page.tsx` — визуальная карта проекта: контур, риски, automation loops и последние verified changes
+- `project-map/page.tsx` — визуальная карта проекта: контур, риски, автоматические контуры и последние проверенные изменения
 - `personalize/page.tsx` — страница границ/контракта
+
+Важно:
+- главная витрина не должна превращаться в декоративный 3D-экран без смысла; правая колонка обязана объяснять следующий рабочий шаг
+- `project-map/page.tsx` не должен читать как сырой technical log; для русского locale он обязан отдавать нормальные деловые формулировки, а не полуанглийский project-memory dump
 
 ### `apps/web/components/navigation/site-header.tsx`
 
@@ -140,6 +145,10 @@ Versioned memory проекта.
 Важно:
 - теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
 - это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
+- dev shell теперь использует отдельный `MAGON_WEB_DIST_DIR=.next-dev`
+- это нужно, чтобы параллельный `next build` не ломал живой runtime на `3000`
+- launcher теперь считает unified shell ready только после успешного `GET /`
+- это нужно, чтобы внешние smoke/perf проверки не ловили холодную компиляцию главной страницы как ложный runtime-failure
 
 ### `scripts/run_platform.sh`
 
@@ -160,7 +169,7 @@ Desktop launcher-обёртка для локального старта с Find
 
 Важно:
 - это не новый канонический runtime path
-- реальный all-in-one entrypoint всё равно `scripts/run_unified_platform.sh`
+- реальный all-in-one foundation entrypoint теперь `scripts/run_foundation_unified.sh`
 - `Start_Platform.command` просто подготавливает окружение и в foreground передаёт управление туда
 
 ### `scripts/finalize_task.py`
@@ -193,6 +202,30 @@ Desktop launcher-обёртка для локального старта с Find
 - `docs/visuals/project-map.md`
 - `docs/visuals/project-map.json`
 
+### `scripts/check_russian_locale_integrity.py`
+
+Жёсткий guard для русского слоя.
+
+Проверяет versioned source-of-truth:
+- `apps/web/messages/ru.json`
+- `docs/ru/current-project-state.md`
+- `docs/ru/visuals/project-map.md`
+- `docs/ru/visuals/project-map.json`
+
+Если передан `--web-url`, дополнительно проходит живые страницы:
+- `/`
+- `/dashboard`
+- `/ops-workbench`
+- `/project-map`
+
+И режет проход, если в русском shell всплыли английские доменные ярлыки вроде `company`, `review queue`, `feedback ledger / projection` или `quote intent / RFQ boundary`.
+
+Дополнительно режет плохие гибридные формулировки в русском слое вроде:
+- `worklog`
+- `scope guard`
+- `technical log`
+- `project-memory dump`
+
 ### `scripts/run_playwright_cli.sh`
 
 Project-safe wrapper вокруг установленного `playwright` skill.
@@ -200,6 +233,9 @@ Project-safe wrapper вокруг установленного `playwright` skil
 - использует `~/.codex/skills/playwright/scripts/playwright_cli.sh`
 - уводит `npx` cache в `.cache/npm-playwright`
 - обходит проблему с root-owned файлами в `~/.npm`
+- по умолчанию переиспользует одну живую playwright-сессию из `.cache/playwright-session`
+- повторный `open` не должен плодить новые окна Chrome; если окно уже открыто, wrapper ведёт тот же браузер в новый URL
+- это именно ручной lightweight-инструмент для одного окна, а не тяжёлый suite внутри каждого `verify`
 
 Если нужно открыть живую страницу, снять snapshot, кликать по UI и ловить текстовые ошибки — стартовать лучше через этот wrapper.
 
@@ -239,7 +275,9 @@ Project-safe wrapper вокруг установленного `playwright` skil
 Нужен, чтобы локальная машина сама периодически фиксировала:
 - синхронность root docs
 - актуальность visual map
+- чистоту русского source-of-truth
 - живость платформы
+- утечки английских доменных ярлыков в русском shell
 - k6 smoke при живом runtime
 
 ### `scripts/install_launchd_periodic_checks.sh`
@@ -321,6 +359,80 @@ Installer постоянного Watchman trigger для этого репози
 - browser automation wrapper `scripts/run_playwright_cli.sh` тоже включён в этот contract
 - autosync scripts и watchman installer тоже входят в этот contract
 - если verification не знает про новый launcher или guard, значит repo drift уже начался
+
+## Codex automation topology
+
+### `~/.codex/automations/`
+
+Тут живут Codex cron-автоматизации, которые не заменяют локальный `launchd`, а дают inbox-facing контроль поверх репозитория.
+
+Общий meta-skill для них теперь один:
+- `automation-context-guard`
+
+Его задача:
+- всегда стартовать с `./scripts/restore_context.sh --check`
+- тянуть один и тот же repo context bundle
+- заставлять automation доверять каноническим файлам и командам, а не собственной интерпретации
+- не давать дневным audit/review слоям жить "от башки"
+
+Текущий рабочий набор:
+- `Platform Smoke 2h`
+- `Repo Guard 3h`
+- `RU Locale Guard 6h`
+- `Architecture Drift Watch`
+- `Operator Flow Audit`
+- `Visual Map Daily`
+- `PR Branch Hygiene`
+- `Daily Project Digest`
+- `Nightly Deep Review`
+- `Weekly Release Gate`
+
+Смысловой порядок такой:
+- сначала быстрые guard’ы и smoke
+- потом дневные бизнес- и архитектурные аудиты
+- потом вечерние review/digest
+- в конце недели — release verdict
+
+Это нужно, чтобы:
+- локальный autosync не тащил на себе весь review-контур
+- тяжёлые агенты не стреляли каждый час
+- активная разработка не тонула в overlapping automation runs
+
+## Naming contract для `skills/`
+
+Repo-local skills больше не должны называться произвольно.
+
+Теперь есть явный guard:
+- `scripts/check_skill_naming.py`
+- `src/magon_standalone/skill_naming.py`
+
+Он проверяет:
+- lowercase `kebab-case`
+- от `2` до `4` токенов
+- разрешённый первый токен действия
+- совпадение имени папки и `name:` во frontmatter `SKILL.md`
+
+Смысл:
+- не плодить похожие skills с хаотичными именами
+- не ломать читаемость automation prompt layer
+- не путать repo-local skills с plugin/curated skills
+
+## Automation contract для `~/.codex/automations/`
+
+Для живых Codex automation теперь тоже есть отдельный guard:
+- `scripts/check_automation_contract.py`
+- `src/magon_standalone/automation_contract.py`
+
+Он проверяет:
+- `id` automation и имя папки
+- обязательный `automation-context-guard` в prompt
+- правильный `cwd`
+- локальную execution model
+- допустимый `rrule`
+
+Смысл тот же:
+- automation не должны жить "вне репозитория" по своим случайным правилам
+- review/smoke/digest слои должны стартовать из того же контекста, что и ручная работа по проекту
 
 ### `Taskfile.yml`
 
@@ -409,7 +521,7 @@ Root config для Watchman.
 ### `skills/project-visual-map/SKILL.md`
 
 Локальный skill для обновления и ревизии визуальной карты проекта.
-Нужен, когда надо быстро увидеть контур продукта, активный фокус, риски, skills и automation loops в графическом виде.
+Нужен, когда надо быстро увидеть контур продукта, активный фокус, риски, локальные скиллы и автоматические контуры в графическом виде.
 
 ## Tests
 

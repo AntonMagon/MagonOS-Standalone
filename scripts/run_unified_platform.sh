@@ -106,13 +106,41 @@ if ! curl -fsS "http://$BACKEND_HOST:$BACKEND_PORT/health" >/dev/null 2>&1; then
 fi
 
 echo "[magon-unified] backend healthy"
+cd "$WEB_DIR"
+# RU: На macOS watch limit часто роняет Next dev через EMFILE, поэтому unified shell запускаем с polling-mode по умолчанию.
 echo "[magon-unified] starting web shell on http://$WEB_HOST:$WEB_PORT"
+
+MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" \
+MAGON_WEB_DIST_DIR=".next-dev" \
+WATCHPACK_POLLING=true \
+WATCHPACK_POLLING_INTERVAL=1000 \
+npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT" &
+WEB_PID=$!
+
+cleanup_web() {
+  if kill -0 "$WEB_PID" >/dev/null 2>&1; then
+    # RU: Unified launcher должен гасить child Next dev сам, иначе после Ctrl+C остаётся висячий web shell на старом порту.
+    kill "$WEB_PID" >/dev/null 2>&1 || true
+    wait "$WEB_PID" 2>/dev/null || true
+  fi
+}
+
+trap 'cleanup_web; cleanup' EXIT INT TERM
+
+for _ in $(seq 1 60); do
+  if curl -fsS --max-time 5 "http://$WEB_HOST:$WEB_PORT/" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+if ! curl -fsS --max-time 5 "http://$WEB_HOST:$WEB_PORT/" >/dev/null 2>&1; then
+  echo "Web shell failed to become ready on http://$WEB_HOST:$WEB_PORT/" >&2
+  exit 1
+fi
+
+echo "[magon-unified] web shell ready"
 echo "[magon-unified] public shell: http://$WEB_HOST:$WEB_PORT/"
 echo "[magon-unified] operator surfaces: http://$WEB_HOST:$WEB_PORT/ops-workbench and http://$WEB_HOST:$WEB_PORT/ui/companies"
 
-cd "$WEB_DIR"
-# RU: На macOS watch limit часто роняет Next dev через EMFILE, поэтому unified shell запускаем с polling-mode по умолчанию.
-MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" \
-WATCHPACK_POLLING=true \
-WATCHPACK_POLLING_INTERVAL=1000 \
-npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
+wait "$WEB_PID"

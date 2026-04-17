@@ -27,6 +27,8 @@ bash -n \
   scripts/install_launchd_periodic_checks.sh \
   scripts/run_platform.sh \
   scripts/platform_smoke_check.sh \
+  scripts/foundation_migration_check.sh \
+  scripts/foundation_wave1_demo_smoke_check.sh \
   scripts/run_perf_suite.sh \
   scripts/launchd_periodic_checks_status.sh \
   scripts/render_launchd_periodic_checks.py \
@@ -42,18 +44,36 @@ bash -n \
   .githooks/pre-push
 
 ./.venv/bin/python -m py_compile \
+  scripts/check_russian_locale_integrity.py \
   scripts/render_launchd_periodic_checks.py \
   scripts/run_repo_autosync.py \
   scripts/run_periodic_checks.py \
   scripts/sync_operating_docs.py \
+  src/magon_standalone/locale_integrity.py \
   src/magon_standalone/launchd_periodic_checks.py \
   src/magon_standalone/observability.py \
   src/magon_standalone/repo_autosync.py \
   src/magon_standalone/operating_docs_sync.py
 
 ./.venv/bin/python scripts/sync_operating_docs.py --check
+# RU: Статический locale-guard режет verify ещё до runtime, если русский source-of-truth снова протёк английскими доменными ярлыками.
+./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
+# RU: Имена repo-local skills тоже держим под guard, чтобы automation и ручной вызов skills опирались на один читаемый naming-contract.
+./.venv/bin/python scripts/check_skill_naming.py
+# RU: Живые Codex automation тоже считаются частью operating-layer, поэтому их id/prompt/cwd/rrule не должны уплывать мимо общего контекста проекта.
+./.venv/bin/python scripts/check_automation_contract.py
 
 ./.venv/bin/python -m unittest \
+  tests.test_foundation_api \
+  tests.test_foundation_suppliers \
+  tests.test_foundation_catalog \
+  tests.test_foundation_draft_request \
+  tests.test_foundation_offers \
+  tests.test_foundation_orders \
+  tests.test_foundation_files_documents \
+  tests.test_foundation_events_dashboards \
+  tests.test_foundation_acceptance \
+  tests.test_foundation_migrations \
   tests.test_persistence \
   tests.test_api \
   tests.test_operations \
@@ -61,11 +81,15 @@ bash -n \
   tests.test_deploy \
   tests.test_launchd_periodic_checks \
   tests.test_observability \
+  tests.test_locale_integrity \
+  tests.test_automation_contract \
   tests.test_repo_autosync \
   tests.test_repo_workflow \
+  tests.test_skill_naming \
   tests.test_operating_docs_sync \
   tests.test_russian_comment_contract
 
 if [[ "$WITH_WEB" == "1" ]]; then
+  # RU: Web-проход остаётся опциональным флагом, чтобы быстрый backend verify и полный shell+web gate жили в одном entrypoint.
   (cd apps/web && npm run typecheck)
 fi

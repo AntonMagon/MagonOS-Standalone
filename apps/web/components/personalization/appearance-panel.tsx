@@ -49,9 +49,10 @@ export function AppearancePanel() {
                     {active ? <Check className="h-4 w-4 text-primary" /> : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    {Object.values(palette.values).map((hsl) => (
+                    {/* RU: Внутри одной палитры часть токенов намеренно делит один и тот же HSL, поэтому key должен опираться на имя токена, а не на само значение цвета. */}
+                    {Object.entries(palette.values).map(([token, hsl]) => (
                       <span
-                        key={hsl}
+                        key={`${palette.id}-${token}`}
                         className="h-8 w-8 rounded-full border border-white/15"
                         style={{backgroundColor: `hsl(${hsl})`}}
                         aria-hidden="true"

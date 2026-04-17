@@ -6,6 +6,7 @@ from magon_standalone.supplier_intelligence.sqlite_persistence import SqliteSupp
 
 
 class TestSqlitePersistence(unittest.TestCase):
+    # RU: SQLite store остаётся источником истины для standalone intelligence, поэтому сериализация/декодирование тестируются жёстко.
     def test_store_initializes_schema_and_lists_empty_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / 'supplier_intelligence.sqlite3'
@@ -19,6 +20,8 @@ class TestSqlitePersistence(unittest.TestCase):
             self.assertEqual(counts['routing_audit'], 0)
             self.assertEqual(counts['commercial_records'], 0)
             self.assertEqual(counts['customer_accounts'], 0)
+            self.assertEqual(counts['request_drafts'], 0)
+            self.assertEqual(counts['request_intakes'], 0)
             self.assertEqual(counts['commercial_opportunities'], 0)
             self.assertEqual(counts['quote_intents'], 0)
             self.assertEqual(counts['production_handoffs'], 0)
@@ -28,6 +31,8 @@ class TestSqlitePersistence(unittest.TestCase):
             self.assertEqual(store.list_scores(), [])
             self.assertEqual(store.list_vendor_profiles(), [])
             self.assertEqual(store.list_commercial_records(), [])
+            self.assertEqual(store.list_request_drafts(), [])
+            self.assertEqual(store.list_request_intakes(), [])
             self.assertEqual(store.list_commercial_opportunities(), [])
             self.assertEqual(store.list_commercial_audit(), [])
             self.assertEqual(store.list_quote_intents(), [])
@@ -226,6 +231,55 @@ class TestSqlitePersistence(unittest.TestCase):
             self.assertGreaterEqual(len(audit), 3)
             self.assertIn('customer_account', {item['entity_type'] for item in audit})
             self.assertIn('commercial_opportunity', {item['entity_type'] for item in audit})
+
+    def test_request_draft_submit_creates_request_and_updates_audit(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / 'supplier_intelligence.sqlite3'
+            store = SqliteSupplierIntelligenceStore(db_path)
+            store.upsert_companies([
+                {
+                    'canonical_key': 'cmp-1',
+                    'canonical_name': 'Example Co',
+                    'website': 'https://example.co',
+                    'confidence': 0.8,
+                    'review_status': 'new',
+                    'source_fingerprint': 'fp-1',
+                    'dedup_fingerprint': 'df-1',
+                }
+            ])
+            draft = store.create_request_draft(
+                company_key='cmp-1',
+                draft_type='rfq_packaging',
+                customer_name='Anna Buyer',
+                customer_email='anna@example.co',
+                item_summary='5000 corrugated cartons',
+                quantity_hint='5000 boxes',
+                city='Ho Chi Minh City',
+                requested_deadline='2026-04-25',
+                file_required=True,
+                file_links=['https://files.example/spec.pdf'],
+                notes='Initial intake',
+            )
+
+            self.assertEqual(draft['required_fields_state'], 'ready_to_submit')
+            request = store.submit_request_draft(
+                draft_id=draft['id'],
+                source_channel='web_form',
+                customer_reference='CUST-REQ-1',
+                request_status='needs_review',
+                notes='Escalate for review',
+            )
+
+            updated_draft = store.get_request_draft(draft['id'])
+            self.assertEqual(updated_draft['draft_status'], 'submitted')
+            self.assertEqual(request['draft_id'], draft['id'])
+            self.assertEqual(request['request_status'], 'needs_review')
+            self.assertTrue(request['request_code'].startswith('REQ-'))
+            self.assertEqual(store.count_request_drafts(company_key='cmp-1'), 1)
+            self.assertEqual(store.count_request_intakes(company_key='cmp-1'), 1)
+            audit = store.list_commercial_audit(company_key='cmp-1')
+            self.assertIn('request_draft', {item['entity_type'] for item in audit})
+            self.assertIn('request_intake', {item['entity_type'] for item in audit})
 
     def test_quote_intent_enforces_commercial_linkage_integrity(self):
         with tempfile.TemporaryDirectory() as tmpdir:

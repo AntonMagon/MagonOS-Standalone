@@ -8,6 +8,11 @@ It exists so the project context survives across sessions instead of being re-ex
 - Legacy donor repo: `/Users/anton/Desktop/MagonOS/MagonOS`
 - Standalone is the primary platform-of-record.
 - Odoo is donor/bridge context only, not the active runtime.
+- Wave1 planning truth lives in `gpt_doc/codex_wave1_spec_ru.docx`.
+- Global architecture truth for the new contour lives in `gpt_doc/platform_architecture_report_ru.docx`.
+- The broader roadmap/documentation sync pack lives in `gpt_doc/platform_documentation_pack_ru.docx`.
+- `docs/current-project-state.md` is runtime truth; `gpt_doc/*` is planning truth for the new contour.
+- Wave1 default runtime is the foundation stack without the legacy WSGI bridge; legacy is opt-in only through `MAGON_FOUNDATION_LEGACY_ENABLED=true`.
 - Default changes happen only in this repository.
 - Current verified contour:
   - company
@@ -39,10 +44,19 @@ It exists so the project context survives across sessions instead of being re-ex
 ## Canonical Commands
 - Restore context: `./scripts/restore_context.sh`
 - Install repo guards: `./scripts/install_repo_guards.sh`
-- Backend only: `./scripts/run_platform.sh --fresh --port 8091`
-- Unified platform: `./scripts/run_unified_platform.sh --fresh`
+- Foundation backend: `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+- Unified foundation local-up: `./scripts/run_foundation_unified.sh --fresh`
+- Foundation migrate + seed:
+  - `./scripts/run_foundation_migrations.sh`
+  - `./.venv/bin/python scripts/seed_foundation.py`
 - Fixture pipeline: `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
-- Backend verification: `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
+- Foundation verification:
+  - `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - `./scripts/foundation_smoke_check.sh`
+- Compatibility-only legacy startup:
+  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
+  - `./scripts/run_unified_platform.sh --fresh`
+  - `./scripts/run_platform.sh --fresh --port 8091`
 - Workflow verification: `./scripts/verify_workflow.sh`
 - Web typecheck when web changed: `cd apps/web && npm run typecheck`
 - Finalize a substantial task and persist memory:
@@ -60,15 +74,488 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 06:08 +07`
-- Branch: `develop`
-- Current focus: Green PR checks and promotion of develop to main through the protected PR path
-- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
+- Updated at: `2026-04-17 20:27 +07`
+- Branch: `codex/wave1-foundation`
+- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 20:27 +07 | codex/wave1-foundation
+- Summary: Closed the main wave1 acceptance gaps and hardened the demo-ready contour
+- Changed:
+  - alembic/versions/20260417_0009_wave1_acceptance_hardening.py
+  - src/magon_standalone/foundation/settings.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/integrations/foundation/supplier_sources.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - src/magon_standalone/foundation/file_document_services.py
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/modules/files_media.py
+  - src/magon_standalone/foundation/modules/documents.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - tests/test_foundation_acceptance.py
+  - tests/test_foundation_migrations.py
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - .github/workflows/ci.yml
+  - apps/web/eslint.config.mjs
+  - apps/web/components/requests/request-public-view.tsx
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/foundation-runbook.md
+  - docs/ru/foundation-architecture-as-built.md
+  - docs/ru/wave1-acceptance-checklist.md
+  - docs/ru/wave1-known-limitations.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+  - PASS `bash ./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_supplier_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_request_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_offer_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_order_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Risk:
+  - Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+### 2026-04-17 20:08 +07 | codex/wave1-foundation
+- Summary: Aligned Start_Platform.command with foundation runtime
+- Changed:
+  - Start_Platform.command
+  - scripts/run_foundation_unified.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `bash -n ./Start_Platform.command`
+  - PASS `bash -n ./scripts/run_foundation_unified.sh`
+  - PASS `./Start_Platform.command --help`
+  - PASS `./Start_Platform.command --detach --no-open`
+- Risk:
+  - Detached background persistence cannot be observed from the Codex command harness because child processes are cleaned when the exec session ends; Finder or a normal terminal remains the intended launcher path.
+### 2026-04-17 19:57 +07 | codex/wave1-foundation
+- Summary: implement wave1 messages, rules, notifications and dashboards contour
+- Changed:
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/audit.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/request_intake_services.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/order_services.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/modules/drafts_requests.py
+  - src/magon_standalone/foundation/modules/comms.py
+  - src/magon_standalone/foundation/modules/rules_engine.py
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/components/requests/request-public-view.tsx
+  - apps/web/app/ops-workbench/page.tsx
+  - apps/web/app/admin-dashboard/page.tsx
+  - apps/web/app/supply-dashboard/page.tsx
+  - apps/web/app/processing-dashboard/page.tsx
+  - tests/test_foundation_events_dashboards.py
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents tests.test_foundation_events_dashboards`
+  - PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+- Risk:
+  - supplier/public timeline aggregation across related request-offer-order owners still stays intentionally narrow and may need explicit cross-owner joins in a later wave.
+### 2026-04-17 16:44 +07 | develop
+- Summary: Implemented wave1 managed files and documents contour
+- Changed:
+  - src/magon_standalone/foundation/models.py,src/magon_standalone/foundation/file_document_services.py,src/magon_standalone/foundation/modules/shared.py,src/magon_standalone/foundation/modules/files_media.py,src/magon_standalone/foundation/modules/documents.py,src/magon_standalone/foundation/modules/drafts_requests.py,src/magon_standalone/foundation/modules/orders.py,src/magon_standalone/foundation/settings.py,src/magon_standalone/integrations/foundation/storage.py,src/magon_standalone/integrations/foundation/__init__.py,alembic/versions/20260417_0007_wave1_files_documents.py,apps/web/lib/foundation-client.ts,apps/web/components/requests/request-public-view.tsx,apps/web/components/requests/request-workbench-detail.tsx,apps/web/components/orders/order-detail.tsx,tests/test_foundation_files_documents.py,scripts/foundation_files_documents_smoke_check.sh,docs/implementation-notes.md,docs/implementation-log-wave1-foundation.md,docs/current-project-state.md,docs/ru/current-project-state.md,docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents && bash ./scripts/foundation_files_documents_smoke_check.sh && (cd apps/web && npm run typecheck) && ./scripts/verify_workflow.sh`
+- Risk:
+  - legacy thin catalog/supplier references still coexist with new foundation entities outside the already verified wave1 boundaries
+### 2026-04-17 16:09 +07 | develop
+- Summary: Implemented wave1 Order layer with lines and internal payment skeleton
+- Changed:
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/order_services.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/modules/drafts_requests.py
+  - src/magon_standalone/foundation/modules/orders.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - alembic/versions/20260417_0006_wave1_orders_payments.py
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/app/orders/page.tsx
+  - apps/web/app/orders/[orderCode]/page.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/request-public-view.tsx
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - tests/test_foundation_orders.py
+  - scripts/foundation_order_smoke_check.sh
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_offers tests.test_foundation_orders`
+  - PASS `bash ./scripts/foundation_order_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - catalog/supplier thin legacy references still coexist with new foundation entities outside already verified wave1 boundaries
+### 2026-04-17 16:01 +07 | develop
+- Summary: Hourly platform smoke pass recorded with one frontend route gap
+- Changed:
+  - .codex/automations/hourly-platform-smoke/memory.md
+- Verified:
+  - SKIPPED
+- Risk:
+  - The /ui/companies operator route returns 404, so the web shell still has one missing surface.
+### 2026-04-17 15:44 +07 | develop
+- Summary: Implemented wave1 versioned Offer module between Request and Order
+- Changed:
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/request_intake_services.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/modules/offers.py
+  - src/magon_standalone/foundation/modules/orders.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - alembic/versions/20260417_0005_wave1_offer_versions.py
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/request-public-view.tsx
+  - tests/test_foundation_api.py
+  - tests/test_foundation_offers.py
+  - scripts/foundation_offer_smoke_check.sh
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_catalog tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_suppliers`
+  - PASS `bash ./scripts/foundation_offer_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_request_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - catalog/supplier thin legacy references still coexist with new foundation entities outside already verified wave1 boundaries
+### 2026-04-17 15:16 +07 | develop
+- Summary: Implemented wave1 central Draft/Request intake contour
+- Changed:
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/codes.py
+  - src/magon_standalone/foundation/request_intake_services.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/modules/drafts_requests.py
+  - src/magon_standalone/foundation/modules/offers.py
+  - src/magon_standalone/foundation/modules/orders.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - alembic/versions/20260417_0004_wave1_draft_request_central_intake.py
+  - apps/web/app/drafts/[draftCode]/page.tsx
+  - apps/web/app/requests/[customerRef]/page.tsx
+  - apps/web/app/request-workbench/page.tsx
+  - apps/web/app/request-workbench/[requestCode]/page.tsx
+  - apps/web/components/catalog/catalog-request-form.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/requests/request-public-view.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - tests/test_foundation_api.py
+  - tests/test_foundation_catalog.py
+  - tests/test_foundation_draft_request.py
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_catalog_smoke_check.sh
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-runbook.md
+  - docs/ru/visuals/project-map.json
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_catalog tests.test_foundation_draft_request tests.test_foundation_suppliers`
+  - PASS `bash ./scripts/foundation_request_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_catalog_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - Legacy business contour and new foundation contour are still not fully reconciled entity-by-entity outside the validated wave1 boundaries.
+### 2026-04-17 14:32 +07 | develop
+- Summary: Implemented wave1 limited catalog showcase with guest draft and RFQ entry
+- Changed:
+  - src/magon_standalone/foundation/models.py,src/magon_standalone/foundation/modules/shared.py,src/magon_standalone/foundation/modules/drafts_requests.py,src/magon_standalone/foundation/modules/catalog.py,src/magon_standalone/foundation/bootstrap.py,src/magon_standalone/foundation/celery_app.py,alembic/versions/20260417_0003_wave1_catalog_showcase.py,tests/test_foundation_api.py,tests/test_foundation_catalog.py,apps/web/app/page.tsx,apps/web/app/catalog/page.tsx,apps/web/app/catalog/[itemCode]/page.tsx,apps/web/app/rfq/page.tsx,apps/web/components/catalog/catalog-showcase.tsx,apps/web/components/catalog/catalog-detail.tsx,apps/web/components/catalog/catalog-request-form.tsx,apps/web/lib/site-nav.ts,apps/web/messages/ru.json,apps/web/messages/en.json,scripts/foundation_catalog_smoke_check.sh,docs/implementation-notes.md,docs/implementation-log-wave1-foundation.md,docs/current-project-state.md,docs/ru/current-project-state.md,docs/ru/foundation-runbook.md,docs/ru/visuals/project-map.json
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 14:07 +07 | develop
+- Summary: Implemented wave1 supplier companies business module with raw-normalized-confirmed ingest contour
+- Changed:
+  - src/magon_standalone/foundation/models.py,src/magon_standalone/foundation/supplier_services.py,src/magon_standalone/foundation/modules/suppliers.py,src/magon_standalone/foundation/bootstrap.py,src/magon_standalone/foundation/celery_app.py,src/magon_standalone/foundation/modules/shared.py,src/magon_standalone/foundation/modules/audit_dashboards.py,src/magon_standalone/integrations/foundation/base.py,src/magon_standalone/integrations/foundation/__init__.py,src/magon_standalone/integrations/foundation/supplier_sources.py,alembic/versions/20260417_0002_wave1_supplier_companies_module.py,tests/test_foundation_suppliers.py,scripts/run_supplier_demo_pipeline.py,scripts/foundation_supplier_smoke_check.sh,apps/web/lib/foundation-client.ts,apps/web/components/auth/foundation-login-form.tsx,apps/web/lib/site-nav.ts,apps/web/app/suppliers/page.tsx,apps/web/app/suppliers/[supplierCode]/page.tsx,apps/web/app/supplier-sites/[siteCode]/page.tsx,apps/web/app/supplier-ingests/[ingestCode]/page.tsx,apps/web/messages/ru.json,apps/web/messages/en.json,docs/implementation-notes.md,docs/implementation-log-wave1-foundation.md,docs/current-project-state.md,docs/ru/current-project-state.md,docs/ru/foundation-runbook.md,docs/ru/visuals/project-map.json,.codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:33 +07 | develop
+- Summary: Documented the verified wave1 stack baseline and Colima resource plan
+- Changed:
+  - skills/operate-platform/SKILL.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-runbook.md
+  - docs/implementation-notes.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:27 +07 | develop
+- Summary: Switched wave1 foundation to a legacy-free default runtime
+- Changed:
+  - src/magon_standalone/foundation/settings.py
+  - docker-compose.yml
+  - .env.example
+  - .env.local.example
+  - .env.test.example
+  - .env.prod.example
+  - scripts/run_foundation_unified.sh
+  - scripts/foundation_smoke_check.sh
+  - tests/test_foundation_api.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-runbook.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - README.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `MAGON_FOUNDATION_LEGACY_ENABLED=false docker compose up -d --build api worker`
+  - PASS `bash -lc 'for i in {1..20}; do curl -fsS http://127.0.0.1:3000/health/ready && exit 0; sleep 1; done; exit 1'`
+  - PASS `curl -fsS -X POST http://127.0.0.1:3000/platform-api/api/v1/auth/login -H 'content-type: application/json' -d '{"email":"admin@example.com","password":"admin123"}' > /dev/null`
+  - PASS `bash -lc 'curl -i -s http://127.0.0.1:3000/status | grep -q "HTTP/1.1 404 Not Found"'`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:25 +07 | develop
+- Summary: Switched wave1 foundation to a legacy-free default runtime and left the old contour as opt-in compatibility only
+- Changed:
+  - src/magon_standalone/foundation/settings.py, docker-compose.yml, .env.example, .env.local.example, .env.test.example, .env.prod.example, scripts/run_foundation_unified.sh, scripts/foundation_smoke_check.sh, tests/test_foundation_api.py, docs/current-project-state.md, docs/ru/current-project-state.md, docs/ru/foundation-runbook.md, docs/implementation-log-wave1-foundation.md, docs/implementation-notes.md, README.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `MAGON_FOUNDATION_LEGACY_ENABLED=false docker compose up -d --build api worker`
+  - PASS `curl -fsS http://127.0.0.1:3000/health/ready`
+  - PASS `curl -fsS -X POST http://127.0.0.1:3000/platform-api/api/v1/auth/login -H 'content-type: application/json' -d '{"email":"admin@example.com","password":"admin123"}' > /dev/null`
+  - PASS `curl -i -s http://127.0.0.1:3000/status | head -n 1`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:16 +07 | develop
+- Summary: Re-anchored wave1 planning truth to gpt_doc and demoted legacy to compatibility bridge
+- Changed:
+  - docs/current-project-state.md, docs/ru/current-project-state.md, docs/implementation-notes.md, README.md
+- Verified:
+  - PASS `rg -n 'gpt_doc/codex_wave1_spec_ru.docx|compatibility bridge|целевой runtime первой волны|Wave1 planning truth' docs/current-project-state.md docs/ru/current-project-state.md docs/implementation-notes.md README.md .codex/project-memory.md`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:12 +07 | develop
+- Summary: Restarted Colima on a compact 2GB profile and re-verified compose runtime
+- Changed:
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `colima list --json && docker compose ps && curl -fsS http://127.0.0.1:3000/health/ready > /dev/null && curl -fsS -X POST http://127.0.0.1:3000/platform-api/api/v1/auth/login -H 'content-type: application/json' -d '{"email":"admin@example.com","password":"admin123"}' > /dev/null && docker stats --no-stream > /tmp/magon-docker-stats.txt && rg -n '1.913GiB' /tmp/magon-docker-stats.txt`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:10 +07 | develop
+- Summary: Confirmed compact compose build contexts and cleared remaining stack drift risk
+- Changed:
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `docker compose --progress=plain build api > /tmp/magon-api-build.log && docker compose --progress=plain build web > /tmp/magon-web-build.log && rg -n 'transferring context: 1.41MB' /tmp/magon-api-build.log && rg -n 'transferring context: 1.21MB' /tmp/magon-web-build.log && curl -fsS http://127.0.0.1:3000/health/ready > /dev/null`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 13:07 +07 | develop
+- Summary: Aligned web runtime to Node 22 and documented compact Colima defaults
+- Changed:
+  - deploy/web.Dockerfile, apps/web/package.json, skills/operate-platform/SKILL.md, docs/implementation-notes.md, docs/implementation-log-wave1-foundation.md, docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `docker compose exec -T web node -v && docker compose exec -T web npm -v && docker compose exec -T api python --version && docker compose exec -T db postgres --version && docker compose exec -T redis redis-server --version && curl -fsS http://127.0.0.1:3000/health/ready > /dev/null && cd apps/web && npm run typecheck`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 12:53 +07 | develop
+- Summary: Verified wave1 foundation compose runtime on local Docker/Colima and fixed Caddy platform-api routing
+- Changed:
+  - .dockerignore, deploy/Caddyfile, docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `docker compose ps`
+  - PASS `curl -fsS http://127.0.0.1:3000/health/ready`
+  - PASS `curl -fsS -X POST http://127.0.0.1:3000/platform-api/api/v1/auth/login -H 'content-type: application/json' -d '{"email":"admin@example.com","password":"admin123"}'`
+  - PASS `curl -fsS http://127.0.0.1:3000/ui/companies | head -n 5`
+- Risk:
+  - Compose now runs on local Docker/Colima, but build contexts are still broader than necessary because docker-compose.yml uses repo-root context for both api and web services; narrowing service contexts would materially speed rebuilds.
+### 2026-04-17 12:33 +07 | develop
+- Summary: Closed wave1 foundation follow-up with authz regression coverage and doc drift fixes
+- Changed:
+  - tests/test_foundation_api.py, README.md, docs/current-project-state.md, docs/ru/current-project-state.md, docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+- Risk:
+  - Compose/Caddy skeleton remains unverified in this environment because docker is unavailable; local fast path still uses SQLite by documented assumption while compose/prod skeleton targets PostgreSQL.
+### 2026-04-17 12:20 +07 | develop
+- Summary: Added wave1 foundation modular-monolith skeleton with FastAPI, migrations, auth, health, telemetry, and compose scaffolding
+- Changed:
+  - src/magon_standalone/foundation, src/magon_standalone/integrations/foundation, alembic, scripts/foundation_*, scripts/run_foundation_*, tests/test_foundation_api.py, apps/web/app/login/page.tsx, apps/web/components/auth/foundation-login-form.tsx, deploy, docker-compose.yml, .env*.example, docs/implementation-notes.md, docs/implementation-log-wave1-foundation.md, docs/ru/foundation-runbook.md, docs/current-project-state.md, docs/ru/current-project-state.md, README.md, pyproject.toml
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_foundation_api`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+- Risk:
+  - Foundation FastAPI and legacy standalone runtime now coexist cleanly, but deep entity-level reconciliation between the new Postgres foundation contour and the older SQLite business contour is still the main integration risk for the next wave.
+### 2026-04-17 11:40 +07 | develop
+- Summary: Added standalone request draft to request intake flow
+- Changed:
+  - src/magon_standalone/supplier_intelligence/sqlite_persistence.py
+  - src/magon_standalone/supplier_intelligence/api.py
+  - tests/test_persistence.py
+  - tests/test_api.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_persistence tests.test_api`
+- Risk:
+  - Quote intents still remain a separate post-request layer and are not yet linked back to requests as first-class offer records.
+### 2026-04-17 10:20 +07 | develop
+- Summary: Added a repo-local bootstrap skill for creating new project skills under the standalone workflow contract.
+- Changed:
+  - skills/skill-project-bootstrap/SKILL.md, skills/skill-project-bootstrap/agents/openai.yaml, docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 09:51 +07 | develop
+- Summary: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
+- Changed:
+  - scripts/check_automation_contract.py, src/magon_standalone/automation_contract.py, tests/test_automation_contract.py, scripts/verify_workflow.sh, docs/ru/repo-workflow.md, docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 09:37 +07 | develop
+- Summary: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
+- Changed:
+  - scripts/check_skill_naming.py, src/magon_standalone/skill_naming.py, tests/test_skill_naming.py, scripts/verify_workflow.sh, docs/ru/repo-workflow.md, docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 09:29 +07 | develop
+- Summary: Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.
+- Changed:
+  - skills/automation-context-guard/SKILL.md, docs/ru/code-map.md, docs/ru/performance-and-observability.md, ~/.codex/automations/*/automation.toml
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 09:10 +07 | develop
+- Summary: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Changed:
+  - docs/ru/performance-and-observability.md, docs/ru/code-map.md, ~/.codex/automations/*/automation.toml
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-17 08:55 +07 | develop
+- Summary: Extended the Russian locale guard so it also blocks bad hybrid technical copy in the Russian docs and shell layer.
+- Changed:
+  - src/magon_standalone/locale_integrity.py
+  - tests/test_locale_integrity.py
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`
+  - PASS `./scripts/verify_workflow.sh`
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Risk:
+  - The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
+### 2026-04-17 08:46 +07 | develop
+- Summary: Audited standalone documentation and removed the remaining English drift from the Russian code map.
+- Changed:
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/restore_context.sh --check`
+  - PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - Russian docs are mostly aligned now, but wording quality still depends on continued review whenever new architecture terms land in project memory or shell text.
+### 2026-04-17 08:29 +07 | develop
+- Summary: Optimized standalone UI checks for a low-memory MacBook by keeping browser inspection manual, single-window, and outside the default verify path.
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/components/sections/section-intro.tsx
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
+### 2026-04-17 07:59 +07 | develop
+- Summary: Cleaned standalone web layout and semantic load on the Russian home and project map surfaces.
+- Changed:
+  - apps/web/app/page.tsx
+  - apps/web/app/project-map/page.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
+### 2026-04-17 07:43 +07 | develop
+- Summary: Added automatic Russian locale guard for source-of-truth and live shell routes
+- Changed:
+  - scripts/check_russian_locale_integrity.py and src/magon_standalone/locale_integrity.py
+  - scripts/verify_workflow.sh and scripts/run_periodic_checks.py locale guard integration
+  - docs/ru current-state and project-map Russian source cleanup
+  - RU Locale Guard Codex automation
+- Verified:
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- Risk:
+  - The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
+### 2026-04-17 06:50 +07 | develop
+- Summary: Stabilized full-project audit runtime across web, perf, and periodic checks
+- Changed:
+  - apps/web runtime isolation (.next-dev)
+  - unified launcher readiness contract
+  - perf warmup and periodic liveness probes
+- Verified:
+  - PASS `./.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/platform_smoke_check.sh`
+  - PASS `./scripts/run_perf_suite.sh smoke`
+  - PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Cold-start dev-shell latency can still be worse than steady-state performance; perf smoke is now robust but still measures a development runtime, not a production shell.
 ### 2026-04-17 06:08 +07 | develop
 - Summary: Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent
 - Changed:

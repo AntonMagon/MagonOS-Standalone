@@ -43,14 +43,31 @@ fi
 mkdir -p "$OUTPUT_DIR"
 SUMMARY_PATH="$OUTPUT_DIR/${SCENARIO}-summary.json"
 
+warmup_probe() {
+  local url="$1"
+  local attempts="${2:-3}"
+  local timeout="${3:-30}"
+  local attempt=1
+  # RU: Warmup intentionally ретраит URL до старта k6, чтобы первое холодное обращение к Next dev не выглядело как runtime/perf-регрессия.
+  while [[ "$attempt" -le "$attempts" ]]; do
+    if curl -fsS --max-time "$timeout" "$url" >/dev/null; then
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+  echo "run-perf-suite: warmup failed for $url" >&2
+  return 1
+}
+
 # RU: Перед k6 делаем warmup ключевых страниц, чтобы smoke/load мерял живой runtime, а не первую холодную компиляцию Next dev.
-curl -fsS --max-time 20 "$BACKEND_URL/health" >/dev/null
-curl -fsS --max-time 20 "$BACKEND_URL/status" >/dev/null
-curl -fsS --max-time 20 "$WEB_URL/" >/dev/null
-curl -fsS --max-time 20 "$WEB_URL/dashboard" >/dev/null
-curl -fsS --max-time 20 "$WEB_URL/ops-workbench" >/dev/null
-curl -fsS --max-time 20 "$WEB_URL/project-map" >/dev/null
-curl -fsS --max-time 20 "$WEB_URL/ui/companies" >/dev/null
+warmup_probe "$BACKEND_URL/health" 2 15
+warmup_probe "$BACKEND_URL/status" 2 15
+warmup_probe "$WEB_URL/" 3 30
+warmup_probe "$WEB_URL/dashboard" 3 30
+warmup_probe "$WEB_URL/ops-workbench" 3 30
+warmup_probe "$WEB_URL/project-map" 3 30
+warmup_probe "$WEB_URL/ui/companies" 3 30
 
 # RU: Perf-прогоны не стартуют платформу сами — они меряют уже живой runtime, чтобы цифры не смешивались со startup noise.
 k6 run \
