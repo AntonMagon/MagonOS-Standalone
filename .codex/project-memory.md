@@ -60,15 +60,23 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 09:37 +07`
+- Updated at: `2026-04-17 09:51 +07`
 - Branch: `develop`
-- Current focus: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
+- Current focus: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
 - Biggest operational risk: no additional risk recorded
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 09:51 +07 | develop
+- Summary: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
+- Changed:
+  - scripts/check_automation_contract.py, src/magon_standalone/automation_contract.py, tests/test_automation_contract.py, scripts/verify_workflow.sh, docs/ru/repo-workflow.md, docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
 ### 2026-04-17 09:37 +07 | develop
 - Summary: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
 - Changed:

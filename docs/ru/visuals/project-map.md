@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 09:37 +07``
+Обновлено: ``2026-04-17 09:51 +07``
 
 ## Контур движения
 
@@ -48,7 +48,7 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
+- Текущий фокус: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
 - Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`
 - Главный операционный риск: no additional risk recorded
 

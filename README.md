@@ -126,8 +126,8 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 09:37 +07`
-- Current focus: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
+- Auto-synced at: `2026-04-17 09:51 +07`
+- Current focus: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
 - Biggest operational risk: no additional risk recorded
 - Validated contour:

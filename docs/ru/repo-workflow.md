@@ -139,6 +139,26 @@ Repo-local skills в `skills/` теперь тоже считаются част
 
 Если меняется код, а русский слой не меняется, commit должен считаться неполным.
 
+## Automation contract для Codex расписаний
+
+Codex automation в `~/.codex/automations/` тоже больше не считаются произвольным внешним слоем.
+Для этого репозитория они должны проходить тот же operating-contract.
+
+Теперь есть отдельный guard:
+- `./.venv/bin/python scripts/check_automation_contract.py`
+
+Что он проверяет:
+- `id` automation совпадает с именем папки
+- `id` в lowercase `kebab-case`
+- `kind = "cron"`
+- `prompt` обязательно тянет `automation-context-guard`
+- `cwds` содержит только `/Users/anton/Desktop/MagonOS-Standalone`
+- `execution_environment = "local"`
+- `model` остаётся в семействе `gpt-5`
+- `rrule` остаётся в поддерживаемой hourly/weekly форме
+
+Это уже встроено в `./scripts/verify_workflow.sh`, поэтому drift в самих расписаниях теперь тоже ловится автоматически.
+
 ## Минимальный рабочий путь
 
 1. `./scripts/restore_context.sh`

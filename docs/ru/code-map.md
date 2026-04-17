@@ -416,6 +416,23 @@ Repo-local skills больше не должны называться произ
 - не ломать читаемость automation prompt layer
 - не путать repo-local skills с plugin/curated skills
 
+## Automation contract для `~/.codex/automations/`
+
+Для живых Codex automation теперь тоже есть отдельный guard:
+- `scripts/check_automation_contract.py`
+- `src/magon_standalone/automation_contract.py`
+
+Он проверяет:
+- `id` automation и имя папки
+- обязательный `automation-context-guard` в prompt
+- правильный `cwd`
+- локальную execution model
+- допустимый `rrule`
+
+Смысл тот же:
+- automation не должны жить "вне репозитория" по своим случайным правилам
+- review/smoke/digest слои должны стартовать из того же контекста, что и ручная работа по проекту
+
 ### `Taskfile.yml`
 
 Короткий task-runner слой поверх канонических repo scripts.

@@ -58,6 +58,8 @@ bash -n \
 ./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
 # RU: Имена repo-local skills тоже держим под guard, чтобы automation и ручной вызов skills опирались на один читаемый naming-contract.
 ./.venv/bin/python scripts/check_skill_naming.py
+# RU: Живые Codex automation тоже считаются частью operating-layer, поэтому их id/prompt/cwd/rrule не должны уплывать мимо общего контекста проекта.
+./.venv/bin/python scripts/check_automation_contract.py
 
 ./.venv/bin/python -m unittest \
   tests.test_persistence \
@@ -68,6 +70,7 @@ bash -n \
   tests.test_launchd_periodic_checks \
   tests.test_observability \
   tests.test_locale_integrity \
+  tests.test_automation_contract \
   tests.test_repo_autosync \
   tests.test_repo_workflow \
   tests.test_skill_naming \
