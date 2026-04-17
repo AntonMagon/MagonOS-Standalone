@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-17 20:27 +07``
+Updated: ``2026-04-18 03:33 +07``
 
 ## Flow contour
 
@@ -17,7 +17,10 @@ flowchart LR
 
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
+- operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - normalization / enrichment / dedup / scoring
+- lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
 - draft autosave / abandoned / archive-ready intake layer
 - central request review queue with blocker/clarification flow

@@ -58,6 +58,61 @@
   - supply dashboard
   - processing dashboard
 
+## 2026-04-18 — Supplier source operator contour and async parsing acceptance pass
+
+### Что было найдено
+- `supplier_sources` уже существовали как backend-реестр, но оператор не видел health адаптеров и последний успешный/failed ingest прямо в UI.
+- `enqueue` путь для supplier parsing был неполным: async job мог существовать без явного queued-state в foundation DB, значит operator panel не имел надёжной explainable точки правды.
+- `/suppliers` и `/supplier-ingests/{code}` не давали полноценного retry / rerun flow и оставляли заметный RU/EN drift в рабочем интерфейсе.
+
+### Что изменено
+- `SupplierSourceRegistry` API обогащён runtime health и `latest_ingest` summary.
+- Async parsing contour доведён до управляемого состояния:
+  - `enqueue` теперь создаёт или переводит ingest в `queued` ещё до worker execution;
+  - worker/runtime path корректно подхватывает `queued` ingest и переводит его в `running`;
+  - operator detail page показывает `task_id`, `trigger_mode`, `retry_count`, `failure_code`, `failure_detail`, timestamps.
+- `/suppliers` теперь даёт:
+  - health source adapters;
+  - last success/failure;
+  - queue run;
+  - retry failed ingest;
+  - force rerun.
+- `/supplier-ingests/{code}` теперь даёт explainable async status и action buttons для retry/rerun.
+- Вычищен видимый RU/EN drift на audited supplier/request surfaces.
+
+## 2026-04-18 — Cleanup рабочего shell и supplier operator UI
+
+### Что было найдено
+- Desktop header был перегружен: слишком много primary-nav элементов, длинный подзаголовок бренда и активная сессия дрались за одно место.
+- `/suppliers` визуально шумел: тяжёлый background mesh, жирные action pills, англоязычные `ingest/jobs` лейблы и слабая иерархия карточек.
+
+### Что изменено
+- Header ужат до короткого рабочего брендинга, компактной primary-nav и отдельной панели `Ещё` для вторичных разделов.
+- Supplier screen переведён на более чистую paper-panel иерархию:
+  - `Источник импорта`
+  - `Последние запуски импорта`
+  - локализованные source labels и adapter labels
+  - кнопка `Детали импорта` вместо сырого `Raw-слой`
+- Глобальный background shell ослаблен, чтобы сетка не спорила с содержимым.
+
+### Что проверено
+- `cd apps/web && npm run lint`
+- `cd apps/web && npm run typecheck`
+- browser-open:
+  - `/login`
+  - `/suppliers`
+
+### Что проверено
+- `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+- `cd apps/web && npm run lint`
+- `cd apps/web && npm run typecheck`
+- browser-pass:
+  - `/login`
+  - `/suppliers`
+  - `/supplier-ingests/ING-00001`
+  - `/request-workbench`
+- `./scripts/verify_workflow.sh --with-web`
+
 ### Persistence / миграции
 - SQLAlchemy foundation models.
 - Alembic bootstrap + initial revision `20260417_0001`.
@@ -799,3 +854,204 @@
 - async supplier ingest имеет устойчивые failure/retry states;
 - environment boot остаётся консистентным через migration/seed/api/web/smoke path;
 - wave1 contour теперь можно демонстрировать целиком без ручного "доклеивания" пробелов по runtime.
+
+## Доведение по обновлённой wave1-спецификации и frontend cleanup
+
+### Что было найдено
+
+- `gpt_doc/` реально содержит только один активный planning source-of-truth для wave1: `codex_wave1_spec_ru.docx` плюс PDF-экспорт той же спецификации.
+- Часть backend status/default mappings отставала от обновлённой терминологии спецификации:
+  - supplier `candidate/reviewing/approved`
+  - offer `prepared`
+  - order `created/confirmed_start`
+  - file `pending_review/approved/rejected`
+- В frontend ещё торчали сырые status/value куски и англо-ярлыки в request/order/dashboard/supplier surfaces.
+- Public marketing surface отсутствовал как отдельная conversion-area, хотя по спецификации нужен лёгкий внешний слой вокруг showcase/RFQ/draft.
+
+### Что было доведено
+
+- Добавлена migration `20260417_0010_wave1_status_language_alignment` с backfill под обновлённые статусы первой волны.
+- Backend выровнен под wave1 status map:
+  - `Supplier` / `SupplierCompany`: `discovered -> normalized -> contact_confirmed -> capability_confirmed -> trusted`
+  - `Offer`: `draft -> sent -> awaiting_confirmation -> revised -> accepted / declined / expired`
+  - `Order`: `awaiting_confirmation / awaiting_payment / paid / supplier_assigned / in_production / partially_ready / ready / in_delivery / completed / cancelled / disputed`
+  - `File`: `uploaded / checking / passed / failed / needs_manual_review / approved_final`
+- Rules/guards и tests приведены к той же терминологии без смешивания старых и новых status-code.
+- Добавлен единый display-layer `apps/web/lib/foundation-display.ts`, чтобы страницы больше не светили raw status-code и service fallbacks напрямую.
+- Перечищены customer/operator/supplier dashboards, request detail/public view, draft editor, order detail/list и supplier surfaces:
+  - статусы, причины, visibility и даты стали human-readable;
+  - убраны заметные англо/raw fragments;
+  - payment/logistics/order labels выровнены по новой модели.
+- Добавлен отдельный public marketing route `/marketing` как лёгкий conversion-layer первой волны без создания нового большого модуля.
+- На web добавлен `app/icon.svg`, чтобы публичный слой не шумел 404 по favicon в живом browser-pass.
+- Runtime/docs truth синхронизированы с фактическим содержимым `gpt_doc/` без ссылок на несуществующие planning-docs.
+
+### Что проверено
+
+- PASS `./scripts/verify_workflow.sh --with-web`
+- PASS `cd apps/web && npm run lint`
+- PASS `cd apps/web && npm run build`
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents`
+- PASS browser sanity pass:
+  - `http://127.0.0.1:3000/marketing`
+  - console without page errors after icon fix
+  - navigation and key CTA surfaces rendered
+
+## 2026-04-18 — Hourly launcher watchdog
+
+### Что было найдено
+
+- `Start_Platform.command` уже поднимал wave1 runtime корректно.
+- Реальная проблема была в том, что у проекта был periodic smoke/observability layer, но не было отдельного self-heal guard, который мягко вернёт launcher после локального падения.
+- Пользовательский запрос был именно про часовой refresh launcher-а, а не про ещё одну inbox-проверку.
+
+### Что было доведено
+
+- Добавлен safe watchdog runner `scripts/run_launcher_watchdog.py`.
+- Watchdog проверяет:
+  - `GET /health/ready`
+  - `GET /login`
+- Если runtime жив, watchdog ничего не делает.
+- Если runtime мёртв, watchdog запускает:
+  - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+- Добавлен отдельный macOS LaunchAgent layer:
+  - `scripts/install_launchd_launcher_watchdog.sh`
+  - `scripts/launchd_launcher_watchdog_status.sh`
+  - `scripts/render_launchd_launcher_watchdog.py`
+  - `src/magon_standalone/launchd_launcher_watchdog.py`
+- Новый guard включён в `scripts/verify_workflow.sh` и покрыт тестом `tests.test_launchd_launcher_watchdog`.
+- Одновременно исправлен `scripts/platform_smoke_check.sh`, чтобы он проверял живой wave1 contour вместо устаревших `/status` и `/ui/companies` как обязательных public probes.
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog`
+- PASS `./.venv/bin/python scripts/run_launcher_watchdog.py`
+- PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+- PASS `./scripts/launchd_launcher_watchdog_status.sh`
+- PASS `./scripts/verify_workflow.sh`
+
+## 2026-04-18 — UI cleanup for clickable dashboards and clean RU shell
+
+### Что было найдено
+
+- В `admin/operator` dashboard-карточках уведомления, блокировки и части счётчиков оставались фактически информационными: перейти в заявку, заказ или поставщика было нельзя или неудобно.
+- Верхняя шапка была перегружена: все разделы, язык, палитра, тема и session-block одновременно висели в одной строке.
+- В русскоязычном UI ещё торчали смешанные формулировки вроде `login`, `intake`, `backend`, `request contour`, `Foundation auth`, а на admin-срезе метрики светили raw ключами `users`, `rules`, `message_events`.
+
+### Что было доведено
+
+- Dashboard-карточки стали интерактивными:
+  - уведомления ведут в `request-workbench`, `orders` или `suppliers` по entity payload;
+  - блокировки и просрочки ведут в owning object;
+  - count-карточки получили прямые переходы в соответствующий рабочий раздел;
+  - supply-карточки поставщиков открывают detail page.
+- Backend dashboard payload для overdue offer confirmation теперь отдаёт `request_ref`, чтобы фронт мог строить корректный переход из карточки.
+- Шапка собрана заново без расползания:
+  - в верхней строке оставлены только ключевые разделы;
+  - вторичные разделы и все переключатели убраны в панель `Ещё`;
+  - session-chip стал компактным и читаемым.
+- Login screen и связанные auth-блоки переведены на нормальные русские подписи.
+- `apps/web/messages/ru.json` и `apps/web/messages/en.json` выровнены под новый header contract и очищены от наиболее заметных смешанных UI-формулировок.
+
+### Что проверено
+
+- PASS `cd apps/web && npm run lint`
+- PASS `cd apps/web && npm run typecheck`
+- PASS `cd apps/web && npm run build`
+- PASS `./scripts/verify_workflow.sh --with-web`
+- PASS browser pass через Playwright CLI:
+  - `http://127.0.0.1:3000/login`
+  - `Ещё` открывает secondary navigation и interface controls
+  - login ведёт в рабочий контур
+  - `http://127.0.0.1:3000/admin-dashboard`
+  - клик по административному уведомлению переводит в `request-workbench/{requestCode}`
+
+## 2026-04-18 — Wave1 audit: supplier parsing source restored as a first-class ingest option
+
+### Что было найдено
+
+- Спецификация первой волны требует supplier-модуль с `источники, парсинг, сырой слой, нормализация`, но foundation runtime фактически сидел только на seeded `fixture_json`.
+- Нормализация, dedup и trust progression уже существовали; реальный разрыв был именно в source layer и operator UX выбора источника.
+- `/suppliers` всегда запускал первый источник, поэтому parsing как отдельная опция в интерфейсе по сути отсутствовал.
+
+### Что было доведено
+
+- Добавлен supplier source adapter `scenario_live` поверх существующего `supplier_intelligence` discovery layer.
+- В seed foundation добавлен второй source registry для live parsing рядом с fixture source.
+- В панели `/suppliers` оператор теперь явно выбирает источник ingest и видит, это repeatable fixture ingest или live parsing.
+- Backend-покрытие расширено тестом, который доказывает, что seeded live parsing source проходит через foundation ingest contour.
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+- PASS `cd apps/web && npm run lint`
+- PASS `cd apps/web && npm run typecheck`
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — Final UI cleanup for operator shell and RU wording
+
+### Что было найдено
+
+- В интерфейс всё ещё попадали служебные и англоязычные хвосты: `RU:` пояснения в JSX, `Request`, `Offer`, `Raw layer`, `Dedup review`, `login`, `session token`, `ingest jobs`.
+- На основных операторских поверхностях это делало экран похожим на промежуточную сборку, а не на пригодный рабочий продукт.
+- Повторный browser-pass показал, что проблема была не в одном экране `/suppliers`, а в группе связанных экранов: `request-workbench`, `orders`, `supplier-ingests`, `suppliers/{code}`, `supplier-sites/{code}`, home shell.
+
+### Что было доведено
+
+- Вычищены пользовательские тексты в:
+  - `request-workbench`
+  - `request-workbench/{requestCode}`
+  - `orders`
+  - `orders/{orderCode}`
+  - `suppliers`
+  - `supplier-ingests/{ingestCode}`
+  - `suppliers/{supplierCode}`
+  - `supplier-sites/{siteCode}`
+  - `drafts/{draftCode}`
+  - home marketing-operational shell
+- `RU:` объяснения оставлены только в кодовых комментариях и больше не рендерятся в UI.
+- Англоязычные рабочие термины заменены на единый русский слой:
+  - `login` -> `вход`
+  - `Request / Offer / Draft` -> `заявка / предложение / черновик`
+  - `Raw layer / Dedup review` -> `первичный слой / разбор дублей`
+  - `ingest jobs` -> `запуски импорта`
+- Header, `Ещё`-панель и операторские экраны повторно просмотрены в браузере после сборки.
+
+### Что проверено
+
+- PASS `cd apps/web && npm run lint`
+- PASS `cd apps/web && npm run typecheck`
+- PASS `cd apps/web && npm run build`
+- PASS `./scripts/verify_workflow.sh --with-web`
+- PASS browser pass через Playwright CLI:
+  - `http://127.0.0.1:3000/`
+  - `http://127.0.0.1:3000/request-workbench`
+  - `http://127.0.0.1:3000/orders`
+  - `http://127.0.0.1:3000/suppliers`
+  - `http://127.0.0.1:3000/supplier-ingests/ING-00001`
+  - раскрытие `Ещё` и проверка secondary navigation/session block
+
+## 2026-04-18 — product-shell справка по сущностям и зависимостям
+
+### Что было найдено
+
+- В проекте уже были runtime docs и карта архитектуры, но не было одного короткого shell-entry, который объясняет сущности, зависимости и рабочие маршруты прямо внутри продукта.
+- Новому участнику проекта приходилось прыгать между `gpt_doc`, `current-project-state` и кодом, чтобы понять, где живёт конкретная сущность и какой экран ей владеет.
+
+### Что было доведено
+
+- Добавлена встроенная product-shell страница `/reference`.
+- На странице собраны:
+  - ключевые сущности первой волны;
+  - зависимые слои и boundaries;
+  - роли и соответствующие маршруты;
+  - список того, что сознательно не входит в wave1.
+- Добавлен отдельный русский документ `docs/ru/platform-entity-reference.md`.
+- `docs/current-project-state.md` и `docs/ru/current-project-state.md` теперь явно ссылаются на новую справку.
+
+### Что проверено
+
+- PASS `cd apps/web && npm run lint`
+- PASS `cd apps/web && npm run typecheck`
+- PASS `cd apps/web && npm run build`
+- PASS `./scripts/verify_workflow.sh --with-web`

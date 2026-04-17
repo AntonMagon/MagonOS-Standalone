@@ -48,6 +48,10 @@
 38. Failure/retry contour для supplier ingest первой волны обязан быть объяснимым и устойчивым: failed state хранится прямо в `SupplierRawIngest`, а retry идёт через тот же сервисный слой с очисткой промежуточных rows этого ingest-run, а не через "переигрывание поверх мусора".
 39. Архивный контур первой волны считается достаточным, если историчность сохраняется, archived items исчезают из active views и audit/timeline не теряются. Полный operator archive-кабинет для всех сущностей специально не входит в wave1.
 40. Demo readiness первой волны считается закрытой не по словам, а по отдельному end-to-end smoke сценарному прогону. Поэтому `scripts/foundation_wave1_demo_smoke_check.sh` является частью обязательного acceptance набора, а не необязательной демонстрацией.
+41. Маркетинговый слой в пределах первой волны трактуется как отдельная публичная conversion-surface поверх уже существующих `catalog / rfq / drafts / customer request`, а не как новый большой модуль, CRM или CMS. Поэтому route `/marketing` только собирает и объясняет wave1-путь клиента без дублирования бизнес-сущностей.
+42. Под "parsing option" в wave1-контуре понимается именно supplier-source parsing внутри модуля поставщиков, потому что спецификация включает `источники, парсинг, сырой слой, нормализация` в этот блок. Продвинутый file OCR/prepress parsing в первую волну не входит.
+43. Чтобы не плодить второй контур парсинга, foundation supplier ingest использует уже существующий `supplier_intelligence` discovery layer как selectable source adapter `scenario_live`, а fixture source остаётся рядом как повторяемый demo/test baseline.
+44. Async parsing contour первой волны intentionally operator-managed: `enqueue` создаёт/обновляет явный `SupplierRawIngest(queued)` row ещё до worker execution, а UI показывает именно этот explainable state вместо неявного фонового "что-то ушло в очередь".
 
 ## Явно исключено из этого шага
 

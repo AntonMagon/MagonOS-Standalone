@@ -24,8 +24,8 @@ from .security import AuthContext, ROLE_GUEST
 from .workflow_support import WorkflowSupportService
 
 OFFER_CREATION_REQUEST_STATUSES = {"supplier_search", "offer_prep", "offer_sent"}
-OFFER_SENDABLE_STATUSES = {"prepared", "declined", "expired"}
-OFFER_CONFIRMABLE_STATUSES = {"sent"}
+OFFER_SENDABLE_STATUSES = {"draft", "revised", "declined", "expired"}
+OFFER_CONFIRMABLE_STATUSES = {"awaiting_confirmation"}
 CONFIRMATION_ACTIONS = {"accept", "decline", "expire"}
 
 
@@ -265,7 +265,7 @@ class OfferService:
             request_id=request.id,
             request_ref=request.code,
             current_version_no=1,
-            offer_status="prepared",
+            offer_status="draft",
             confirmation_state="pending",
             amount=amount,
             currency_code=currency_code,
@@ -282,7 +282,7 @@ class OfferService:
             code=reserve_code(self.session, "offer_versions", "OFV"),
             offer_id=offer.id,
             version_no=1,
-            version_status="prepared",
+            version_status="draft",
             confirmation_state="pending",
             amount=amount,
             currency_code=currency_code,
@@ -351,7 +351,7 @@ class OfferService:
             code=reserve_code(self.session, "offer_versions", "OFV"),
             offer_id=offer.id,
             version_no=offer.current_version_no + 1,
-            version_status="prepared",
+            version_status="revised",
             confirmation_state="pending",
             amount=amount,
             currency_code=currency_code,
@@ -375,7 +375,8 @@ class OfferService:
             auth=auth,
         )
         self._apply_current_snapshot(offer, new_version)
-        offer.offer_status = "prepared"
+        # RU: Критичная правка оферты обязана явно сбрасывать её в revised, а не возвращать в абстрактный prepared-state.
+        offer.offer_status = "revised"
         offer.transition_reason = note or reason_code
         comparison = self._create_comparison_metadata(
             offer=offer,
@@ -427,7 +428,7 @@ class OfferService:
         if request.request_status not in {"offer_prep", "offer_sent"}:
             raise HTTPException(status_code=409, detail="request_not_ready_for_offer_send")
         version = self.get_current_version(offer)
-        offer.offer_status = "sent"
+        offer.offer_status = "awaiting_confirmation"
         offer.transition_reason = note or reason_code
         version.version_status = "sent"
         if request.request_status != "offer_sent":

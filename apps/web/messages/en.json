@@ -5,15 +5,17 @@
   },
   "nav": {
     "overview": "Home",
+    "marketing": "Marketing",
     "catalog": "Showcase",
-    "requests": "Intake",
+    "requests": "Requests",
     "orders": "Orders",
-    "dashboard": "Runtime",
+    "dashboard": "Dashboard",
     "suppliers": "Suppliers",
     "ops": "Ops",
     "login": "Login",
     "projectMap": "Map",
-    "personalize": "Boundary"
+    "reference": "Reference",
+    "personalize": "Settings"
   },
   "header": {
     "homeAria": "Open the MagonOS home page",
@@ -22,7 +24,15 @@
     "mobileMenuOpen": "Open navigation menu",
     "mobileMenuTitle": "Navigation and quick settings",
     "mobileMenuText": "Switch language, adjust the theme, and jump into the working surfaces from here.",
-    "controlsLabel": "Quick controls"
+    "controlsLabel": "Interface settings",
+    "navigationLabel": "Additional sections",
+    "sessionLabel": "Current session",
+    "sessionActive": "Active session",
+    "sessionSignedInAs": "{role} · {email}",
+    "sessionUnknownRole": "Role unavailable",
+    "sessionUnknownEmail": "email unavailable",
+    "openPanel": "More",
+    "logout": "Log out"
   },
   "languageToggle": {
     "label": "Interface language",
@@ -41,16 +51,16 @@
     "description": "Palettes change the accent and glow tokens without disturbing page structure or component hierarchy.",
     "palettes": {
       "ember-signal": {
-        "name": "Warm signal",
-        "description": "The default working palette with an amber accent"
+        "name": "Cobalt contour",
+        "description": "Default paper-led palette with a clear route accent"
       },
       "tidal-mint": {
-        "name": "Tidal mint",
-        "description": "A cooler accent for calmer operator workflows"
+        "name": "Signal cyan",
+        "description": "Lighter mode for trust signals and verification work"
       },
       "violet-ink": {
-        "name": "Violet ink",
-        "description": "Sharper and more editorial without adding visual noise"
+        "name": "Industrial red",
+        "description": "A stricter mode for risk, tolerance and manual control"
       }
     },
     "page": {
@@ -143,22 +153,22 @@
     "runtimeDb": "SQLite: {path}",
     "runtimeUnavailable": "The backend did not respond. Start the standalone runtime before opening the operator surfaces.",
     "openConsole": "Open ops console",
-    "openBoard": "Open production board",
+    "openBoard": "Open orders",
     "workspaceLabel": "Key surfaces",
     "workspaceTitle": "Where the operator enters from the shared product shell",
-    "workspaceText": "These are direct entry points into the current company-centric workflow: companies, review, and feedback. They no longer sit apart from the main shell.",
+    "workspaceText": "These are direct entry points into the current standalone-first contour: suppliers, intake requests, and orders. All three now live inside the same product shell as the public layer.",
     "surfaces": {
-      "companies": {
-        "title": "Company workbench",
-        "body": "Open company intelligence, scores, commercial context, and related actions in one place."
+      "suppliers": {
+        "title": "Suppliers",
+        "body": "Open the supplier registry, trust levels, ingest jobs, and manual verification in one place."
       },
-      "review": {
-        "title": "Review queue",
-        "body": "Open the review queue and move straight into the decision flow for a specific company."
+      "requests": {
+        "title": "Requests",
+        "body": "Go into the intake workbench, `draft/request` states, and operator transitions without the legacy review queue."
       },
-      "feedback": {
-        "title": "Feedback status",
-        "body": "Inspect downstream outcomes separately from the canonical intelligence layer."
+      "orders": {
+        "title": "Orders",
+        "body": "Open the order workbench, documents, and confirmed execution without the legacy production board."
       }
     },
     "metrics": {
@@ -177,6 +187,7 @@
     },
     "recentLabel": "Recent companies",
     "recentTitle": "Quick entry into company records",
+    "recentPublicLabel": "public",
     "recentUnknownCity": "City not set",
     "recentNoEmail": "Email not set",
     "recentEmpty": "There are no companies to show in the runtime yet."
@@ -272,6 +283,86 @@
       "automationsDetail": "Recurring control loops",
       "worklog": "Worklog",
       "worklogDetail": "Recent recorded changes"
+    }
+  },
+  "referencePage": {
+    "eyebrow": "Contour reference",
+    "title": "This page gathers the key entities, dependencies, and working paths of wave1 without guesswork or architecture theater.",
+    "text": "Use this as the fastest entry into the current project context: what an entity is, what it depends on, and which screen actually owns it. It does not replace the wave1 spec; it helps you orient inside the standalone contour that already exists.",
+    "quickLabel": "How to read this page",
+    "quickTitle": "Find the entity first, then the screen, then the dependency boundary.",
+    "quickText": "If the ownership is unclear, use this rule: the customer starts in the public shell and draft/request view, the operator works in request/order/supplier surfaces, and the admin inspects dashboards, audit, and the project map. Anything outside wave1 is explicitly called out at the bottom.",
+    "links": {
+      "requestWorkbench": "Open the request workbench",
+      "suppliers": "Open the supplier contour",
+      "projectMap": "Open the project map"
+    },
+    "flowLabel": "Main chain",
+    "flowTitle": "The product flow that should already be readable in the interface and in the data model",
+    "flowText": "Do not collapse these entities into one generic record. They are deliberately split so transitions, reasons, audit, and role-scoped visibility do not turn into one muddy object.",
+    "flowSteps": [
+      "Showcase / RFQ -> Draft",
+      "Draft -> Request",
+      "Request -> versioned Offer",
+      "Accepted offer -> Order"
+    ],
+    "stepLabel": "Step {index}",
+    "entitiesLabel": "Key entities",
+    "entitiesTitle": "What these objects are and how to use them in the project",
+    "usageLabel": "How to use it:",
+    "depsLabel": "Dependencies and boundaries",
+    "depsTitle": "What depends on what and where the boundary must stay explicit",
+    "rolesLabel": "Role usage",
+    "rolesTitle": "Which screens and routes belong to which role",
+    "limitsLabel": "Not in wave1",
+    "limitsTitle": "Intentionally left outside the current contour"
+  },
+  "marketingPage": {
+    "eyebrow": "Public marketing layer",
+    "title": "Wave1 marketing should lead into clear intake, not hide the work behind a decorative landing page.",
+    "text": "The spec defines a light showcase, guest draft intake, and a separate complex RFQ entry. This page turns that into one public marketing surface: promise, entry points, and the path from interest to the actual request contour.",
+    "openCatalog": "Open showcase",
+    "openRfq": "Open complex RFQ",
+    "openDraft": "Start guest draft",
+    "promiseLabel": "What we promise publicly",
+    "promiseTitle": "The public layer must stay commercially clear.",
+    "promiseText": "Instead of vague AI claims and ERP jargon, this layer needs readable directions, honest pricing language, and a fast path into manual review.",
+    "promises": {
+      "one": "A constrained wave1 showcase instead of pretending to be a marketplace for everything.",
+      "two": "Guest draft intake for straightforward cases without forced registration.",
+      "three": "A separate RFQ entry for complex and non-standard requests."
+    },
+    "flowLabel": "How interest converts",
+    "flowTitle": "The marketing entry should end in a real working contour.",
+    "flow": {
+      "one": {
+        "title": "Showcase and commercial directions",
+        "body": "The visitor sees limited product directions, indicative pricing, and clear calls to action without noise."
+      },
+      "two": {
+        "title": "Draft or RFQ",
+        "body": "A simple case goes into a guest draft, a complex one goes into the dedicated RFQ route. These entry points stay intentionally separate."
+      },
+      "three": {
+        "title": "Request and offer contour",
+        "body": "After required fields are checked, the operator moves the draft into a request, prepares versioned offers, and keeps the full decision history."
+      }
+    },
+    "surfacesLabel": "Where to send the visitor",
+    "surfacesTitle": "The entry points need to explain the difference between a simple and a complex path.",
+    "surfaces": {
+      "catalog": {
+        "title": "Showcase",
+        "body": "Displays the curated wave1 directions, product cards, and the path into a draft."
+      },
+      "rfq": {
+        "title": "Complex RFQ",
+        "body": "A dedicated entry for custom work where a product card cannot honestly promise the final price."
+      },
+      "request": {
+        "title": "Operator review contour",
+        "body": "After submit, the operator enters the request/offer/order contour through login and continues the case without mixing public and internal surfaces."
+      }
     }
   },
   "catalogShowcase": {

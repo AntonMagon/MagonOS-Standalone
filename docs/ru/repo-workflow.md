@@ -102,6 +102,26 @@ task autosync:watch
 
 Это intentionally не полный `verify_workflow`, чтобы не гонять тяжёлый suite каждые 30 минут.
 
+## Hourly launcher watchdog
+
+Если нужна не только периодическая проверка, а мягкое автовосстановление Launcher, в репозитории теперь есть отдельный launchd-guard:
+
+```bash
+./scripts/install_launchd_launcher_watchdog.sh --interval 3600
+./scripts/launchd_launcher_watchdog_status.sh
+```
+
+Он делает только безопасный сценарий:
+- проверяет `http://127.0.0.1:8091/health/ready`
+- проверяет `http://127.0.0.1:3000/login`
+- если оба URL живы, ничего не трогает
+- если runtime умер, запускает `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+
+Важно:
+- watchdog не стирает локальную БД
+- watchdog не пересеивает demo fixtures
+- watchdog не заменяет ручной launcher; он только возвращает платформу в живое состояние, если она упала
+
 ## Что считается обязательным русским слоем
 
 - русская документация в `docs/ru/`

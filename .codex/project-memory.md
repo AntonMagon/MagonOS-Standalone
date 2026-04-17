@@ -9,9 +9,8 @@ It exists so the project context survives across sessions instead of being re-ex
 - Standalone is the primary platform-of-record.
 - Odoo is donor/bridge context only, not the active runtime.
 - Wave1 planning truth lives in `gpt_doc/codex_wave1_spec_ru.docx`.
-- Global architecture truth for the new contour lives in `gpt_doc/platform_architecture_report_ru.docx`.
-- The broader roadmap/documentation sync pack lives in `gpt_doc/platform_documentation_pack_ru.docx`.
-- `docs/current-project-state.md` is runtime truth; `gpt_doc/*` is planning truth for the new contour.
+- Read-only export of the same planning spec lives in `gpt_doc/codex_wave1_spec_ru.pdf`.
+- There are no other active planning docs in `gpt_doc/`; `docs/current-project-state.md` is runtime truth, and the wave1 spec above is the planning truth for the new contour.
 - Wave1 default runtime is the foundation stack without the legacy WSGI bridge; legacy is opt-in only through `MAGON_FOUNDATION_LEGACY_ENABLED=true`.
 - Default changes happen only in this repository.
 - Current verified contour:
@@ -24,6 +23,7 @@ It exists so the project context survives across sessions instead of being re-ex
 - Already standalone-owned:
   - supplier intelligence pipeline
   - normalization / enrichment / dedup / scoring
+  - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
   - review queue
   - routing / qualification decisions
   - feedback ledger / projection
@@ -74,15 +74,243 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 20:27 +07`
-- Branch: `codex/wave1-foundation`
-- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
-- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+- Updated at: `2026-04-18 03:33 +07`
+- Branch: `main`
+- Current focus: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
+- Last verified workflow status: PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-18 03:33 +07 | main
+- Summary: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
+- Changed:
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/globals.css
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/app/suppliers/[supplierCode]/page.tsx
+  - apps/web/app/supplier-sites/[siteCode]/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/messages/ru.json
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
+### 2026-04-18 02:38 +07 | main
+- Summary: Complete the supplier source operator console, make parsing retries/queue states explainable, run browser-pass on supplier/workbench screens, and close the wave1 acceptance gate green.
+- Changed:
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/lib/foundation-display.ts
+  - tests/test_foundation_suppliers.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_acceptance.TestFoundationAcceptance.test_supplier_ingest_failure_is_visible_and_retryable`
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS browser pass for `/suppliers`, `/supplier-ingests/ING-00001`, `/request-workbench`
+- Risk:
+  - Detached launcher/web startup remains less reliable than direct canonical verification commands, so browser-heavy operator checks still prefer explicit runtime sessions.
+### 2026-04-18 03:18 +07 | main
+- Summary: Clean the standalone operator shell so the header stops collapsing into button clutter and the supplier screen reads like a real working console instead of a noisy demo card wall.
+- Changed:
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/globals.css
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS browser-open for `/login` and `/suppliers`
+- Risk:
+  - Browser verification for the fully authenticated suppliers screen still depends on an explicit runtime session because the current Playwright wrapper does not persist login across fresh browser opens by default.
+### 2026-04-18 02:17 +07 | main
+- Summary: Audit wave1 spec vs runtime, restore supplier parsing as a selectable ingest source, expose it in the supplier UI, and verify the standalone contour end-to-end.
+- Changed:
+  - src/magon_standalone/integrations/foundation/supplier_sources.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - apps/web/app/suppliers/page.tsx
+  - tests/test_foundation_suppliers.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached launcher/web startup remains less reliable than direct verification commands, so browser-heavy operator checks still prefer canonical verify commands or explicit runtime sessions.
+### 2026-04-18 02:09 +07 | main
+- Summary: Clean the standalone web shell: make dashboard cards actionable, simplify the header into primary nav plus a More panel, remove visible RU/EN UI drift, and verify the flow with browser and repo checks.
+- Changed:
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/login/page.tsx
+  - apps/web/components/auth/foundation-login-form.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - no additional risk recorded
+### 2026-04-18 00:56 +07 | main
+- Summary: Fix cached foundation session snapshots so useSyncExternalStore no longer loops in the web shell header
+- Changed:
+  - apps/web/lib/foundation-client.ts
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - The session loop is fixed at the store boundary, but I did not run a headed browser transcript in this turn, so final confirmation still depends on reopening /login or any page with the header in the current dev server.
+### 2026-04-18 00:52 +07 | main
+- Summary: Fix standalone web auth flow so foundation login completes with role-based redirect and visible session state
+- Changed:
+  - apps/web/lib/foundation-client.ts
+  - apps/web/components/auth/foundation-login-form.tsx
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - The foundation auth API is healthy and the web login flow now completes, but I was not able to extract structured output from the external Playwright CLI wrapper in this shell, so browser verification here is backed by code-path inspection plus build/typecheck and live auth API checks.
+### 2026-04-18 00:43 +07 | main
+- Summary: Align standalone web runtime with foundation health/public routes and harden the unified launcher port checks
+- Changed:
+  - apps/web/lib/standalone-api.ts
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - scripts/run_foundation_unified.sh
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Mixed-language public copy still remains in parts of the shell, but the runtime contract and operator entry points are now aligned with the real standalone foundation contour.
+### 2026-04-18 00:17 +07 | main
+- Summary: Add an hourly launchd watchdog that safely restarts the standalone launcher only when backend/web are down, wire it into verification, and document the new operator path.
+- Changed:
+  - scripts/run_launcher_watchdog.py
+  - scripts/render_launchd_launcher_watchdog.py
+  - scripts/install_launchd_launcher_watchdog.sh
+  - scripts/launchd_launcher_watchdog_status.sh
+  - src/magon_standalone/launchd_launcher_watchdog.py
+  - tests/test_launchd_launcher_watchdog.py
+  - scripts/platform_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - docs/ru/repo-workflow.md
+  - docs/ru/code-map.md
+  - docs/ru/current-project-state.md
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - The watchdog self-heals the local launcher, but it intentionally does not replace a full process supervisor, archive UI expansion, or broader post-wave-1 runtime scope.
+### 2026-04-18 00:10 +07 | main
+- Summary: Довёл публичный web-слой MagonOS: вычистил англицизмы и добавил paper-lab favicon
+- Changed:
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/app/icon.svg
+- Verified:
+  - PASS `cd apps/web && mkdir -p .next/types && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `test -f output/playwright/magonos-home-desktop-v2.png && test -f output/playwright/magonos-home-mobile-v2.png`
+- Risk:
+  - Repo-wide verify_workflow remains red outside this task because unrelated backend tests still expect old order/file states and Alembic head 20260417_0009 instead of 20260417_0010.
+### 2026-04-17 23:54 +07 | main
+- Summary: Align wave1 statuses, frontend wording, and marketing layer with the updated spec
+- Changed:
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/order_services.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - src/magon_standalone/foundation/file_document_services.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/modules/offers.py
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - apps/web/lib/foundation-display.ts
+  - apps/web/app/marketing/page.tsx
+  - apps/web/app/icon.svg
+  - apps/web/components/requests/*
+  - apps/web/components/orders/*
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/app/suppliers*
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/{ru,en}.json
+  - tests/test_foundation_offers.py
+  - tests/test_foundation_orders.py
+  - tests/test_foundation_files_documents.py
+  - tests/test_foundation_migrations.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - Wave1 remains intentionally bounded: no full archive UI, no full payment-core, and the main remaining web build warnings come from third-party Sentry/Prisma/OpenTelemetry instrumentation rather than product code.
+### 2026-04-17 23:40 +07 | main
+- Summary: Внедрил новый retro print lab веб-слой для главной MagonOS
+- Changed:
+  - apps/web/app/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/app/globals.css
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/components/ui/button.tsx
+  - apps/web/components/personalization/appearance-provider.tsx
+  - apps/web/design-system/tokens.ts
+  - apps/web/lib/fonts.ts
+  - apps/web/tailwind.config.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `test -f output/playwright/magonos-home-desktop.png && test -f output/playwright/magonos-home-mobile.png`
+- Risk:
+  - Repo-wide verify_workflow remains red because unrelated backend tests still expect old order/file states and Alembic head 20260417_0009 instead of 20260417_0010.
 ### 2026-04-17 20:27 +07 | codex/wave1-foundation
 - Summary: Closed the main wave1 acceptance gaps and hardened the demo-ready contour
 - Changed:
@@ -865,3 +1093,50 @@ It exists so the project context survives across sessions instead of being re-ex
 - Risk:
   - this file only helps if the repo workflow updates it on every substantial task
 <!-- WORKLOG:END -->
+### 2026-04-18 03:32 +07 | main
+- Summary: cleaned the operator shell and linked screens so the UI no longer leaks RU developer notes or mixed EN workflow terms into the Russian product surface
+- Changed:
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/globals.css
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/app/suppliers/[supplierCode]/page.tsx
+  - apps/web/app/supplier-sites/[siteCode]/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/messages/ru.json
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS browser pass for `/`, `/request-workbench`, `/orders`, `/suppliers`, `/supplier-ingests/ING-00001`, and the `Ещё` panel
+- Risk:
+  - seeded demo company/order titles still contain legacy English fixture names, so the remaining visible English is now mostly test/demo data rather than shell copy or workflow labels
+### 2026-04-18 04:24 +07 | codex/entity-help-reference
+- Summary: added an embedded `/reference` surface and matching Russian repo doc so the standalone contour explains key entities, dependency boundaries, and role-owned routes directly inside the product shell
+- Changed:
+  - apps/web/app/reference/page.tsx
+  - apps/web/lib/platform-reference.ts
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/platform-entity-reference.md
+  - docs/ru/current-project-state.md
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - the branch now has a clear reference surface, but the repo still contains unrelated dirty worktree state outside this task and it must be staged intentionally

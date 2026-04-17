@@ -1,4 +1,5 @@
 # RU: Файл проверяет, что миграции первой волны поднимают полный acceptance-контур на чистой БД без ручного вмешательства.
+# RU: Дополнительно держим эту проверку идемпотентной, чтобы CI ловил дрейф между несколькими upgrade head подряд.
 from __future__ import annotations
 
 import os
@@ -44,7 +45,7 @@ class TestFoundationMigrations(unittest.TestCase):
 
             with engine.connect() as connection:
                 version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-            self.assertEqual(version, "20260417_0009")
+            self.assertEqual(version, "20260417_0010")
 
 
 if __name__ == "__main__":

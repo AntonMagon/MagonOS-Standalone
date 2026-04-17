@@ -8,7 +8,14 @@ import {useEffect, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {
+  displayReasonCode,
+  displaySupplierStatus,
+  displaySupplierTrustLevel,
+  formatFoundationDate,
+} from "@/lib/foundation-display";
 
+// RU: Карточка поставщика держит trust/status и историю проверок рядом, чтобы оператор не перескакивал между разрозненными экранами.
 type SupplierDetailPayload = {
   supplier: {
     code: string;
@@ -105,10 +112,10 @@ export default function SupplierDetailPage() {
       <main className="container py-10">
         <Card className="glass-panel border-white/12 p-6">
           <h1 className="text-3xl leading-tight">Карточка поставщика</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">Сначала нужен foundation login.</p>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">Сначала нужен вход с ролью оператора или администратора.</p>
           <div className="mt-6">
             <Link href="/login">
-              <Button>Открыть login</Button>
+              <Button>Открыть вход</Button>
             </Link>
           </div>
         </Card>
@@ -123,82 +130,82 @@ export default function SupplierDetailPage() {
           <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground">← К списку поставщиков</Link>
           <h1 className="mt-2 text-3xl leading-tight">{payload?.supplier.display_name ?? supplierCode}</h1>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Separate Company/Supplier/Site контур: raw evidence, confirmed company, verification history и trust progression.
+            Раздельный контур компании, поставщика и площадки: исходные данные, подтверждённая компания, история проверок и движение по доверию.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => void verify("contact_confirmed")} disabled={loading}>Contact confirmed</Button>
-          <Button variant="secondary" onClick={() => void verify("capability_confirmed")} disabled={loading}>Capability confirmed</Button>
-          <Button onClick={() => void verify("trusted")} disabled={loading}>Trusted</Button>
+          <Button variant="secondary" onClick={() => void verify("contact_confirmed")} disabled={loading}>Подтвердить контакт</Button>
+          <Button variant="secondary" onClick={() => void verify("capability_confirmed")} disabled={loading}>Подтвердить компетенции</Button>
+          <Button onClick={() => void verify("trusted")} disabled={loading}>Сделать доверенным</Button>
         </div>
       </div>
 
       {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
-      {loading && !payload ? <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">Загрузка supplier card...</Card> : null}
+      {loading && !payload ? <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">Загрузка карточки поставщика...</Card> : null}
 
       {payload ? (
         <>
           <section className="grid gap-4 lg:grid-cols-3">
             <Card className="glass-panel border-white/12 p-5 lg:col-span-2">
-              <h2 className="text-xl">Confirmed supplier</h2>
+              <h2 className="text-xl">Подтверждённый поставщик</h2>
               <div className="mt-4 grid gap-3 text-sm">
                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                   <div>{payload.supplier.code}</div>
-                  <div className="mt-1 text-muted-foreground">trust {payload.supplier.trust_level} · status {payload.supplier.supplier_status}</div>
-                  <div className="mt-2">{payload.supplier.capability_summary || "Capabilities not confirmed yet."}</div>
-                  <div className="mt-2 text-muted-foreground">{payload.supplier.canonical_email || "no email"} · {payload.supplier.canonical_phone || "no phone"}</div>
+                  <div className="mt-1 text-muted-foreground">доверие: {displaySupplierTrustLevel(payload.supplier.trust_level)} · статус: {displaySupplierStatus(payload.supplier.supplier_status)}</div>
+                  <div className="mt-2">{payload.supplier.capability_summary || "Компетенции ещё не подтверждены."}</div>
+                  <div className="mt-2 text-muted-foreground">{payload.supplier.canonical_email || "Email не указан"} · {payload.supplier.canonical_phone || "Телефон не указан"}</div>
                   {payload.supplier.website ? <div className="mt-1 text-muted-foreground">{payload.supplier.website}</div> : null}
                 </div>
                 {payload.company ? (
                   <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <div className="font-medium">Company</div>
+                    <div className="font-medium">Компания</div>
                     <div className="mt-1">{payload.company.name}</div>
-                    <div className="mt-1 text-muted-foreground">{payload.company.code} · {payload.company.legal_name || "No legal name"}</div>
+                    <div className="mt-1 text-muted-foreground">{payload.company.code} · {payload.company.legal_name || "Юр. имя не указано"}</div>
                   </div>
                 ) : null}
               </div>
             </Card>
 
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Admin actions</h2>
+              <h2 className="text-xl">Admin-действия</h2>
               <div className="mt-4 flex flex-col gap-3">
-                <Button variant="secondary" onClick={() => void adminStatus("block")} disabled={loading}>Block supplier</Button>
-                <Button variant="secondary" onClick={() => void adminStatus("archive")} disabled={loading}>Archive supplier</Button>
+                <Button variant="secondary" onClick={() => void adminStatus("block")} disabled={loading}>Заблокировать поставщика</Button>
+                <Button variant="secondary" onClick={() => void adminStatus("archive")} disabled={loading}>Архивировать поставщика</Button>
               </div>
             </Card>
           </section>
 
           <section className="grid gap-4 lg:grid-cols-2">
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Contacts & addresses</h2>
+              <h2 className="text-xl">Контакты и адреса</h2>
               <div className="mt-4 space-y-3">
                 {payload.contacts.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
-                    <div>{item.email || "no email"} · {item.phone || "no phone"}</div>
-                    <div className="mt-1 text-muted-foreground">{item.verification_status}</div>
+                    <div>{item.email || "Email не указан"} · {item.phone || "Телефон не указан"}</div>
+                    <div className="mt-1 text-muted-foreground">{displayMaybeCode(item.verification_status)}</div>
                   </div>
                 ))}
                 {payload.addresses.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
-                    <div>{item.normalized_address || "no address"}</div>
-                    <div className="mt-1 text-muted-foreground">{item.city || "unknown city"} · {item.district || "unknown district"}</div>
+                    <div>{item.normalized_address || "Адрес не указан"}</div>
+                    <div className="mt-1 text-muted-foreground">{item.city || "Город не указан"} · {item.district || "Район не указан"}</div>
                   </div>
                 ))}
               </div>
             </Card>
 
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Sites</h2>
+              <h2 className="text-xl">Площадки</h2>
               <div className="mt-4 space-y-3">
                 {payload.sites.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div>{item.site_name}</div>
-                        <div className="mt-1 text-muted-foreground">trust {item.trust_level} · load {item.current_load_percent ?? 0}%</div>
+                        <div className="mt-1 text-muted-foreground">доверие: {displaySupplierTrustLevel(item.trust_level)} · загрузка {item.current_load_percent ?? 0}%</div>
                       </div>
                       <Link href={`/supplier-sites/${item.code}`}>
-                        <Button variant="secondary">Site card</Button>
+                        <Button variant="secondary">Карточка площадки</Button>
                       </Link>
                     </div>
                   </div>
@@ -209,19 +216,19 @@ export default function SupplierDetailPage() {
 
           <section className="grid gap-4 lg:grid-cols-2">
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Verification history</h2>
+              <h2 className="text-xl">История проверок</h2>
               <div className="mt-4 space-y-3">
                 {payload.verification_history.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
-                    <div>{item.verification_type}</div>
-                    <div className="mt-1 text-muted-foreground">{item.reason_code} · {item.occurred_at || "n/a"}</div>
+                    <div>{displayMaybeCode(item.verification_type)}</div>
+                    <div className="mt-1 text-muted-foreground">{displayReasonCode(item.reason_code)} · {formatFoundationDate(item.occurred_at)}</div>
                   </div>
                 ))}
               </div>
             </Card>
 
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Latest raw evidence</h2>
+              <h2 className="text-xl">Последние raw-доказательства</h2>
               <div className="mt-4 space-y-3">
                 {payload.raw_records.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
@@ -236,4 +243,15 @@ export default function SupplierDetailPage() {
       ) : null}
     </main>
   );
+}
+
+function displayMaybeCode(value?: string | null): string {
+  if (!value) {
+    return "Не указано";
+  }
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\w/, (char) => char.toUpperCase());
 }

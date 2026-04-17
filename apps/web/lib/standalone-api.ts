@@ -10,7 +10,7 @@ export type PlatformStatus = {
 };
 
 export type PlatformCompany = {
-  id: number;
+  id: string | number;
   canonical_key: string;
   canonical_name: string;
   city?: string;
@@ -18,10 +18,37 @@ export type PlatformCompany = {
   website?: string;
 };
 
+type FoundationHealth = {
+  status: string;
+  service?: string;
+  database_url?: string;
+};
+
+type PublicCompaniesPayload = {
+  items: Array<{
+    id: string;
+    code: string;
+    name: string;
+    country_code?: string;
+    status?: string;
+    note?: string | null;
+  }>;
+};
+
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8091';
 
 function apiBaseUrl(): string {
   return (process.env.MAGON_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
+}
+
+function databasePathFromUrl(databaseUrl?: string): string {
+  if (!databaseUrl) {
+    return 'Не указано';
+  }
+  if (databaseUrl.startsWith('sqlite+pysqlite:///')) {
+    return databaseUrl.slice('sqlite+pysqlite:///'.length);
+  }
+  return databaseUrl;
 }
 
 async function fetchJson<T>(path: string): Promise<T | null> {
@@ -39,14 +66,46 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 export async function getPlatformStatus(): Promise<PlatformStatus | null> {
-  return fetchJson<PlatformStatus>('/status');
+  const legacyStatus = await fetchJson<PlatformStatus>('/status');
+  if (legacyStatus) {
+    return legacyStatus;
+  }
+
+  // RU: Foundation runtime по умолчанию больше не держит legacy `/status`, поэтому public shell должен собирать online-state из канонического `/health`.
+  const [health, companies] = await Promise.all([
+    fetchJson<FoundationHealth>('/health'),
+    fetchJson<PublicCompaniesPayload>('/api/v1/public/companies'),
+  ]);
+  if (!health) {
+    return null;
+  }
+  return {
+    status: health.status,
+    service: health.service || 'magon-foundation',
+    db_path: databasePathFromUrl(health.database_url),
+    storage_counts: {
+      canonical_companies: companies?.items.length ?? 0,
+      review_queue: 0,
+      feedback_events: 0,
+    },
+  };
 }
 
 export async function getRecentCompanies(limit = 5): Promise<PlatformCompany[]> {
-  const payload = await fetchJson<{items: PlatformCompany[]}>(
+  // RU: Для standalone-first контура читаем публичный foundation company-registry, а legacy `/companies` оставляем только как fallback совместимости.
+  const foundationPayload = await fetchJson<PublicCompaniesPayload>('/api/v1/public/companies');
+  if (foundationPayload?.items) {
+    return foundationPayload.items.slice(0, limit).map((item) => ({
+      id: item.id,
+      canonical_key: item.code,
+      canonical_name: item.name,
+    }));
+  }
+
+  const legacyPayload = await fetchJson<{items: PlatformCompany[]}>(
     `/companies?limit=${encodeURIComponent(String(limit))}&offset=0`
   );
-  return payload?.items || [];
+  return legacyPayload?.items || [];
 }
 
 export function getOperatorUrl(path = ''): Route {

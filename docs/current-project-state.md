@@ -6,9 +6,8 @@
 
 ## Planning truth
 - Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
-- Global architecture source-of-truth: `gpt_doc/platform_architecture_report_ru.docx`
-- Broader planning/roadmap sync pack: `gpt_doc/platform_documentation_pack_ru.docx`
-- This file remains the runtime/verification truth, but product planning for the new contour must follow `gpt_doc/*`.
+- Read-only export of the same planning spec: `gpt_doc/codex_wave1_spec_ru.pdf`
+- There are no additional active planning documents in `gpt_doc/`; this file remains the runtime/verification truth, but product planning for the new contour must follow the wave1 spec above.
 
 ## Runtime truth
 - Standalone is the primary platform-of-record.
@@ -50,7 +49,10 @@
 Also already standalone-owned:
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
+- operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - normalization / enrichment / dedup / scoring
+- lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
 - draft autosave / abandoned / archive-ready intake layer
 - central request review queue with blocker/clarification flow
@@ -86,6 +88,9 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/run_foundation_unified.sh --fresh`
 - desktop launcher for the same local contour:
   - `./Start_Platform.command`
+- hourly self-heal watchdog for the launcher:
+  - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+  - `./scripts/launchd_launcher_watchdog_status.sh`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
@@ -119,6 +124,8 @@ Do not pretend full CRM/quote parity exists.
 
 ## Runtime surfaces
 - public shell: `http://127.0.0.1:3000/`
+- embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+- public marketing layer: `http://127.0.0.1:3000/marketing`
 - public showcase: `http://127.0.0.1:3000/catalog`
 - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
 - public RFQ entry: `http://127.0.0.1:3000/rfq`
@@ -134,13 +141,23 @@ Do not pretend full CRM/quote parity exists.
 - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
 - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
 - supplier workbench: `http://127.0.0.1:3000/suppliers`
+- supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
+- supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
 - direct backend debug: `http://127.0.0.1:8091/`
 - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`
   - `http://127.0.0.1:3000/ops`
   - `http://127.0.0.1:3000/ui/*`
+
+## Reference surface
+- Fast shell entry: `/reference`
+- Russian repo doc: `docs/ru/platform-entity-reference.md`
+- Use this when you need a quick answer to:
+  - which entity owns a given stage;
+  - which screen should be used for it;
+  - which dependency boundary must remain explicit.
 
 ## Working rules
 - Trust code, tests, and runtime over stale docs.

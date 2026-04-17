@@ -44,6 +44,7 @@ KEY_OBJECT_MODELS = {
     "document": Document,
 }
 
+# RU: Workflow support держит единый словарь причин, видимости и правил, чтобы UI и API объясняли блокировки одинаково.
 BASELINE_REASON_CODES: list[dict[str, Any]] = [
     {
         "code": "draft_required_fields_missing",
@@ -124,6 +125,14 @@ BASELINE_REASON_CODES: list[dict[str, Any]] = [
         "severity": "critical",
         "default_visibility_scope": VISIBILITY_INTERNAL,
         "description": "Производственный старт требует корректного текущего состояния заказа.",
+    },
+    {
+        "code": "order_payment_confirmation_required",
+        "title": "Для старта нужна подтверждённая оплата",
+        "category": "order",
+        "severity": "critical",
+        "default_visibility_scope": VISIBILITY_INTERNAL,
+        "description": "Критичные производственные действия первой волны доступны только после подтверждения оплаты.",
     },
     {
         "code": "order_not_ready_for_readiness_update",
@@ -356,7 +365,7 @@ BASELINE_ESCALATION_HINTS: list[dict[str, Any]] = [
     {
         "code": "SLA-00002",
         "entity_type": "offer",
-        "status_code": "sent",
+        "status_code": "awaiting_confirmation",
         "severity": "warning",
         "sla_minutes": 1440,
         "overdue_after_minutes": 2880,
@@ -748,22 +757,30 @@ class WorkflowSupportService:
         supplier_assigned: bool,
         readiness_state: str,
         logistics_state: str,
+        payment_state: str,
     ) -> RuleEvaluation:
         checks = [
             {"check": "supplier_assignment", "status": "passed" if supplier_assigned else "failed", "message": "supplier_ready" if supplier_assigned else "supplier_missing"},
+            {
+                "check": "payment_state",
+                "status": "passed" if action not in {"confirm_start", "mark_production"} or payment_state in {"confirmed", "partially_refunded", "refunded"} else "failed",
+                "message": payment_state,
+            },
             {"check": "readiness_state", "status": "passed", "message": readiness_state},
             {"check": "logistics_state", "status": "passed", "message": logistics_state},
         ]
         detail = None
         if action == "confirm_start" and not supplier_assigned:
             detail = "supplier_assignment_required"
-        elif action == "mark_production" and order.order_status not in {"confirmed_start", "supplier_assigned", "in_production", "partially_ready"}:
+        elif action in {"confirm_start", "mark_production"} and payment_state not in {"confirmed", "partially_refunded", "refunded"}:
+            detail = "order_payment_confirmation_required"
+        elif action == "mark_production" and order.order_status not in {"supplier_assigned", "paid", "in_production", "partially_ready"}:
             detail = "order_not_ready_for_production"
-        elif action == "ready" and order.order_status not in {"confirmed_start", "in_production", "supplier_assigned", "partially_ready"}:
+        elif action == "ready" and order.order_status not in {"in_production", "partially_ready"}:
             detail = "order_not_ready_for_readiness_update"
         elif action == "delivery" and readiness_state not in {"ready", "partial_ready"}:
             detail = "order_not_ready_for_delivery"
-        elif action == "complete" and logistics_state not in {"delivered", "partial_delivery"}:
+        elif action == "complete" and logistics_state != "delivered":
             detail = "order_not_ready_for_completion"
         blockers = [{"reason_code": detail, "reason_display": self.reason_display(detail)}] if detail else []
         payload = self._evaluation_payload(
@@ -775,6 +792,7 @@ class WorkflowSupportService:
                 "order_code": order.code,
                 "order_status": order.order_status,
                 "action": action,
+                "payment_state": payment_state,
                 "readiness_state": readiness_state,
                 "logistics_state": logistics_state,
             },

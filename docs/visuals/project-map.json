@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 20:27 +07`",
+  "generated_at": "`2026-04-18 03:33 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -25,7 +25,10 @@
   "owned_capabilities_en": [
     "company/supplier/site registry contour with raw -> normalized -> confirmed layering",
     "supplier intelligence pipeline",
+    "supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer",
+    "operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI",
     "normalization / enrichment / dedup / scoring",
+    "lightweight marketing/conversion layer over showcase + RFQ + guest draft entry",
     "limited catalog / showcase contour with guest draft + RFQ entry",
     "draft autosave / abandoned / archive-ready intake layer",
     "central request review queue with blocker/clarification flow",
@@ -41,7 +44,11 @@
   "owned_capabilities_ru": [
     "контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`",
     "конвейер проверки и обогащения поставщиков",
+    "реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery",
+    "операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура",
+    "header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу",
     "нормализация / обогащение / дедупликация / скоринг",
+    "лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа",
     "ограниченный контур каталога / витрины с гостевым входом в draft и RFQ",
     "autosave / abandoned / archive-ready слой Draft",
     "центральная операторская очередь Review для Request с blocker/clarification flow",
@@ -81,26 +88,26 @@
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 20:27 +07`",
-    "branch": "`codex/wave1-foundation`",
-    "current_focus": "Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`",
-    "biggest_operational_risk": "Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code."
+    "updated_at": "`2026-04-18 03:33 +07`",
+    "branch": "`main`",
+    "current_focus": "Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.",
+    "last_verified_workflow_status": "PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording."
   },
   "recent_worklog": [
     {
-      "heading": "2026-04-17 20:27 +07 | codex/wave1-foundation",
-      "summary": "Closed the main wave1 acceptance gaps and hardened the demo-ready contour",
+      "heading": "2026-04-18 03:33 +07 | main",
+      "summary": "Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-17 20:08 +07 | codex/wave1-foundation",
-      "summary": "Aligned Start_Platform.command with foundation runtime",
+      "heading": "2026-04-18 02:38 +07 | main",
+      "summary": "Complete the supplier source operator console, make parsing retries/queue states explainable, run browser-pass on supplier/workbench screens, and close the wave1 acceptance gate green.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-17 19:57 +07 | codex/wave1-foundation",
-      "summary": "implement wave1 messages, rules, notifications and dashboards contour",
+      "heading": "2026-04-18 03:18 +07 | main",
+      "summary": "Clean the standalone operator shell so the header stops collapsing into button clutter and the supplier screen reads like a real working console instead of a noisy demo card wall.",
       "risk": "See worklog entry"
     }
   ],

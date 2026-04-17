@@ -1,7 +1,14 @@
 // RU: Файл входит в проверенный контур первой волны.
 "use client";
 
+import {useSyncExternalStore} from "react";
+
 export const FOUNDATION_SESSION_KEY = "magon.foundation.session";
+const FOUNDATION_SESSION_EVENT = "magon.foundation.session.changed";
+const FOUNDATION_SERVER_SESSION_SNAPSHOT: FoundationSession | null = null;
+
+let cachedSessionRaw: string | null | undefined;
+let cachedSessionSnapshot: FoundationSession | null = null;
 
 export type FoundationSession = {
   token: string;
@@ -12,17 +19,32 @@ export type FoundationSession = {
   };
 };
 
+function emitFoundationSessionChange(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new Event(FOUNDATION_SESSION_EVENT));
+}
+
 export function readFoundationSession(): FoundationSession | null {
   if (typeof window === "undefined") {
     return null;
   }
   const raw = window.localStorage.getItem(FOUNDATION_SESSION_KEY);
+  if (raw === cachedSessionRaw) {
+    return cachedSessionSnapshot;
+  }
+  // RU: useSyncExternalStore требует стабильный snapshot по ссылке, поэтому повторно используем уже распарсенную session, пока raw-значение не изменилось.
+  cachedSessionRaw = raw;
   if (!raw) {
+    cachedSessionSnapshot = null;
     return null;
   }
   try {
-    return JSON.parse(raw) as FoundationSession;
+    cachedSessionSnapshot = JSON.parse(raw) as FoundationSession;
+    return cachedSessionSnapshot;
   } catch {
+    cachedSessionSnapshot = null;
     return null;
   }
 }
@@ -32,6 +54,7 @@ export function writeFoundationSession(session: FoundationSession): void {
     return;
   }
   window.localStorage.setItem(FOUNDATION_SESSION_KEY, JSON.stringify(session));
+  emitFoundationSessionChange();
 }
 
 export function clearFoundationSession(): void {
@@ -39,6 +62,38 @@ export function clearFoundationSession(): void {
     return;
   }
   window.localStorage.removeItem(FOUNDATION_SESSION_KEY);
+  emitFoundationSessionChange();
+}
+
+function subscribeFoundationSession(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+  // RU: login/logout должны обновлять header и другие client-экраны сразу, а не только после полного reload страницы.
+  const handleChange = () => callback();
+  window.addEventListener("storage", handleChange);
+  window.addEventListener(FOUNDATION_SESSION_EVENT, handleChange);
+  return () => {
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener(FOUNDATION_SESSION_EVENT, handleChange);
+  };
+}
+
+export function useFoundationSession(): FoundationSession | null {
+  return useSyncExternalStore(subscribeFoundationSession, readFoundationSession, () => FOUNDATION_SERVER_SESSION_SNAPSHOT);
+}
+
+export function resolveFoundationLoginTarget(roleCode: string, nextPath?: string | null): string {
+  if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+    return nextPath;
+  }
+  if (roleCode === "operator" || roleCode === "admin") {
+    return "/dashboard";
+  }
+  if (roleCode === "customer") {
+    return "/catalog";
+  }
+  return "/";
 }
 
 export async function fetchFoundationJson<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {

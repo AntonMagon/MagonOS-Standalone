@@ -27,6 +27,7 @@ from ..security import ROLE_ADMIN, ROLE_OPERATOR, AuthContext
 from ..workflow_support import ROLE_CUSTOMER, WorkflowSupportService, visibility_scopes_for_audience
 from .shared import order_public_view, request_operator_view, request_public_view, supplier_operator_view, timeline_event_view
 
+# RU: Этот router собирает operator/admin read-model без обхода workflow-guard слоя и сырых таблиц.
 router = APIRouter(tags=["AuditDashboards"])
 
 
@@ -135,14 +136,14 @@ def _overdue_items(session: Session, workflow: WorkflowSupportService) -> list[d
             }
         )
 
-    offer_hint = hint_by_entity.get(("offer", "sent"))
+    offer_hint = hint_by_entity.get(("offer", "awaiting_confirmation"))
     if offer_hint and offer_hint.overdue_after_minutes:
         threshold = current_ts - timedelta(minutes=int(offer_hint.overdue_after_minutes))
         overdue_offers = session.scalars(
             select(OfferRecord)
             .where(
                 OfferRecord.deleted_at.is_(None),
-                OfferRecord.offer_status == "sent",
+                OfferRecord.offer_status == "awaiting_confirmation",
                 OfferRecord.confirmation_state == "pending",
                 OfferRecord.updated_at < threshold,
             )
@@ -152,6 +153,7 @@ def _overdue_items(session: Session, workflow: WorkflowSupportService) -> list[d
             {
                 "kind": "offer_confirmation",
                 "owner_code": offer.code,
+                "request_ref": offer.request_ref,
                 "status": offer.offer_status,
                 "reason_code": "overdue_offer_confirmation",
                 "reason_display": workflow.reason_display("overdue_offer_confirmation"),
@@ -244,7 +246,7 @@ def customer_dashboard(customer_ref: str, session: Session = Depends(get_db)) ->
         "order": order_public_view(order) if order else None,
         "notifications": [_notification_view(item, workflow) for item in notifications],
         "timeline": [_notification_view(item, workflow) for item in timeline],
-        "offers_pending_confirmation": sum(1 for item in offers if item.offer_status == "sent" and item.confirmation_state == "pending"),
+        "offers_pending_confirmation": sum(1 for item in offers if item.offer_status == "awaiting_confirmation" and item.confirmation_state == "pending"),
         "documents_waiting_confirmation": session.scalar(
             select(func.count())
             .select_from(MessageEvent)
@@ -281,7 +283,7 @@ def operator_workbench(
             }
             for item in session.scalars(
                 select(OfferRecord)
-                .where(OfferRecord.deleted_at.is_(None), OfferRecord.offer_status == "sent", OfferRecord.confirmation_state == "pending")
+                .where(OfferRecord.deleted_at.is_(None), OfferRecord.offer_status == "awaiting_confirmation", OfferRecord.confirmation_state == "pending")
                 .order_by(OfferRecord.updated_at.asc())
             ).all()
         ],
@@ -366,7 +368,7 @@ def processing_dashboard(
             }
             for item in session.scalars(
                 select(OfferRecord)
-                .where(OfferRecord.deleted_at.is_(None), OfferRecord.offer_status == "sent", OfferRecord.confirmation_state == "pending")
+                .where(OfferRecord.deleted_at.is_(None), OfferRecord.offer_status == "awaiting_confirmation", OfferRecord.confirmation_state == "pending")
                 .order_by(OfferRecord.updated_at.asc())
             ).all()
         ],

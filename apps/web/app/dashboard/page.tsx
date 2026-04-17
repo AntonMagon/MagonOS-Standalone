@@ -5,22 +5,23 @@ import {ArrowRight, DatabaseZap, Factory, ListChecks, MessageSquareQuote} from '
 import {MetricCard} from '@/components/dashboard/metric-card';
 import {SectionIntro} from '@/components/sections/section-intro';
 import {MagicCard} from '@/components/ui/magic-card';
-import {getOperatorUrl, getPlatformStatus, getRecentCompanies} from '@/lib/standalone-api';
+import {getPlatformStatus, getRecentCompanies} from '@/lib/standalone-api';
 
+// RU: Dashboard остаётся коротким runtime-входом в ключевые operator surfaces, а не отдельной бизнес-панелью со своей логикой.
 const linkedSurfaces = [
   {
-    key: 'companies',
-    href: getOperatorUrl('companies'),
+    key: 'suppliers',
+    href: '/suppliers',
     icon: Factory
   },
   {
-    key: 'review',
-    href: getOperatorUrl('review-queue'),
+    key: 'requests',
+    href: '/request-workbench',
     icon: ListChecks
   },
   {
-    key: 'feedback',
-    href: getOperatorUrl('feedback-status'),
+    key: 'orders',
+    href: '/orders',
     icon: MessageSquareQuote
   }
 ] as const;
@@ -60,13 +61,13 @@ export default async function DashboardPage() {
                 {status ? t('runtimeDb', {path: status.db_path}) : t('runtimeUnavailable')}
               </div>
               <div className="flex flex-wrap gap-3">
-                <Link href={getOperatorUrl()}>
+                <Link href="/ops-workbench">
                   <span className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow">
                     {t('openConsole')}
                     <ArrowRight className="h-4 w-4" />
                   </span>
                 </Link>
-                <Link href={getOperatorUrl('production-board')}>
+                <Link href="/orders">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-foreground">
                     {t('openBoard')}
                   </span>
@@ -112,23 +113,24 @@ export default async function DashboardPage() {
           <div className="grid gap-3">
             {recentCompanies.length ? (
               recentCompanies.map((company) => (
-                <Link
+                <div
                   key={company.id}
-                  href={getOperatorUrl(`companies/${company.id}`)}
-                  className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4 transition-colors hover:bg-black/16"
+                  className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="text-lg font-medium leading-tight">{company.canonical_name}</div>
                       <div className="mt-1 truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">{company.canonical_key}</div>
                     </div>
-                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="rounded-full border border-white/12 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      {t('recentPublicLabel')}
+                    </span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
                     <span>{company.city || t('recentUnknownCity')}</span>
                     <span className="break-all">{company.canonical_email || t('recentNoEmail')}</span>
                   </div>
-                </Link>
+                </div>
               ))
             ) : (
               <div className="rounded-[1.2rem] border border-dashed border-white/12 bg-black/10 p-4 text-sm text-muted-foreground">

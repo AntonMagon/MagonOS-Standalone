@@ -172,10 +172,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 20:27 +07`
-- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
-- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+- Auto-synced at: `2026-04-18 03:33 +07`
+- Current focus: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
+- Last verified workflow status: PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -187,7 +187,10 @@ Detailed workflow: `docs/repo-workflow.md`
 - Standalone-owned capabilities:
   - company/supplier/site registry contour with raw -> normalized -> confirmed layering
   - supplier intelligence pipeline
+  - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
+  - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
   - normalization / enrichment / dedup / scoring
+  - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
   - limited catalog / showcase contour with guest draft + RFQ entry
   - draft autosave / abandoned / archive-ready intake layer
   - central request review queue with blocker/clarification flow
@@ -213,6 +216,8 @@ Detailed workflow: `docs/repo-workflow.md`
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
+  - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+  - public marketing layer: `http://127.0.0.1:3000/marketing`
   - public showcase: `http://127.0.0.1:3000/catalog`
   - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
   - public RFQ entry: `http://127.0.0.1:3000/rfq`
@@ -228,8 +233,10 @@ Detailed workflow: `docs/repo-workflow.md`
   - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
   - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
   - supplier workbench: `http://127.0.0.1:3000/suppliers`
+  - supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
   - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
   - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
+  - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
   - direct backend debug: `http://127.0.0.1:8091/`
   - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`

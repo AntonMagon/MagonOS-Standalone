@@ -242,13 +242,14 @@ Project-safe wrapper вокруг установленного `playwright` skil
 ### `scripts/platform_smoke_check.sh`
 
 Быстрый probe для:
-- `GET /health`
-- `GET /status`
+- `GET /health/ready`
+- `GET /api/v1/meta/system-mode`
 - `/`
-- `/dashboard`
-- `/ops-workbench`
-- `/project-map`
-- `/ui/companies`
+- `/login`
+- `/marketing`
+- `/request-workbench`
+- `/orders`
+- `/suppliers`
 
 Нужен, чтобы без полного suite быстро доказать, что backend/web/operator surfaces живы.
 
@@ -292,6 +293,31 @@ Project-safe wrapper вокруг установленного `playwright` skil
 - реальный `launchctl print`
 
 Если periodic runner "вроде установлен", но реально не живёт, смотреть сюда.
+
+### `scripts/run_launcher_watchdog.py`
+
+Лёгкий safe-restart watchdog для Launcher.
+
+Что делает:
+- проверяет `health/ready` у backend
+- проверяет `/login` у web shell
+- если всё живо, ничего не трогает
+- если runtime умер, вызывает `Start_Platform.command --detach --no-open --keep-db --no-seed`
+
+Важно:
+- не чистит SQLite БД
+- не пересеивает demo fixtures
+- нужен именно для hourly self-heal, а не для полного verify
+
+### `scripts/install_launchd_launcher_watchdog.sh`
+
+Ставит отдельный macOS LaunchAgent `com.magonos.launcher-watchdog`.
+Это OS-level guard, который раз в час может вернуть платформу в живое состояние после локального падения.
+
+### `scripts/launchd_launcher_watchdog_status.sh`
+
+Показывает plist и `launchctl print` для watchdog-агента.
+Это точка проверки, если "watchdog вроде поставлен", но restart-guard реально не живёт.
 
 ### `src/magon_standalone/observability.py`
 

@@ -8,7 +8,9 @@ import {useEffect, useState} from "react";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {displaySupplierTrustLevel, formatFoundationDate} from "@/lib/foundation-display";
 
+// RU: Карточка площадки нужна как operator view на конкретный supplier site, а не как универсальная supplier-страница.
 type SitePayload = {
   site: {
     code: string;
@@ -50,11 +52,11 @@ export default function SupplierSitePage() {
     return (
       <main className="container py-10">
         <Card className="glass-panel border-white/12 p-6">
-          <h1 className="text-3xl leading-tight">Supplier site</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">Нужен operator/admin login.</p>
+          <h1 className="text-3xl leading-tight">Площадка поставщика</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">Для этого экрана нужен вход с ролью оператора или администратора.</p>
           <div className="mt-6">
             <Link href="/login">
-              <Button>Открыть login</Button>
+              <Button>Открыть вход</Button>
             </Link>
           </div>
         </Card>
@@ -64,17 +66,17 @@ export default function SupplierSitePage() {
 
   return (
     <main className="container space-y-6 py-8">
-      <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground">← К supplier workbench</Link>
+      <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground">← К панели поставщиков</Link>
       {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
       {payload ? (
         <section className="grid gap-4 lg:grid-cols-2">
           <Card className="glass-panel border-white/12 p-5">
             <h1 className="text-3xl leading-tight">{payload.site.site_name}</h1>
             <div className="mt-4 space-y-2 text-sm">
-              <div>code {payload.site.code}</div>
-              <div>trust {payload.site.trust_level} · status {payload.site.site_status}</div>
-              <div>load {payload.site.current_load_percent ?? 0}% · lead time {payload.site.lead_time_days ?? "n/a"} days</div>
-              <div>{payload.site.capability_summary || "No capability summary"}</div>
+              <div>Код: {payload.site.code}</div>
+              <div>Доверие: {displaySupplierTrustLevel(payload.site.trust_level)} · статус: {displayMaybeCode(payload.site.site_status)}</div>
+              <div>Загрузка: {payload.site.current_load_percent ?? 0}% · lead time: {payload.site.lead_time_days ?? "не указан"} дней</div>
+              <div>{payload.site.capability_summary || "Сводка компетенций ещё не собрана"}</div>
               {payload.supplier ? (
                 <div className="pt-2">
                   <Link href={`/suppliers/${payload.supplier.code}`} className="text-primary underline-offset-4 hover:underline">
@@ -86,26 +88,37 @@ export default function SupplierSitePage() {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Location & rating</h2>
+            <h2 className="text-xl">Локация и рейтинг</h2>
             <div className="mt-4 space-y-3 text-sm">
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <div>{payload.address?.normalized_address || "No address yet"}</div>
+                <div>{payload.address?.normalized_address || "Адрес ещё не подтверждён"}</div>
                 <div className="mt-1 text-muted-foreground">
-                  {payload.address?.city || "unknown city"} · {payload.address?.district || "unknown district"}
+                  {payload.address?.city || "Город не указан"} · {payload.address?.district || "Район не указан"}
                 </div>
               </div>
               {payload.rating_history.map((item) => (
                 <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <div>overall {item.overall_score}</div>
-                  <div className="mt-1 text-muted-foreground">{item.source_label || "manual"} · {item.captured_at || "n/a"}</div>
+                  <div>Общий score: {item.overall_score}</div>
+                  <div className="mt-1 text-muted-foreground">{item.source_label || "manual"} · {formatFoundationDate(item.captured_at)}</div>
                 </div>
               ))}
             </div>
           </Card>
         </section>
       ) : (
-        <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">Загрузка site card...</Card>
+        <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">Загрузка карточки площадки...</Card>
       )}
     </main>
   );
+}
+
+function displayMaybeCode(value?: string | null): string {
+  if (!value) {
+    return "Не указано";
+  }
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\w/, (char) => char.toUpperCase());
 }

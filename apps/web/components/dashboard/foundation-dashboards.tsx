@@ -1,13 +1,25 @@
 "use client";
 // RU: Компонент собирает wave1 dashboards только из role-scoped API payloads и не склеивает customer/operator/admin данные.
 
+import type {Route} from "next";
 import Link from "next/link";
 import {type ReactNode, useEffect, useState} from "react";
 
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {
+  displayOfferStatus,
+  displayOrderStatus,
+  displayReasonCode,
+  displayRequestStatus,
+  displaySupplierStatus,
+  displaySupplierTrustLevel,
+  displayVisibilityScope,
+  formatFoundationDate,
+} from "@/lib/foundation-display";
 
+// RU: Карточки dashboards должны вести дальше по клику и не оставаться purely informational summary без рабочего объекта.
 type CountMap = Record<string, number>;
 
 type ReasonDisplay = {
@@ -20,12 +32,16 @@ type ReasonDisplay = {
 type NotificationItem = {
   code: string;
   entry_kind: string;
+  entity_type?: string | null;
+  entity_code?: string | null;
+  event_type?: string | null;
   title?: string | null;
   body?: string | null;
   reason_code?: string | null;
   reason_display?: ReasonDisplay | null;
   visibility_scope?: string | null;
   created_at?: string | null;
+  payload?: Record<string, unknown> | null;
 };
 
 type BlockedItem = {
@@ -37,7 +53,33 @@ type BlockedItem = {
   note?: string | null;
   due_at?: string | null;
   created_at?: string | null;
+  request_ref?: string | null;
 };
+
+function displayBlockedKind(kind: string): string {
+  if (kind === "request_blocker") return "Блокер заявки";
+  if (kind === "request_deadline") return "Просрочка по заявке";
+  if (kind === "offer_confirmation") return "Задержка подтверждения оффера";
+  if (kind === "supplier_blocked") return "Заблокированный поставщик";
+  return kind;
+}
+
+function displayBlockedStatus(kind: string, status: string): string {
+  if (kind.startsWith("request_")) return displayRequestStatus(status);
+  if (kind.startsWith("offer_")) return displayOfferStatus(status);
+  if (kind.startsWith("supplier_")) return displaySupplierStatus(status);
+  if (kind.startsWith("order_")) return displayOrderStatus(status);
+  return status;
+}
+
+function displayAdminMetricKey(key: string): string {
+  if (key === "users") return "Пользователи";
+  if (key === "rules") return "Правила";
+  if (key === "rule_versions") return "Версии правил";
+  if (key === "message_events") return "События хронологии";
+  if (key === "notifications") return "Уведомления";
+  return key;
+}
 
 type OfferPendingItem = {
   code: string;
@@ -102,25 +144,83 @@ type AdminDashboardPayload = {
   telemetry: Record<string, unknown>;
 };
 
-function formatDate(value?: string | null): string {
-  if (!value) {
-    return "n/a";
-  }
-  return new Date(value).toLocaleString("ru-RU");
+function resolveOwnerHref(ownerType?: string | null, ownerCode?: string | null): string | null {
+  if (!ownerType || !ownerCode) return null;
+  if (ownerType === "request") return `/request-workbench/${ownerCode}`;
+  if (ownerType === "order") return `/orders/${ownerCode}`;
+  if (ownerType === "supplier" || ownerType === "supplier_company") return `/suppliers/${ownerCode}`;
+  return null;
 }
 
-function CountSection({title, counts}: {title: string; counts: CountMap}) {
+function resolveNotificationHref(item: NotificationItem): string | null {
+  const payload = item.payload ?? {};
+  const payloadRequestCode = typeof payload.request_code === "string" ? payload.request_code : null;
+  const payloadRequestRef = typeof payload.request_ref === "string" ? payload.request_ref : null;
+  const payloadOrderCode = typeof payload.order_code === "string" ? payload.order_code : null;
+  const payloadSupplierCode = typeof payload.supplier_code === "string" ? payload.supplier_code : null;
+  const payloadOwnerType = typeof payload.owner_type === "string" ? payload.owner_type : null;
+  const payloadOwnerCode = typeof payload.owner_code === "string" ? payload.owner_code : null;
+
+  if (item.entity_type === "order" || payloadOrderCode) {
+    return `/orders/${payloadOrderCode ?? item.entity_code ?? ""}`;
+  }
+  if (item.entity_type === "request" || payloadRequestCode) {
+    return `/request-workbench/${payloadRequestCode ?? item.entity_code ?? ""}`;
+  }
+  if (item.entity_type === "offer" || payloadRequestRef) {
+    return payloadRequestRef ? `/request-workbench/${payloadRequestRef}` : null;
+  }
+  if (item.entity_type === "supplier" || item.entity_type === "supplier_company" || payloadSupplierCode) {
+    return `/suppliers/${payloadSupplierCode ?? item.entity_code ?? ""}`;
+  }
+  return resolveOwnerHref(payloadOwnerType, payloadOwnerCode);
+}
+
+function resolveBlockedHref(item: BlockedItem): string | null {
+  if (item.kind.startsWith("request_")) return `/request-workbench/${item.owner_code}`;
+  if (item.kind.startsWith("supplier_")) return `/suppliers/${item.owner_code}`;
+  if (item.kind.startsWith("offer_") && item.request_ref) return `/request-workbench/${item.request_ref}`;
+  return null;
+}
+
+function resolveOfferPendingHref(item: OfferPendingItem): string | null {
+  return item.request_ref ? `/request-workbench/${item.request_ref}` : null;
+}
+
+function CountSection({
+  title,
+  counts,
+  formatKey,
+  href,
+  actionLabel,
+}: {
+  title: string;
+  counts: CountMap;
+  formatKey?: (key: string) => string;
+  href?: string;
+  actionLabel?: string;
+}) {
   const entries = Object.entries(counts);
   return (
     <Card className="glass-panel border-white/12 p-5">
-      <h2 className="text-xl">{title}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl">{title}</h2>
+        {href ? (
+          <Link href={href as Route} className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground">
+            {actionLabel ?? "Открыть"}
+          </Link>
+        ) : null}
+      </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {entries.map(([key, value]) => (
-          <div key={key} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{key}</div>
-            <div className="mt-2 text-3xl leading-none">{value}</div>
-          </div>
-        ))}
+        {entries.map(([key, value]) => {
+          const content = (
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{formatKey ? formatKey(key) : key}</div>
+              <div className="mt-2 text-3xl leading-none">{value}</div>
+            </div>
+          );
+          return href ? <Link key={key} href={href as Route} className="block">{content}</Link> : <div key={key}>{content}</div>;
+        })}
         {!entries.length ? <div className="text-sm text-muted-foreground">Пока нет данных.</div> : null}
       </div>
     </Card>
@@ -132,15 +232,22 @@ function NotificationSection({title, items}: {title: string; items: Notification
     <Card className="glass-panel border-white/12 p-5">
       <h2 className="text-xl">{title}</h2>
       <div className="mt-4 space-y-3 text-sm">
-        {items.map((item) => (
-          <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div className="font-medium">{item.title ?? item.reason_display?.title ?? item.reason_code ?? item.code}</div>
-            {item.body ? <div className="mt-2 text-foreground/80">{item.body}</div> : null}
-            <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {item.visibility_scope ?? "n/a"} · {formatDate(item.created_at)}
+        {items.map((item) => {
+          const href = resolveNotificationHref(item);
+          const content = (
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-medium">{item.title ?? displayReasonCode(item.reason_code, item.reason_display?.title) ?? item.code}</div>
+                {href ? <div className="text-[11px] uppercase tracking-[0.18em] text-primary/80">Открыть</div> : null}
+              </div>
+              {item.body ? <div className="mt-2 text-foreground/80">{item.body}</div> : null}
+              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {displayVisibilityScope(item.visibility_scope)} · {formatFoundationDate(item.created_at)}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+          return href ? <Link key={item.code} href={href as Route} className="block">{content}</Link> : <div key={item.code}>{content}</div>;
+        })}
         {!items.length ? <div className="text-sm text-muted-foreground">Нет активных уведомлений.</div> : null}
       </div>
     </Card>
@@ -152,23 +259,36 @@ function BlockedSection({title, items}: {title: string; items: BlockedItem[]}) {
     <Card className="glass-panel border-white/12 p-5">
       <h2 className="text-xl">{title}</h2>
       <div className="mt-4 space-y-3 text-sm">
-        {items.map((item, index) => (
-          <div key={`${item.owner_code}-${item.reason_code}-${index}`} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="font-medium">{item.owner_code}</div>
-                <div className="mt-1 text-muted-foreground">
-                  {item.reason_display?.title ?? item.reason_code} · {item.status}
+        {items.map((item, index) => {
+          const href = resolveBlockedHref(item);
+          const content = (
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium">{item.owner_code}</div>
+                  <div className="mt-1 text-muted-foreground">
+                    {displayReasonCode(item.reason_code, item.reason_display?.title)} · {displayBlockedStatus(item.kind, item.status)}
+                  </div>
+                </div>
+                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  {displayBlockedKind(item.kind)}
+                  {href ? <span className="ml-2 text-primary/80">· открыть</span> : null}
                 </div>
               </div>
-              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.kind}</div>
+              {item.note ? <div className="mt-2 text-foreground/80">{item.note}</div> : null}
+              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {formatFoundationDate(item.due_at ?? item.created_at)}
+              </div>
             </div>
-            {item.note ? <div className="mt-2 text-foreground/80">{item.note}</div> : null}
-            <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {formatDate(item.due_at ?? item.created_at)}
-            </div>
-          </div>
-        ))}
+          );
+          return href ? (
+            <Link key={`${item.owner_code}-${item.reason_code}-${index}`} href={href as Route} className="block">
+              {content}
+            </Link>
+          ) : (
+            <div key={`${item.owner_code}-${item.reason_code}-${index}`}>{content}</div>
+          );
+        })}
         {!items.length ? <div className="text-sm text-muted-foreground">Нет элементов.</div> : null}
       </div>
     </Card>
@@ -178,17 +298,24 @@ function BlockedSection({title, items}: {title: string; items: BlockedItem[]}) {
 function OffersPendingSection({items}: {items: OfferPendingItem[]}) {
   return (
     <Card className="glass-panel border-white/12 p-5">
-      <h2 className="text-xl">Offers pending confirmation</h2>
+      <h2 className="text-xl">Предложения, ожидающие подтверждения</h2>
       <div className="mt-4 space-y-3 text-sm">
-        {items.map((item) => (
-          <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div className="font-medium">{item.code}</div>
-            <div className="mt-1 text-muted-foreground">
-              {item.request_ref ?? "no_request_ref"} · {item.confirmation_state ?? item.offer_status ?? "n/a"}
+        {items.map((item) => {
+          const href = resolveOfferPendingHref(item);
+          const content = (
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-medium">{item.code}</div>
+                {href ? <div className="text-[11px] uppercase tracking-[0.18em] text-primary/80">Открыть заявку</div> : null}
+              </div>
+              <div className="mt-1 text-muted-foreground">
+                {item.request_ref ?? "без привязки к заявке"} · {displayOfferStatus(item.confirmation_state === "pending" ? item.offer_status : item.confirmation_state)}
+              </div>
+              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">{formatFoundationDate(item.updated_at)}</div>
             </div>
-            <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">{formatDate(item.updated_at)}</div>
-          </div>
-        ))}
+          );
+          return href ? <Link key={item.code} href={href as Route} className="block">{content}</Link> : <div key={item.code}>{content}</div>;
+        })}
         {!items.length ? <div className="text-sm text-muted-foreground">Нет офферов, ожидающих подтверждения.</div> : null}
       </div>
     </Card>
@@ -205,7 +332,7 @@ function SessionGate({title, description, children}: {title: string; description
           <p className="mt-3 text-sm leading-7 text-muted-foreground">{description}</p>
           <div className="mt-6">
             <Link href="/login">
-              <Button>Открыть login</Button>
+              <Button>Открыть вход</Button>
             </Link>
           </div>
         </Card>
@@ -218,12 +345,12 @@ function SessionGate({title, description, children}: {title: string; description
 function WorkbenchLinks() {
   return (
     <div className="flex flex-wrap gap-2">
-      <Link href="/request-workbench"><Button variant="secondary">Requests</Button></Link>
-      <Link href="/orders"><Button variant="secondary">Orders</Button></Link>
-      <Link href="/suppliers"><Button variant="secondary">Suppliers</Button></Link>
-      <Link href="/processing-dashboard"><Button variant="secondary">Processing</Button></Link>
-      <Link href="/supply-dashboard"><Button variant="secondary">Supply</Button></Link>
-      <Link href="/admin-dashboard"><Button variant="secondary">Admin</Button></Link>
+      <Link href="/request-workbench"><Button variant="secondary">Заявки</Button></Link>
+      <Link href="/orders"><Button variant="secondary">Заказы</Button></Link>
+      <Link href="/suppliers"><Button variant="secondary">Поставщики</Button></Link>
+      <Link href="/processing-dashboard"><Button variant="secondary">Производство</Button></Link>
+      <Link href="/supply-dashboard"><Button variant="secondary">Снабжение</Button></Link>
+      <Link href="/admin-dashboard"><Button variant="secondary">Админ</Button></Link>
     </div>
   );
 }
@@ -255,44 +382,44 @@ export function OperatorWorkbenchView() {
   }, [session?.token]);
 
   return (
-    <SessionGate title="Operator workbench" description="Для operator/admin панели нужен foundation session token.">
+    <SessionGate title="Операторский рабочий стол" description="Для панели оператора нужен действующий токен с ролью оператора или администратора.">
       <main className="container space-y-6 py-10">
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Wave1 operator</div>
-              <h1 className="mt-2 text-3xl leading-tight">Operator workbench</h1>
+              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Операторский контур</div>
+              <h1 className="mt-2 text-3xl leading-tight">Операторский рабочий стол</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Единая панель для intake, blocker reasons, overdue queues, role-scoped notifications и explainable transitions.
+                Единая панель для заявок, причин блокировки, просрочек, ролевых уведомлений и объяснимых переходов.
               </p>
             </div>
             <WorkbenchLinks />
           </div>
         </Card>
 
-        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка operator workbench...</Card> : null}
+        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка операторского рабочего стола...</Card> : null}
         {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
 
         {payload ? (
           <>
             <section className="grid gap-4 lg:grid-cols-2">
-              <CountSection title="Requests by status" counts={payload.requests_by_status} />
-              <CountSection title="Orders by state" counts={payload.orders_by_state} />
+              <CountSection title="Заявки по статусам" counts={payload.requests_by_status} formatKey={displayRequestStatus} href="/request-workbench" actionLabel="Открыть заявки" />
+              <CountSection title="Заказы по состоянию" counts={payload.orders_by_state} formatKey={displayOrderStatus} href="/orders" actionLabel="Открыть заказы" />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <CountSection title="Offers by status" counts={payload.offers_by_status} />
-              <CountSection title="Suppliers by trust" counts={payload.suppliers_by_trust} />
-              <CountSection title="Suppliers by status" counts={payload.suppliers_by_status} />
+              <CountSection title="Предложения по статусам" counts={payload.offers_by_status} formatKey={displayOfferStatus} href="/request-workbench" actionLabel="Открыть коммерческий контур" />
+              <CountSection title="Поставщики по доверию" counts={payload.suppliers_by_trust} formatKey={displaySupplierTrustLevel} href="/suppliers" actionLabel="Открыть поставщиков" />
+              <CountSection title="Поставщики по статусам" counts={payload.suppliers_by_status} formatKey={displaySupplierStatus} href="/suppliers" actionLabel="Открыть поставщиков" />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <BlockedSection title="Blocked items" items={payload.blocked_items} />
-              <BlockedSection title="Overdue items" items={payload.overdue_items} />
+              <BlockedSection title="Заблокированные элементы" items={payload.blocked_items} />
+              <BlockedSection title="Просроченные элементы" items={payload.overdue_items} />
               <OffersPendingSection items={payload.offers_pending_confirmation} />
             </section>
 
-            <NotificationSection title="Notifications" items={payload.notifications} />
+            <NotificationSection title="Уведомления" items={payload.notifications} />
           </>
         ) : null}
       </main>
@@ -327,47 +454,47 @@ export function AdminDashboardView() {
   }, [session?.token]);
 
   return (
-    <SessionGate title="Admin dashboard" description="Для admin панели нужен foundation session token с ролью admin.">
+    <SessionGate title="Панель администратора" description="Для панели администратора нужен действующий токен с ролью администратора.">
       <main className="container space-y-6 py-10">
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Wave1 admin</div>
-              <h1 className="mt-2 text-3xl leading-tight">Admin dashboard</h1>
+              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Административный контур</div>
+              <h1 className="mt-2 text-3xl leading-tight">Панель администратора</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Админ-слой показывает baseline rules, версии, объём message events и базовую telemetry без чёрного ящика.
+                Здесь видны правила, версии, объём событий, уведомления и базовая телеметрия без скрытой логики.
               </p>
             </div>
             <WorkbenchLinks />
           </div>
         </Card>
 
-        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка admin dashboard...</Card> : null}
+        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка панели администратора...</Card> : null}
         {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
 
         {payload ? (
           <>
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <CountSection title="Users" counts={{users: payload.counts.users}} />
-              <CountSection title="Rules" counts={{rules: payload.counts.rules}} />
-              <CountSection title="Rule versions" counts={{rule_versions: payload.counts.rule_versions}} />
-              <CountSection title="Message events" counts={{message_events: payload.counts.message_events}} />
-              <CountSection title="Notifications" counts={{notifications: payload.counts.notifications}} />
+              <CountSection title="Пользователи" counts={{users: payload.counts.users}} formatKey={displayAdminMetricKey} />
+              <CountSection title="Правила" counts={{rules: payload.counts.rules}} formatKey={displayAdminMetricKey} />
+              <CountSection title="Версии правил" counts={{rule_versions: payload.counts.rule_versions}} formatKey={displayAdminMetricKey} />
+              <CountSection title="События хронологии" counts={{message_events: payload.counts.message_events}} formatKey={displayAdminMetricKey} />
+              <CountSection title="Уведомления" counts={{notifications: payload.counts.notifications}} formatKey={displayAdminMetricKey} />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
-              <CountSection title="Requests by status" counts={payload.requests_by_status} />
-              <CountSection title="Orders by state" counts={payload.orders_by_state} />
+              <CountSection title="Заявки по статусам" counts={payload.requests_by_status} formatKey={displayRequestStatus} href="/request-workbench" actionLabel="Открыть заявки" />
+              <CountSection title="Заказы по состоянию" counts={payload.orders_by_state} formatKey={displayOrderStatus} href="/orders" actionLabel="Открыть заказы" />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <BlockedSection title="Blocked items" items={payload.blocked_items} />
-              <BlockedSection title="Overdue items" items={payload.overdue_items} />
-              <NotificationSection title="Admin notifications" items={payload.notifications} />
+              <BlockedSection title="Заблокированные элементы" items={payload.blocked_items} />
+              <BlockedSection title="Просроченные элементы" items={payload.overdue_items} />
+              <NotificationSection title="Административные уведомления" items={payload.notifications} />
             </section>
 
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Telemetry snapshot</h2>
+              <h2 className="text-xl">Снимок телеметрии</h2>
               <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-foreground/80">
                 {JSON.stringify(payload.telemetry, null, 2)}
               </pre>
@@ -406,59 +533,59 @@ export function SupplyDashboardView() {
   }, [session?.token]);
 
   return (
-    <SessionGate title="Supply dashboard" description="Для supply-side панели нужен foundation session token.">
+    <SessionGate title="Панель поставщиков" description="Для панели поставщиков нужен действующий токен с ролью оператора или администратора.">
       <main className="container space-y-6 py-10">
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Wave1 supply</div>
-              <h1 className="mt-2 text-3xl leading-tight">Supply dashboard</h1>
+              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Контур поставщиков</div>
+              <h1 className="mt-2 text-3xl leading-tight">Панель поставщиков</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Панель для supplier trust/status, blocked suppliers и текущего подтверждённого supply contour без полного supplier portal.
+                Здесь собраны доверие, статусы, блокировки и рабочий срез по поставщикам без расширения в полноценный supplier portal.
               </p>
             </div>
             <WorkbenchLinks />
           </div>
         </Card>
 
-        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка supply dashboard...</Card> : null}
+        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка панели поставщиков...</Card> : null}
         {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
 
         {payload ? (
           <>
             <section className="grid gap-4 lg:grid-cols-2">
-              <CountSection title="Suppliers by trust" counts={payload.suppliers_by_trust} />
-              <CountSection title="Suppliers by status" counts={payload.suppliers_by_status} />
+              <CountSection title="Поставщики по доверию" counts={payload.suppliers_by_trust} formatKey={displaySupplierTrustLevel} href="/suppliers" actionLabel="Открыть реестр" />
+              <CountSection title="Поставщики по статусам" counts={payload.suppliers_by_status} formatKey={displaySupplierStatus} href="/suppliers" actionLabel="Открыть реестр" />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
               <Card className="glass-panel border-white/12 p-5">
-                <h2 className="text-xl">Blocked suppliers</h2>
+                <h2 className="text-xl">Заблокированные поставщики</h2>
                 <div className="mt-4 space-y-3 text-sm">
                   {payload.blocked_suppliers.map((item) => (
-                    <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                    <Link key={item.code} href={`/suppliers/${item.code}`} className="block rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
                       <div className="font-medium">{item.display_name}</div>
                       <div className="mt-1 text-muted-foreground">
-                        {item.code} · {item.trust_level} · {item.supplier_status}
+                        {item.code} · {displaySupplierTrustLevel(item.trust_level)} · {displaySupplierStatus(item.supplier_status)}
                       </div>
                       {item.blocked_reason ? <div className="mt-2 text-foreground/80">{item.blocked_reason}</div> : null}
-                    </div>
+                    </Link>
                   ))}
                   {!payload.blocked_suppliers.length ? <div className="text-sm text-muted-foreground">Нет заблокированных поставщиков.</div> : null}
                 </div>
               </Card>
 
               <Card className="glass-panel border-white/12 p-5">
-                <h2 className="text-xl">Top suppliers</h2>
+                <h2 className="text-xl">Ключевые поставщики</h2>
                 <div className="mt-4 space-y-3 text-sm">
                   {payload.top_suppliers.map((item) => (
-                    <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                    <Link key={item.code} href={`/suppliers/${item.code}`} className="block rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
                       <div className="font-medium">{item.display_name}</div>
                       <div className="mt-1 text-muted-foreground">
-                        {item.code} · trust {item.trust_level} · status {item.supplier_status}
+                        {item.code} · {displaySupplierTrustLevel(item.trust_level)} · {displaySupplierStatus(item.supplier_status)}
                       </div>
                       {item.capability_summary ? <div className="mt-2 text-foreground/80">{item.capability_summary}</div> : null}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </Card>
@@ -497,35 +624,35 @@ export function ProcessingDashboardView() {
   }, [session?.token]);
 
   return (
-    <SessionGate title="Processing dashboard" description="Для processing панели нужен foundation session token.">
+    <SessionGate title="Производственный срез" description="Для производственного среза нужен действующий токен с ролью оператора или администратора.">
       <main className="container space-y-6 py-10">
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Wave1 processing</div>
-              <h1 className="mt-2 text-3xl leading-tight">Processing dashboard</h1>
+              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Производственный контур</div>
+              <h1 className="mt-2 text-3xl leading-tight">Производственный срез</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Здесь собраны requests by status, offers pending confirmation, order states и operational blockers/overdue для ручного processing contour.
+                Здесь собраны статусы заявок, ожидающие подтверждения офферы, состояния заказов и все блокировки с просрочками для ручного ведения исполнения.
               </p>
             </div>
             <WorkbenchLinks />
           </div>
         </Card>
 
-        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка processing dashboard...</Card> : null}
+        {loading ? <Card className="glass-panel border-white/12 p-6">Загрузка производственного среза...</Card> : null}
         {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
 
         {payload ? (
           <>
             <section className="grid gap-4 lg:grid-cols-2">
-              <CountSection title="Requests by status" counts={payload.requests_by_status} />
-              <CountSection title="Orders by state" counts={payload.orders_by_state} />
+              <CountSection title="Заявки по статусам" counts={payload.requests_by_status} formatKey={displayRequestStatus} href="/request-workbench" actionLabel="Открыть заявки" />
+              <CountSection title="Заказы по состоянию" counts={payload.orders_by_state} formatKey={displayOrderStatus} href="/orders" actionLabel="Открыть заказы" />
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
               <OffersPendingSection items={payload.offers_pending_confirmation} />
-              <BlockedSection title="Blocked items" items={payload.blocked_items} />
-              <BlockedSection title="Overdue items" items={payload.overdue_items} />
+              <BlockedSection title="Заблокированные элементы" items={payload.blocked_items} />
+              <BlockedSection title="Просроченные элементы" items={payload.overdue_items} />
             </section>
           </>
         ) : null}

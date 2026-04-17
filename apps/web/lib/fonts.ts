@@ -1,19 +1,22 @@
-import { IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 
-export const fontBody = Manrope({
-  subsets: ["latin"],
+// RU: Шрифты централизованы здесь, чтобы маркетинговый и операторский слой не расходились по font imports.
+export const fontBody = IBM_Plex_Sans({
+  subsets: ["latin", "cyrillic-ext"],
   variable: "--font-body",
+  weight: ["400", "500", "600"],
   display: "swap"
 });
 
-export const fontHeading = Space_Grotesk({
-  subsets: ["latin"],
+export const fontHeading = IBM_Plex_Sans_Condensed({
+  subsets: ["latin", "cyrillic-ext"],
   variable: "--font-heading",
+  weight: ["500", "600", "700"],
   display: "swap"
 });
 
 export const fontMono = IBM_Plex_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic-ext"],
   variable: "--font-mono",
   weight: ["400", "500"],
   display: "swap"

@@ -14,6 +14,7 @@ from .request_intake_services import RequestIntakeService
 from .security import AuthContext
 from .workflow_support import WorkflowSupportService
 
+# RU: Набор действий по заказу фиксируем явно, чтобы критичные переходы не расползались по API-обработчикам.
 ORDER_ACTIONS = {
     "assign_supplier",
     "confirm_start",
@@ -223,6 +224,7 @@ class OrderService:
             request=request,
             existing_order=existing is not None,
         ).raise_if_blocked()
+        initial_order_status = "awaiting_payment" if version.amount is not None else "awaiting_confirmation"
         order = OrderRecord(
             code=reserve_code(self.session, "orders", "ORD"),
             offer_id=offer.id,
@@ -237,7 +239,7 @@ class OrderService:
             },
             supplier_refs_json=[value for value in [version.supplier_ref] if value],
             internal_owner_user_id=request.owner_user_id or request.assignee_user_id or (auth.user_id if auth else None),
-            order_status="created",
+            order_status=initial_order_status,
             payment_state="created",
             logistics_state="planning",
             readiness_state="not_ready",
@@ -324,6 +326,7 @@ class OrderService:
             supplier_assigned=supplier_assigned,
             readiness_state=order.readiness_state,
             logistics_state=order.logistics_state,
+            payment_state=order.payment_state,
         ).raise_if_blocked()
 
         # RU: Order-экшен работает как тонкий orchestration-слой и обновляет общий order shape без попытки строить MES-планировщик.
@@ -343,13 +346,13 @@ class OrderService:
         elif action == "confirm_start":
             if not any(line.planned_supplier_ref for line in all_lines):
                 raise HTTPException(status_code=409, detail="supplier_assignment_required")
-            order.order_status = "confirmed_start"
+            order.order_status = "in_production"
             for line in target_lines:
                 line.line_status = "started"
                 line.last_transition_reason_code = reason_code
                 line.last_transition_note = _clean_text(note)
         elif action == "mark_production":
-            if order.order_status not in {"confirmed_start", "supplier_assigned", "in_production", "partially_ready"}:
+            if order.order_status not in {"supplier_assigned", "paid", "in_production", "partially_ready"}:
                 raise HTTPException(status_code=409, detail="order_not_ready_for_production")
             order.order_status = "in_production"
             for line in target_lines:
@@ -357,7 +360,7 @@ class OrderService:
                 line.last_transition_reason_code = reason_code
                 line.last_transition_note = _clean_text(note)
         elif action == "ready":
-            if order.order_status not in {"confirmed_start", "in_production", "supplier_assigned", "partially_ready"}:
+            if order.order_status not in {"in_production", "partially_ready"}:
                 raise HTTPException(status_code=409, detail="order_not_ready_for_readiness_update")
             full_ready = len(target_lines) == len(all_lines)
             order.order_status = "ready" if full_ready else "partially_ready"
@@ -371,7 +374,7 @@ class OrderService:
             if order.readiness_state not in {"ready", "partial_ready"}:
                 raise HTTPException(status_code=409, detail="order_not_ready_for_delivery")
             full_delivery = len(target_lines) == len(all_lines)
-            order.order_status = "in_delivery" if full_delivery else "partially_delivered"
+            order.order_status = "in_delivery"
             order.logistics_state = "delivered" if full_delivery else "partial_delivery"
             for line in target_lines:
                 line.line_status = "delivered"
@@ -380,7 +383,7 @@ class OrderService:
                 line.last_transition_reason_code = reason_code
                 line.last_transition_note = _clean_text(note)
         elif action == "complete":
-            if order.logistics_state not in {"delivered", "partial_delivery"}:
+            if order.logistics_state != "delivered":
                 raise HTTPException(status_code=409, detail="order_not_ready_for_completion")
             order.order_status = "completed"
             order.logistics_state = "delivered"
@@ -503,8 +506,12 @@ class OrderService:
         if target_state == "confirmed":
             payment.confirmed_at = utc_now()
             order.payment_state = "confirmed"
+            if order.order_status in {"awaiting_confirmation", "awaiting_payment"}:
+                order.order_status = "paid"
         elif target_state == "pending":
             order.payment_state = "pending"
+            if order.order_status == "awaiting_confirmation":
+                order.order_status = "awaiting_payment"
         elif target_state == "failed":
             payment.failed_at = utc_now()
             order.payment_state = "failed"

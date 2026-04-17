@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 20:27 +07``
+Обновлено: ``2026-04-18 03:33 +07``
 
 ## Контур движения
 
@@ -17,7 +17,11 @@ flowchart LR
 
 - контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
+- реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
+- операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
+- header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу
 - нормализация / обогащение / дедупликация / скоринг
+- лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
 - ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
 - autosave / abandoned / archive-ready слой Draft
 - центральная операторская очередь Review для Request с blocker/clarification flow
@@ -57,9 +61,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
-- Главный операционный риск: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+- Текущий фокус: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
+- Последний подтверждённый статус workflow: PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
 
 ## Автоматические контуры контроля
 

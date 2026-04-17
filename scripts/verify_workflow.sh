@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# RU: Это канонический verification path репозитория; перед push/commit он должен ловить drift раньше ручной проверки.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WITH_WEB="0"
 
@@ -24,12 +25,16 @@ cd "$REPO_ROOT"
 # RU: Perf/launchd/observability layer тоже должен быть частью канонического verify path, иначе новая автоматизация быстро станет "непроверяемым хвостом".
 bash -n \
   scripts/install_repo_automation.sh \
+  scripts/install_launchd_launcher_watchdog.sh \
   scripts/install_launchd_periodic_checks.sh \
+  scripts/launchd_launcher_watchdog_status.sh \
   scripts/run_platform.sh \
+  scripts/run_launcher_watchdog.py \
   scripts/platform_smoke_check.sh \
   scripts/foundation_migration_check.sh \
   scripts/foundation_wave1_demo_smoke_check.sh \
   scripts/run_perf_suite.sh \
+  scripts/render_launchd_launcher_watchdog.py \
   scripts/launchd_periodic_checks_status.sh \
   scripts/render_launchd_periodic_checks.py \
   scripts/run_periodic_checks.py \
@@ -45,10 +50,13 @@ bash -n \
 
 ./.venv/bin/python -m py_compile \
   scripts/check_russian_locale_integrity.py \
+  scripts/render_launchd_launcher_watchdog.py \
   scripts/render_launchd_periodic_checks.py \
+  scripts/run_launcher_watchdog.py \
   scripts/run_repo_autosync.py \
   scripts/run_periodic_checks.py \
   scripts/sync_operating_docs.py \
+  src/magon_standalone/launchd_launcher_watchdog.py \
   src/magon_standalone/locale_integrity.py \
   src/magon_standalone/launchd_periodic_checks.py \
   src/magon_standalone/observability.py \
@@ -79,6 +87,7 @@ bash -n \
   tests.test_operations \
   tests.test_workforce \
   tests.test_deploy \
+  tests.test_launchd_launcher_watchdog \
   tests.test_launchd_periodic_checks \
   tests.test_observability \
   tests.test_locale_integrity \

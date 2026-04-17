@@ -14,6 +14,7 @@ from .supplier_services import SupplierPipelineService
 from .workflow_support import WorkflowSupportService
 
 
+# RU: Bootstrap первой волны поднимает роли, демо-компанию и базовые рабочие данные в том же standalone-контуре.
 ROLE_SPECS = {
     ROLE_GUEST: ("Гость", "Публичный неавторизованный пользователь."),
     ROLE_CUSTOMER: ("Клиент", "Клиентский ролевой доступ для своих заявок и документов."),
@@ -90,7 +91,7 @@ def seed_foundation(session: Session, settings: FoundationSettings) -> dict[str,
             code=reserve_code(session, "suppliers", "SUP"),
             company_id=company.id,
             display_name="Wave1 Supplier",
-            supplier_status="approved",
+            supplier_status="trusted",
             public_summary="Минимальный поставщик для foundation skeleton.",
             internal_note="Seed supplier.",
         )
@@ -108,6 +109,22 @@ def seed_foundation(session: Session, settings: FoundationSettings) -> dict[str,
             config_json={"source_label": "fixture_vn_suppliers"},
         )
         session.add(source_registry)
+        session.flush()
+    live_source_registry = session.scalar(select(SupplierSourceRegistry).where(SupplierSourceRegistry.adapter_key == "scenario_live"))
+    if live_source_registry is None:
+        live_source_registry = SupplierSourceRegistry(
+            code=reserve_code(session, "supplier_source_registries", "SRC"),
+            label="Live parsing VN suppliers",
+            adapter_key="scenario_live",
+            source_layer="raw",
+            enabled=True,
+            config_json={
+                "query": "printing packaging vietnam",
+                "country": "VN",
+                "source_label": "live_parsing_vn_suppliers",
+            },
+        )
+        session.add(live_source_registry)
         session.flush()
 
     admin = _ensure_user(

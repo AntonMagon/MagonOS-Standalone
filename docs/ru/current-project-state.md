@@ -8,9 +8,8 @@
 ## Что является плановой истиной
 
 - Жёсткая спецификация первой волны: `gpt_doc/codex_wave1_spec_ru.docx`
-- Глобальная архитектурная фиксация: `gpt_doc/platform_architecture_report_ru.docx`
-- Общий пакет документации и roadmap: `gpt_doc/platform_documentation_pack_ru.docx`
-- Этот файл остаётся правдой по runtime и проверке, но плановую архитектуру нового контура нужно читать из `gpt_doc/*`.
+- PDF-экспорт той же спецификации для чтения без редактора: `gpt_doc/codex_wave1_spec_ru.pdf`
+- Других активных planning-doc в `gpt_doc/` сейчас нет; этот файл остаётся правдой по runtime и проверке, а плановую архитектуру нового контура нужно читать из указанной wave1-спецификации.
 
 ## Что является правдой рантайма
 
@@ -56,7 +55,11 @@
 
 - контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
+- реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
+- операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
+- header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу
 - нормализация / обогащение / дедупликация / скоринг
+- лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
 - ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
 - autosave / abandoned / archive-ready слой Draft
 - центральная операторская очередь Review для Request с blocker/clarification flow
@@ -95,6 +98,9 @@
   - `./scripts/run_foundation_unified.sh --fresh`
 - desktop launcher для того же локального контура:
   - `./Start_Platform.command`
+- hourly self-heal watchdog для launcher:
+  - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+  - `./scripts/launchd_launcher_watchdog_status.sh`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
@@ -130,6 +136,11 @@
 ## Локальные поверхности
 
 - public shell: `http://127.0.0.1:3000/`
+- встроенная справка по сущностям и зависимостям: `http://127.0.0.1:3000/reference`
+- header public shell теперь держит только ключевые рабочие разделы в верхней строке, а вторичные разделы и переключатели складывает в `Ещё`; возвращать перегруженную шапку нельзя.
+- public shell и `/dashboard` должны определять online-state через foundation `GET /health` и `GET /api/v1/public/companies`; legacy `GET /status` нельзя считать каноническим контрактом при выключенном bridge
+- marketing/conversion layer: `http://127.0.0.1:3000/marketing`
+- public shell теперь использует визуальный режим `retro print lab + cyber accents`: маршрут `draft -> request -> offer -> order`, supplier routing и explainability показаны как единый editorial-operational слой, а не как dark SaaS hero
 - public витрина: `http://127.0.0.1:3000/catalog`
 - карточка витрины: `http://127.0.0.1:3000/catalog/{itemCode}`
 - public RFQ-вход: `http://127.0.0.1:3000/rfq`
@@ -137,18 +148,33 @@
 - customer request view: `http://127.0.0.1:3000/requests/{customerRef}`
 - customer compare block предложений: `http://127.0.0.1:3000/requests/{customerRef}`
 - foundation login: `http://127.0.0.1:3000/login`
+- успешный foundation login должен не просто показать token, а завершать вход переходом в рабочий контур: `admin/operator -> /dashboard`, `customer -> /catalog`
+- client-shell читает foundation session через кэшированный snapshot store; повторный parse одного и того же `localStorage` значения считается регрессией, потому что ломает `useSyncExternalStore` и может зациклить header/runtime
 - operator request workbench: `http://127.0.0.1:3000/request-workbench`
 - operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
+- operator/admin/supply/processing dashboards должны вести дальше по клику: уведомления, блокировки, просрочки и счётчики нельзя оставлять purely informational карточками.
+- пользовательский UI не должен рендерить служебные `RU:` комментарии, raw status labels или англоязычные оболочки вроде `login`, `Raw layer`, `Dedup review`, `ingest jobs`; это считается регрессией shell-качества
 - operator compare / revision block предложений: `http://127.0.0.1:3000/request-workbench/{requestCode}`
 - managed request files/documents: `http://127.0.0.1:3000/request-workbench/{requestCode}` и `http://127.0.0.1:3000/requests/{customerRef}`
 - operator order workbench: `http://127.0.0.1:3000/orders`
 - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
 - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
 - supplier workbench: `http://127.0.0.1:3000/suppliers`
+- `supplier workbench` теперь является операторской консолью источников: health, последний ingest-результат, queued runs, retry и повторный запуск живут здесь, а не только в скрытых API-вызовах
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
+- страница `supplier raw ingest` теперь показывает explainable async-state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) и даёт оператору retry / повторный запуск источника
 - direct backend debug: `http://127.0.0.1:8091/`
 - legacy-поверхности только при явном `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`
   - `http://127.0.0.1:3000/ops`
   - `http://127.0.0.1:3000/ui/*`
+
+## Где читать справку по сущностям
+
+- Быстрый product-shell вход: `/reference`
+- Командная русская версия: `docs/ru/platform-entity-reference.md`
+- Эта справка объясняет:
+  - какие сущности уже живут в standalone;
+  - в каких экранах ими пользуются;
+  - какие зависимости и boundaries нельзя ломать при доработке.
