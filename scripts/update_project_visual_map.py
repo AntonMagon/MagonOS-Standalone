@@ -145,6 +145,7 @@ def _build_payload() -> dict[str, object]:
         "automations": [
             "Hourly Repo Guard",
             "Hourly Platform Smoke",
+            "RU Locale Guard",
             "Hourly Visual Map",
             "Weekly Release Gate",
             # RU: Локальный LaunchAgent тоже показываем в карте, чтобы системный periodic runner был виден рядом с Codex automations.
@@ -155,6 +156,7 @@ def _build_payload() -> dict[str, object]:
 
 def _write_ru_markdown(payload: dict[str, object]) -> None:
     RU_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    # RU: Русская карта должна показывать не англоязычные доменные ярлыки, а нормальные операторские названия тех же контуров и стадий.
     md = f"""# Визуальная карта проекта
 
 Обновлено: `{payload["generated_at"]}`
@@ -163,11 +165,11 @@ def _write_ru_markdown(payload: dict[str, object]) -> None:
 
 ```mermaid
 flowchart LR
-  Company["Company"] --> Customer["Customer Account"]
-  Customer --> Opportunity["Opportunity"]
-  Opportunity --> Quote["Quote Intent / RFQ"]
-  Quote --> Handoff["Production Handoff"]
-  Handoff --> Board["Production Board"]
+  Company["Компания"] --> Customer["Клиентский аккаунт"]
+  Customer --> Opportunity["Сделка"]
+  Opportunity --> Quote["Заявка на расчёт / RFQ"]
+  Quote --> Handoff["Передача в производство"]
+  Handoff --> Board["Производственная доска"]
 ```
 
 ## Что уже принадлежит standalone
@@ -188,9 +190,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Current focus: {payload["active_context"].get("current_focus", "—")}
-- Last verified workflow status: {payload["active_context"].get("last_verified_workflow_status", "—")}
-- Biggest operational risk: {payload["active_context"].get("biggest_operational_risk", "—")}
+- Текущий фокус: {payload["active_context"].get("current_focus", "—")}
+- Последний подтверждённый статус workflow: {payload["active_context"].get("last_verified_workflow_status", "—")}
+- Главный операционный риск: {payload["active_context"].get("biggest_operational_risk", "—")}
 
 ## Автоматические контуры контроля
 

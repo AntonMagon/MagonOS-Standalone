@@ -19,22 +19,37 @@ Start and verify the active standalone MagonOS platform through its canonical st
 - `docs/ru/current-project-state.md`
 
 ## Execution
-- Unified platform:
+- Unified foundation platform:
+  - `./scripts/run_foundation_unified.sh --fresh`
+- Foundation backend only:
+  - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+- Compatibility-only legacy startup:
+  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
   - `./scripts/run_unified_platform.sh --fresh`
-- Backend only:
   - `./scripts/run_platform.sh --fresh --port 8091`
 
 ## Runtime ownership
-- `scripts/run_unified_platform.sh` is the canonical full local startup path.
-- `scripts/run_platform.sh` is the canonical backend-only startup path.
+- `scripts/run_foundation_unified.sh` is the canonical full local startup path for wave1.
+- `scripts/run_foundation_api.py` is the canonical backend-only startup path for wave1.
 - Public shell lives in `apps/web`.
 - Product-core runtime lives in `src/magon_standalone`.
+- Legacy shell entrypoints are compatibility-only and must not be treated as the normal runtime.
+
+## Resource guard
+- On macOS Docker/Colima hosts, prefer a small default VM first:
+  - `colima start --cpu 2 --memory 2 --disk 20 --vm-type vz`
+- Expand Colima resources only when the current task proves it needs more.
+- Do not silently start Colima with a 6 GB memory cap for routine local checks.
+- Verified steady-state compose usage is currently about `430-450 MiB` across `api + worker + web + db + redis + caddy`, so `2 GB` is enough for routine local runtime and rebuilds.
+- Move to `3 GB` only when doing concurrent rebuilds plus browser-heavy work on the same host.
+- Move to `4 GB` only for clearly heavier tasks such as Playwright/browser automation, extra services, or substantially larger frontend builds.
+- Web runtime baseline is Node 22 when building or running `apps/web`.
 
 ## Verification
 - `./scripts/restore_context.sh --check`
-- `curl http://127.0.0.1:8091/health`
+- `curl http://127.0.0.1:8091/health/ready`
 - open `http://127.0.0.1:3000/`
-- open `http://127.0.0.1:3000/ui/companies`
+- open `http://127.0.0.1:3000/login`
 - `./scripts/verify_workflow.sh --with-web` when changes were made while operating the platform
 
 ## Failure note

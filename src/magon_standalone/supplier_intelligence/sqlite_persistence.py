@@ -291,6 +291,54 @@ class SqliteSupplierIntelligenceStore(SupplierIntelligencePersistence):
                     FOREIGN KEY(company_key) REFERENCES canonical_companies(canonical_key) ON DELETE CASCADE
                 );
 
+                CREATE TABLE IF NOT EXISTS request_drafts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    company_key TEXT NOT NULL,
+                    draft_type TEXT NOT NULL DEFAULT 'rfq_packaging',
+                    customer_name TEXT,
+                    customer_email TEXT,
+                    customer_phone TEXT,
+                    item_summary TEXT,
+                    quantity_hint TEXT,
+                    city TEXT,
+                    requested_deadline TEXT,
+                    file_required INTEGER NOT NULL DEFAULT 0,
+                    file_links_json TEXT,
+                    required_fields_state TEXT NOT NULL DEFAULT 'awaiting_data',
+                    draft_status TEXT NOT NULL DEFAULT 'awaiting_data',
+                    blocking_reasons_json TEXT,
+                    owner TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(company_key) REFERENCES canonical_companies(canonical_key) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS request_intakes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    request_code TEXT UNIQUE NOT NULL,
+                    company_key TEXT NOT NULL,
+                    draft_id INTEGER,
+                    request_type TEXT NOT NULL,
+                    source_channel TEXT NOT NULL DEFAULT 'manual_operator',
+                    customer_name TEXT,
+                    customer_email TEXT,
+                    customer_phone TEXT,
+                    customer_reference TEXT,
+                    item_summary TEXT,
+                    quantity_hint TEXT,
+                    city TEXT,
+                    requested_deadline TEXT,
+                    request_status TEXT NOT NULL DEFAULT 'new',
+                    owner TEXT,
+                    notes TEXT,
+                    reasons_json TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(company_key) REFERENCES canonical_companies(canonical_key) ON DELETE CASCADE,
+                    FOREIGN KEY(draft_id) REFERENCES request_drafts(id) ON DELETE SET NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS commercial_opportunities (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     company_key TEXT NOT NULL,
@@ -747,6 +795,8 @@ class SqliteSupplierIntelligenceStore(SupplierIntelligencePersistence):
                 "routing_audit": self._count(conn, "routing_audit"),
                 "commercial_records": self._count(conn, "commercial_records"),
                 "customer_accounts": self._count(conn, "customer_accounts"),
+                "request_drafts": self._count(conn, "request_drafts"),
+                "request_intakes": self._count(conn, "request_intakes"),
                 "commercial_opportunities": self._count(conn, "commercial_opportunities"),
                 "quote_intents": self._count(conn, "quote_intents"),
                 "production_handoffs": self._count(conn, "production_handoffs"),
@@ -1042,6 +1092,38 @@ class SqliteSupplierIntelligenceStore(SupplierIntelligencePersistence):
         with self._connect() as conn:
             return int(conn.execute(query, tuple(params)).fetchone()["count"])
 
+    def _compute_request_draft_state(
+        self,
+        draft_type: str,
+        customer_name: str,
+        customer_email: str,
+        customer_phone: str,
+        item_summary: str,
+        requested_deadline: str,
+        file_required: bool,
+        file_links: list[str],
+    ) -> tuple[str, list[str]]:
+        # RU: Переход из черновика в заявку нельзя разрешать по одному флагу статуса;
+        # состояние всегда пересчитывается из обязательных полей, чтобы ручной ввод не обходил блокировки.
+        blocking_reasons: list[str] = []
+        if not str(draft_type or "").strip():
+            blocking_reasons.append("draft_type_missing")
+        if not any(str(value or "").strip() for value in (customer_name, customer_email, customer_phone)):
+            blocking_reasons.append("contact_data_missing")
+        if not str(item_summary or "").strip():
+            blocking_reasons.append("item_context_missing")
+        if not str(requested_deadline or "").strip():
+            blocking_reasons.append("requested_deadline_missing")
+        if file_required and not file_links:
+            blocking_reasons.append("required_file_missing")
+        return ("ready_to_submit" if not blocking_reasons else "awaiting_data", blocking_reasons)
+
+    def _effective_request_draft_status(self, requested_status: str | None, required_fields_state: str) -> str:
+        normalized = str(requested_status or "").strip()
+        if normalized in {"blocked", "archived", "submitted"}:
+            return normalized
+        return required_fields_state
+
     def get_customer_account(self, company_key: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
@@ -1126,6 +1208,486 @@ class SqliteSupplierIntelligenceStore(SupplierIntelligencePersistence):
                     "external_customer_ref": record.get("external_customer_ref"),
                 },
             )
+        return record
+
+    def list_request_drafts(
+        self,
+        company_key: str | None = None,
+        status: str | None = None,
+        draft_type: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        query = "SELECT * FROM request_drafts"
+        params: list[Any] = []
+        filters: list[str] = []
+        if company_key:
+            filters.append("company_key = ?")
+            params.append(company_key)
+        if status:
+            filters.append("draft_status = ?")
+            params.append(status)
+        if draft_type:
+            filters.append("draft_type = ?")
+            params.append(draft_type)
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        query += " ORDER BY updated_at DESC, id DESC"
+        if limit > 0:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+        with self._connect() as conn:
+            rows = conn.execute(query, tuple(params)).fetchall()
+        return [self._decode_request_draft(dict(row)) for row in rows]
+
+    def count_request_drafts(self, company_key: str | None = None, status: str | None = None, draft_type: str | None = None) -> int:
+        query = "SELECT COUNT(*) AS count FROM request_drafts"
+        params: list[Any] = []
+        filters: list[str] = []
+        if company_key:
+            filters.append("company_key = ?")
+            params.append(company_key)
+        if status:
+            filters.append("draft_status = ?")
+            params.append(status)
+        if draft_type:
+            filters.append("draft_type = ?")
+            params.append(draft_type)
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        with self._connect() as conn:
+            return int(conn.execute(query, tuple(params)).fetchone()["count"])
+
+    def get_request_draft(self, draft_id: int) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM request_drafts WHERE id = ?", (draft_id,)).fetchone()
+        return None if row is None else self._decode_request_draft(dict(row))
+
+    def create_request_draft(
+        self,
+        company_key: str,
+        draft_type: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        file_required: bool = False,
+        file_links: list[str] | None = None,
+        draft_status: str | None = None,
+        owner: str = "local_operator",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        company = self.get_company_by_key(company_key)
+        if not company:
+            raise LookupError(f"company_key:{company_key}")
+        normalized_file_links = [str(item).strip() for item in (file_links or []) if str(item).strip()]
+        required_fields_state, blocking_reasons = self._compute_request_draft_state(
+            draft_type=draft_type,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            item_summary=item_summary,
+            requested_deadline=requested_deadline,
+            file_required=bool(file_required),
+            file_links=normalized_file_links,
+        )
+        payload = {
+            "company_key": company_key,
+            "draft_type": draft_type,
+            "customer_name": customer_name or "",
+            "customer_email": customer_email or "",
+            "customer_phone": customer_phone or "",
+            "item_summary": item_summary or "",
+            "quantity_hint": quantity_hint or "",
+            "city": city or "",
+            "requested_deadline": requested_deadline or "",
+            "file_required": 1 if file_required else 0,
+            "file_links_json": _json(normalized_file_links),
+            "required_fields_state": required_fields_state,
+            "draft_status": self._effective_request_draft_status(draft_status, required_fields_state),
+            "blocking_reasons_json": _json(blocking_reasons),
+            "owner": owner or "local_operator",
+            "notes": notes or "",
+            "created_at": _utc_now(),
+            "updated_at": _utc_now(),
+        }
+        with self._connect() as conn:
+            columns = ", ".join(payload.keys())
+            placeholders = ", ".join(f":{key}" for key in payload.keys())
+            conn.execute(
+                f"""
+                INSERT INTO request_drafts ({columns})
+                VALUES ({placeholders})
+                """,
+                payload,
+            )
+            row_id = int(conn.execute("SELECT last_insert_rowid()").fetchone()[0])
+            row = conn.execute("SELECT * FROM request_drafts WHERE id = ?", (row_id,)).fetchone()
+            if row is None:
+                raise LookupError(f"request_draft:{company_key}")
+            record = self._decode_request_draft(dict(row))
+            self._append_commercial_audit(
+                conn,
+                company_key=company_key,
+                entity_type="request_draft",
+                entity_id=row_id,
+                action_type="create",
+                previous_status=None,
+                new_status=record.get("draft_status"),
+                note=notes,
+                actor=actor,
+                metadata={
+                    "draft_type": draft_type,
+                    "required_fields_state": record.get("required_fields_state"),
+                    "blocking_reasons": record.get("blocking_reasons"),
+                },
+            )
+        return record
+
+    def update_request_draft(
+        self,
+        draft_id: int,
+        draft_type: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        file_required: bool = False,
+        file_links: list[str] | None = None,
+        draft_status: str | None = None,
+        owner: str = "local_operator",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        existing = self.get_request_draft(draft_id)
+        if existing is None:
+            raise LookupError(f"request_draft:{draft_id}")
+        if existing.get("draft_status") == "submitted":
+            raise ValueError("draft_already_submitted")
+        normalized_file_links = [str(item).strip() for item in (file_links or []) if str(item).strip()]
+        required_fields_state, blocking_reasons = self._compute_request_draft_state(
+            draft_type=draft_type,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            item_summary=item_summary,
+            requested_deadline=requested_deadline,
+            file_required=bool(file_required),
+            file_links=normalized_file_links,
+        )
+        payload = {
+            "id": draft_id,
+            "draft_type": draft_type,
+            "customer_name": customer_name or "",
+            "customer_email": customer_email or "",
+            "customer_phone": customer_phone or "",
+            "item_summary": item_summary or "",
+            "quantity_hint": quantity_hint or "",
+            "city": city or "",
+            "requested_deadline": requested_deadline or "",
+            "file_required": 1 if file_required else 0,
+            "file_links_json": _json(normalized_file_links),
+            "required_fields_state": required_fields_state,
+            "draft_status": self._effective_request_draft_status(draft_status, required_fields_state),
+            "blocking_reasons_json": _json(blocking_reasons),
+            "owner": owner or existing.get("owner") or "local_operator",
+            "notes": notes or "",
+            "updated_at": _utc_now(),
+        }
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE request_drafts
+                SET draft_type = :draft_type,
+                    customer_name = :customer_name,
+                    customer_email = :customer_email,
+                    customer_phone = :customer_phone,
+                    item_summary = :item_summary,
+                    quantity_hint = :quantity_hint,
+                    city = :city,
+                    requested_deadline = :requested_deadline,
+                    file_required = :file_required,
+                    file_links_json = :file_links_json,
+                    required_fields_state = :required_fields_state,
+                    draft_status = :draft_status,
+                    blocking_reasons_json = :blocking_reasons_json,
+                    owner = :owner,
+                    notes = :notes,
+                    updated_at = :updated_at
+                WHERE id = :id
+                """,
+                payload,
+            )
+            self._append_commercial_audit(
+                conn,
+                company_key=existing["company_key"],
+                entity_type="request_draft",
+                entity_id=draft_id,
+                action_type="update",
+                previous_status=existing.get("draft_status"),
+                new_status=payload["draft_status"],
+                note=notes,
+                actor=actor,
+                metadata={
+                    "draft_type": draft_type,
+                    "required_fields_state": required_fields_state,
+                    "blocking_reasons": blocking_reasons,
+                },
+            )
+        record = self.get_request_draft(draft_id)
+        if record is None:
+            raise LookupError(f"request_draft:{draft_id}")
+        return record
+
+    def list_request_intakes(
+        self,
+        company_key: str | None = None,
+        status: str | None = None,
+        request_type: str | None = None,
+        draft_id: int | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        query = "SELECT * FROM request_intakes"
+        params: list[Any] = []
+        filters: list[str] = []
+        if company_key:
+            filters.append("company_key = ?")
+            params.append(company_key)
+        if status:
+            filters.append("request_status = ?")
+            params.append(status)
+        if request_type:
+            filters.append("request_type = ?")
+            params.append(request_type)
+        if draft_id is not None:
+            filters.append("draft_id = ?")
+            params.append(int(draft_id))
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        query += " ORDER BY updated_at DESC, id DESC"
+        if limit > 0:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+        with self._connect() as conn:
+            rows = conn.execute(query, tuple(params)).fetchall()
+        return [self._decode_request_intake(dict(row)) for row in rows]
+
+    def count_request_intakes(self, company_key: str | None = None, status: str | None = None, request_type: str | None = None) -> int:
+        query = "SELECT COUNT(*) AS count FROM request_intakes"
+        params: list[Any] = []
+        filters: list[str] = []
+        if company_key:
+            filters.append("company_key = ?")
+            params.append(company_key)
+        if status:
+            filters.append("request_status = ?")
+            params.append(status)
+        if request_type:
+            filters.append("request_type = ?")
+            params.append(request_type)
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        with self._connect() as conn:
+            return int(conn.execute(query, tuple(params)).fetchone()["count"])
+
+    def get_request_intake(self, request_id: int) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM request_intakes WHERE id = ?", (request_id,)).fetchone()
+        return None if row is None else self._decode_request_intake(dict(row))
+
+    def submit_request_draft(
+        self,
+        draft_id: int,
+        source_channel: str = "manual_operator",
+        customer_reference: str = "",
+        request_status: str = "new",
+        owner: str = "local_operator",
+        notes: str = "",
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        existing = self.get_request_draft(draft_id)
+        if existing is None:
+            raise LookupError(f"request_draft:{draft_id}")
+        if existing.get("draft_status") == "submitted":
+            linked = self.list_request_intakes(draft_id=draft_id, limit=1, offset=0)
+            if linked:
+                return linked[0]
+            raise ValueError("draft_already_submitted")
+        required_fields_state, blocking_reasons = self._compute_request_draft_state(
+            draft_type=str(existing.get("draft_type") or ""),
+            customer_name=str(existing.get("customer_name") or ""),
+            customer_email=str(existing.get("customer_email") or ""),
+            customer_phone=str(existing.get("customer_phone") or ""),
+            item_summary=str(existing.get("item_summary") or ""),
+            requested_deadline=str(existing.get("requested_deadline") or ""),
+            file_required=bool(existing.get("file_required")),
+            file_links=list(existing.get("file_links") or []),
+        )
+        if blocking_reasons:
+            raise ValueError("draft_not_ready_to_submit")
+        payload = {
+            "request_code": "",
+            "company_key": existing["company_key"],
+            "draft_id": draft_id,
+            "request_type": existing["draft_type"],
+            "source_channel": source_channel or "manual_operator",
+            "customer_name": existing.get("customer_name") or "",
+            "customer_email": existing.get("customer_email") or "",
+            "customer_phone": existing.get("customer_phone") or "",
+            "customer_reference": customer_reference or "",
+            "item_summary": existing.get("item_summary") or "",
+            "quantity_hint": existing.get("quantity_hint") or "",
+            "city": existing.get("city") or "",
+            "requested_deadline": existing.get("requested_deadline") or "",
+            "request_status": request_status,
+            "owner": owner or existing.get("owner") or "local_operator",
+            "notes": notes or existing.get("notes") or "",
+            "reasons_json": _json(["submitted_from_draft"]),
+            "created_at": _utc_now(),
+            "updated_at": _utc_now(),
+        }
+        with self._connect() as conn:
+            columns = ", ".join(payload.keys())
+            placeholders = ", ".join(f":{key}" for key in payload.keys())
+            conn.execute(
+                f"""
+                INSERT INTO request_intakes ({columns})
+                VALUES ({placeholders})
+                """,
+                payload,
+            )
+            request_id = int(conn.execute("SELECT last_insert_rowid()").fetchone()[0])
+            request_code = f"REQ-{request_id:05d}"
+            conn.execute(
+                "UPDATE request_intakes SET request_code = ?, updated_at = ? WHERE id = ?",
+                (request_code, _utc_now(), request_id),
+            )
+            conn.execute(
+                """
+                UPDATE request_drafts
+                SET required_fields_state = ?,
+                    draft_status = ?,
+                    blocking_reasons_json = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                ("ready_to_submit", "submitted", _json([]), _utc_now(), draft_id),
+            )
+            self._append_commercial_audit(
+                conn,
+                company_key=existing["company_key"],
+                entity_type="request_draft",
+                entity_id=draft_id,
+                action_type="submit",
+                previous_status=existing.get("draft_status"),
+                new_status="submitted",
+                note=notes or existing.get("notes") or "",
+                actor=actor,
+                metadata={"required_fields_state": required_fields_state},
+            )
+            self._append_commercial_audit(
+                conn,
+                company_key=existing["company_key"],
+                entity_type="request_intake",
+                entity_id=request_id,
+                action_type="create",
+                previous_status=None,
+                new_status=request_status,
+                note=payload["notes"],
+                actor=actor,
+                metadata={"draft_id": draft_id, "request_code": request_code, "request_type": existing.get("draft_type")},
+            )
+        record = self.get_request_intake(request_id)
+        if record is None:
+            raise LookupError(f"request_intake:{request_id}")
+        return record
+
+    def update_request_intake(
+        self,
+        request_id: int,
+        request_type: str,
+        source_channel: str,
+        customer_name: str = "",
+        customer_email: str = "",
+        customer_phone: str = "",
+        customer_reference: str = "",
+        item_summary: str = "",
+        quantity_hint: str = "",
+        city: str = "",
+        requested_deadline: str = "",
+        request_status: str = "new",
+        owner: str = "local_operator",
+        notes: str = "",
+        reasons: list[str] | None = None,
+        actor: str = "local_operator",
+    ) -> dict[str, Any]:
+        existing = self.get_request_intake(request_id)
+        if existing is None:
+            raise LookupError(f"request_intake:{request_id}")
+        payload = {
+            "id": request_id,
+            "request_type": request_type,
+            "source_channel": source_channel or "manual_operator",
+            "customer_name": customer_name or "",
+            "customer_email": customer_email or "",
+            "customer_phone": customer_phone or "",
+            "customer_reference": customer_reference or "",
+            "item_summary": item_summary or "",
+            "quantity_hint": quantity_hint or "",
+            "city": city or "",
+            "requested_deadline": requested_deadline or "",
+            "request_status": request_status,
+            "owner": owner or existing.get("owner") or "local_operator",
+            "notes": notes or "",
+            "reasons_json": _json(reasons or list(existing.get("reasons") or [])),
+            "updated_at": _utc_now(),
+        }
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE request_intakes
+                SET request_type = :request_type,
+                    source_channel = :source_channel,
+                    customer_name = :customer_name,
+                    customer_email = :customer_email,
+                    customer_phone = :customer_phone,
+                    customer_reference = :customer_reference,
+                    item_summary = :item_summary,
+                    quantity_hint = :quantity_hint,
+                    city = :city,
+                    requested_deadline = :requested_deadline,
+                    request_status = :request_status,
+                    owner = :owner,
+                    notes = :notes,
+                    reasons_json = :reasons_json,
+                    updated_at = :updated_at
+                WHERE id = :id
+                """,
+                payload,
+            )
+            self._append_commercial_audit(
+                conn,
+                company_key=existing["company_key"],
+                entity_type="request_intake",
+                entity_id=request_id,
+                action_type="update",
+                previous_status=existing.get("request_status"),
+                new_status=request_status,
+                note=notes,
+                actor=actor,
+                metadata={"request_code": existing.get("request_code"), "request_type": request_type},
+            )
+        record = self.get_request_intake(request_id)
+        if record is None:
+            raise LookupError(f"request_intake:{request_id}")
         return record
 
     def list_commercial_opportunities(
@@ -2290,6 +2852,22 @@ class SqliteSupplierIntelligenceStore(SupplierIntelligencePersistence):
     def _decode_commercial_audit(cls, row: dict[str, Any]) -> dict[str, Any]:
         metadata = cls._decode_json(row.pop("metadata_json", "{}"), {})
         return {**row, "metadata": metadata}
+
+    @classmethod
+    def _decode_request_draft(cls, row: dict[str, Any]) -> dict[str, Any]:
+        file_links = cls._decode_json(row.pop("file_links_json", "[]"), [])
+        blocking_reasons = cls._decode_json(row.pop("blocking_reasons_json", "[]"), [])
+        return {
+            **row,
+            "file_required": bool(row.get("file_required")),
+            "file_links": file_links,
+            "blocking_reasons": blocking_reasons,
+        }
+
+    @classmethod
+    def _decode_request_intake(cls, row: dict[str, Any]) -> dict[str, Any]:
+        reasons = cls._decode_json(row.pop("reasons_json", "[]"), [])
+        return {**row, "reasons": reasons}
 
     @classmethod
     def _decode_quote_intent(cls, row: dict[str, Any]) -> dict[str, Any]:

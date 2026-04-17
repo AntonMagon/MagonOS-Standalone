@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - main
+      - "codex/**"
   pull_request:
     branches:
       - develop
@@ -12,7 +13,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  python-tests:
+  foundation-quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,24 +22,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
-      - name: Install package
+      - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Run backend test suite
-        run: |
-          python -m unittest \
-            tests.test_persistence \
-            tests.test_api \
-            tests.test_operations \
-            tests.test_workforce \
-            tests.test_deploy
+      - name: Repo verify workflow
+        run: ./scripts/verify_workflow.sh
 
-  smoke-runtime:
+      - name: Foundation migration check
+        run: bash ./scripts/foundation_migration_check.sh
+
+  foundation-smoke:
     runs-on: ubuntu-latest
+    needs: foundation-quality
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,48 +45,26 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
-      - name: Install package
+      - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Start backend runtime
+      - name: Run foundation smoke suite
         run: |
-          chmod +x scripts/run_platform.sh
-          scripts/run_platform.sh --host 127.0.0.1 --port 8091 --fresh --seed >/tmp/magon-runtime.log 2>&1 &
-          echo $! >/tmp/magon-runtime.pid
+          bash ./scripts/foundation_supplier_smoke_check.sh
+          bash ./scripts/foundation_request_smoke_check.sh
+          bash ./scripts/foundation_offer_smoke_check.sh
+          bash ./scripts/foundation_order_smoke_check.sh
+          bash ./scripts/foundation_files_documents_smoke_check.sh
+          bash ./scripts/foundation_messages_dashboards_smoke_check.sh
+          bash ./scripts/foundation_wave1_demo_smoke_check.sh
 
-      - name: Wait for health
-        run: |
-          for _ in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8091/health >/dev/null 2>&1; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Runtime failed to become healthy" >&2
-          cat /tmp/magon-runtime.log >&2 || true
-          exit 1
-
-      - name: Verify key backend pages
-        run: |
-          curl -fsS http://127.0.0.1:8091/health >/dev/null
-          curl -fsS http://127.0.0.1:8091/ui/companies >/dev/null
-          curl -fsS http://127.0.0.1:8091/ui/review-queue >/dev/null
-
-      - name: Stop runtime
-        if: always()
-        run: |
-          if [ -f /tmp/magon-runtime.pid ]; then
-            kill "$(cat /tmp/magon-runtime.pid)" 2>/dev/null || true
-            wait "$(cat /tmp/magon-runtime.pid)" 2>/dev/null || true
-          fi
-          cat /tmp/magon-runtime.log || true
-
-  web-build:
+  web-quality:
     runs-on: ubuntu-latest
+    needs: foundation-quality
     defaults:
       run:
         working-directory: apps/web
@@ -98,12 +75,15 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
       - name: Install web dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Typecheck
         run: npm run typecheck

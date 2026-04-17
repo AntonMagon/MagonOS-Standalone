@@ -1,0 +1,239 @@
+// RU: Файл входит в проверенный контур первой волны.
+"use client";
+
+import Link from "next/link";
+import {useParams} from "next/navigation";
+import {useEffect, useState} from "react";
+
+import {Button} from "@/components/ui/button";
+import {Card} from "@/components/ui/card";
+import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+
+type SupplierDetailPayload = {
+  supplier: {
+    code: string;
+    display_name: string;
+    trust_level: string;
+    supplier_status: string;
+    capability_summary?: string | null;
+    canonical_email?: string | null;
+    canonical_phone?: string | null;
+    website?: string | null;
+  };
+  company?: {code: string; name: string; legal_name?: string | null} | null;
+  contacts: Array<{code: string; email?: string | null; phone?: string | null; verification_status: string}>;
+  addresses: Array<{code: string; normalized_address?: string | null; city?: string | null; district?: string | null}>;
+  sites: Array<{code: string; site_name: string; trust_level: string; current_load_percent?: number | null}>;
+  verification_history: Array<{code: string; verification_type: string; reason_code: string; occurred_at?: string | null}>;
+  rating_history: Array<{code: string; overall_score: number; source_label?: string | null; captured_at?: string | null}>;
+  raw_records: Array<{code: string; company_name: string; source_url: string}>;
+};
+
+export default function SupplierDetailPage() {
+  const params = useParams<{supplierCode: string}>();
+  const supplierCode = String(params?.supplierCode || "");
+  const session = readFoundationSession();
+  const [payload, setPayload] = useState<SupplierDetailPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    if (!session?.token || !supplierCode) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchFoundationJson<SupplierDetailPayload>(`/api/v1/operator/suppliers/${supplierCode}`, {}, session.token);
+      setPayload(data);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "supplier_detail_failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplierCode]);
+
+  async function verify(targetTrustLevel: "contact_confirmed" | "capability_confirmed" | "trusted") {
+    if (!session?.token) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchFoundationJson(`/api/v1/operator/suppliers/${supplierCode}/verify`, {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify({
+          target_trust_level: targetTrustLevel,
+          reason_code: `ui_${targetTrustLevel}`
+        })
+      }, session.token);
+      await load();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "supplier_verify_failed");
+      setLoading(false);
+    }
+  }
+
+  async function adminStatus(action: "block" | "archive") {
+    if (!session?.token) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchFoundationJson(`/api/v1/admin/suppliers/${supplierCode}/${action}`, {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify({reason_code: `ui_${action}_supplier`})
+      }, session.token);
+      await load();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "supplier_status_failed");
+      setLoading(false);
+    }
+  }
+
+  if (!session?.token) {
+    return (
+      <main className="container py-10">
+        <Card className="glass-panel border-white/12 p-6">
+          <h1 className="text-3xl leading-tight">Карточка поставщика</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">Сначала нужен foundation login.</p>
+          <div className="mt-6">
+            <Link href="/login">
+              <Button>Открыть login</Button>
+            </Link>
+          </div>
+        </Card>
+      </main>
+    );
+  }
+
+  return (
+    <main className="container space-y-6 py-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground">← К списку поставщиков</Link>
+          <h1 className="mt-2 text-3xl leading-tight">{payload?.supplier.display_name ?? supplierCode}</h1>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            Separate Company/Supplier/Site контур: raw evidence, confirmed company, verification history и trust progression.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => void verify("contact_confirmed")} disabled={loading}>Contact confirmed</Button>
+          <Button variant="secondary" onClick={() => void verify("capability_confirmed")} disabled={loading}>Capability confirmed</Button>
+          <Button onClick={() => void verify("trusted")} disabled={loading}>Trusted</Button>
+        </div>
+      </div>
+
+      {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
+      {loading && !payload ? <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">Загрузка supplier card...</Card> : null}
+
+      {payload ? (
+        <>
+          <section className="grid gap-4 lg:grid-cols-3">
+            <Card className="glass-panel border-white/12 p-5 lg:col-span-2">
+              <h2 className="text-xl">Confirmed supplier</h2>
+              <div className="mt-4 grid gap-3 text-sm">
+                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <div>{payload.supplier.code}</div>
+                  <div className="mt-1 text-muted-foreground">trust {payload.supplier.trust_level} · status {payload.supplier.supplier_status}</div>
+                  <div className="mt-2">{payload.supplier.capability_summary || "Capabilities not confirmed yet."}</div>
+                  <div className="mt-2 text-muted-foreground">{payload.supplier.canonical_email || "no email"} · {payload.supplier.canonical_phone || "no phone"}</div>
+                  {payload.supplier.website ? <div className="mt-1 text-muted-foreground">{payload.supplier.website}</div> : null}
+                </div>
+                {payload.company ? (
+                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                    <div className="font-medium">Company</div>
+                    <div className="mt-1">{payload.company.name}</div>
+                    <div className="mt-1 text-muted-foreground">{payload.company.code} · {payload.company.legal_name || "No legal name"}</div>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+
+            <Card className="glass-panel border-white/12 p-5">
+              <h2 className="text-xl">Admin actions</h2>
+              <div className="mt-4 flex flex-col gap-3">
+                <Button variant="secondary" onClick={() => void adminStatus("block")} disabled={loading}>Block supplier</Button>
+                <Button variant="secondary" onClick={() => void adminStatus("archive")} disabled={loading}>Archive supplier</Button>
+              </div>
+            </Card>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <Card className="glass-panel border-white/12 p-5">
+              <h2 className="text-xl">Contacts & addresses</h2>
+              <div className="mt-4 space-y-3">
+                {payload.contacts.map((item) => (
+                  <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
+                    <div>{item.email || "no email"} · {item.phone || "no phone"}</div>
+                    <div className="mt-1 text-muted-foreground">{item.verification_status}</div>
+                  </div>
+                ))}
+                {payload.addresses.map((item) => (
+                  <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
+                    <div>{item.normalized_address || "no address"}</div>
+                    <div className="mt-1 text-muted-foreground">{item.city || "unknown city"} · {item.district || "unknown district"}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="glass-panel border-white/12 p-5">
+              <h2 className="text-xl">Sites</h2>
+              <div className="mt-4 space-y-3">
+                {payload.sites.map((item) => (
+                  <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div>{item.site_name}</div>
+                        <div className="mt-1 text-muted-foreground">trust {item.trust_level} · load {item.current_load_percent ?? 0}%</div>
+                      </div>
+                      <Link href={`/supplier-sites/${item.code}`}>
+                        <Button variant="secondary">Site card</Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <Card className="glass-panel border-white/12 p-5">
+              <h2 className="text-xl">Verification history</h2>
+              <div className="mt-4 space-y-3">
+                {payload.verification_history.map((item) => (
+                  <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
+                    <div>{item.verification_type}</div>
+                    <div className="mt-1 text-muted-foreground">{item.reason_code} · {item.occurred_at || "n/a"}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="glass-panel border-white/12 p-5">
+              <h2 className="text-xl">Latest raw evidence</h2>
+              <div className="mt-4 space-y-3">
+                {payload.raw_records.map((item) => (
+                  <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
+                    <div>{item.company_name}</div>
+                    <div className="mt-1 break-all text-muted-foreground">{item.source_url}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </section>
+        </>
+      ) : null}
+    </main>
+  );
+}

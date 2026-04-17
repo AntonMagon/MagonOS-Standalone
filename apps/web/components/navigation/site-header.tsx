@@ -34,7 +34,8 @@ export function SiteHeader() {
               <span className="block truncate font-heading text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 {tCommon('brand')}
               </span>
-              <span className="hidden truncate text-sm text-foreground/80 sm:block">{tHeader('shell')}</span>
+              {/* RU: Подзаголовок shell держим чуть крупнее и плотнее, иначе в шапке он визуально пропадает и вся типографика начинает выглядеть слишком "тонкой". */}
+              <span className="hidden truncate text-[13px] font-medium text-foreground/84 sm:block">{tHeader('shell')}</span>
             </span>
           </Link>
 
@@ -48,7 +49,8 @@ export function SiteHeader() {
                   href={item.href as Route}
                   className={cn(
                     'rounded-full px-4 py-2 text-sm transition-colors',
-                    active ? 'bg-white/14 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]' : 'text-muted-foreground hover:text-foreground'
+                    // RU: Навигация в header должна читаться как рабочая, а не как полупрозрачный декоративный текст на фоне свечения.
+                    active ? 'bg-white/14 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]' : 'font-medium text-foreground/70 hover:text-foreground'
                   )}
                   aria-current={active ? 'page' : undefined}
                 >

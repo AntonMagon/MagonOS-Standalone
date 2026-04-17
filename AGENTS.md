@@ -109,24 +109,33 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 06:08 +07`
-- Current focus: Green PR checks and promotion of develop to main through the protected PR path
-- Last verified workflow status: PASS `bash -n scripts/run_platform.sh`, PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: The smoke-runtime CI failure is fixed at the bootstrap layer; the main remaining system risk is still dev-shell latency under heavier k6 load, not runtime startup.
+- Auto-synced at: `2026-04-17 20:27 +07`
+- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 - Validated contour:
   - company
+  - request draft / intake boundary
   - commercial/customer context
   - opportunity
   - quote intent / RFQ boundary
   - production handoff
   - production board
 - Active repo automations:
+  - Architecture Drift Watch
+  - Daily Project Digest
+  - Dev Review Pulse
   - Platform Smoke 2h
   - Repo Guard 3h
-  - Visual Map 6h
+  - Visual Map Daily
+  - Nightly Deep Review
+  - Operator Flow Audit
+  - PR Branch Hygiene
+  - RU Locale Guard 6h
   - Weekly Release Gate
 - Repo-local operating skills:
   - audit-docs-vs-runtime
+  - automation-context-guard
   - ci-watch-fix
   - docs-sync-curator
   - donor-boundary-audit

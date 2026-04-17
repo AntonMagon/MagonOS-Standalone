@@ -108,7 +108,56 @@ task autosync:watch
 - русские комментарии/docstrings в неочевидной изменённой логике
 - явный `RU:` marker в staged diff изменённого кодового файла
 
+## Naming contract для repo-local skills
+
+Repo-local skills в `skills/` теперь тоже считаются частью operating-layer и не должны называться хаотично.
+
+Правило:
+- только `kebab-case`
+- только lowercase ASCII
+- от `2` до `4` токенов
+- первый токен — из общего словаря действий:
+  - `audit`
+  - `automation`
+  - `ci`
+  - `docs`
+  - `donor`
+  - `git`
+  - `operate`
+  - `project`
+  - `release`
+  - `skill`
+  - `verify`
+  - `web`
+- `name:` в frontmatter `SKILL.md` обязан совпадать с именем папки
+
+Это теперь не только договорённость:
+- `./.venv/bin/python scripts/check_skill_naming.py`
+- `./scripts/verify_workflow.sh`
+
+оба режут drift, если новый skill назван не по контракту.
+
 Если меняется код, а русский слой не меняется, commit должен считаться неполным.
+
+## Automation contract для Codex расписаний
+
+Codex automation в `~/.codex/automations/` тоже больше не считаются произвольным внешним слоем.
+Для этого репозитория они должны проходить тот же operating-contract.
+
+Теперь есть отдельный guard:
+- `./.venv/bin/python scripts/check_automation_contract.py`
+
+Что он проверяет:
+- `id` automation совпадает с именем папки
+- `id` в lowercase `kebab-case`
+- `kind = "cron"`
+- `prompt` обязательно тянет `automation-context-guard`
+- `cwds` содержит только `/Users/anton/Desktop/MagonOS-Standalone`
+- `execution_environment = "local"`
+- `model` остаётся в семействе `gpt-5`
+- `rrule` остаётся в поддерживаемой hourly/weekly форме
+
+Это уже встроено в `./scripts/verify_workflow.sh`, поэтому drift в самих расписаниях теперь тоже ловится автоматически.
 
 ## Минимальный рабочий путь
 

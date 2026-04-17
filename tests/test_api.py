@@ -10,6 +10,7 @@ from magon_standalone.supplier_intelligence.api import SupplierIntelligenceApiSe
 
 
 class TestStandaloneApi(unittest.TestCase):
+    # RU: Набор страхует legacy intelligence UI/API и русскую локализацию как часть рабочего операторского контура.
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.db_path = Path(self.tmpdir.name) / 'supplier_intelligence.sqlite3'
@@ -263,6 +264,56 @@ class TestStandaloneApi(unittest.TestCase):
         detail_page = self._get_text(f"/ui/quote-intents/{quote_intents[0]['id']}")
         self.assertIn('Quote workbench', detail_page)
         self.assertIn(f'/ui/companies/{company_id}', detail_page)
+
+    def test_request_draft_submit_flow_is_editable_in_standalone(self):
+        self._post_json('/runs', {'fixture': str(self.fixture_path)})
+        companies = self._get_json('/companies')
+        company_id = companies['items'][0]['id']
+
+        draft_result = self._post_form(
+            f'/ui/actions/companies/{company_id}/request-drafts',
+            {
+                'draft_type': 'rfq_packaging',
+                'customer_name': 'Anna Buyer',
+                'customer_email': 'anna@example.co',
+                'customer_phone': '+840000000',
+                'item_summary': '5000 corrugated cartons',
+                'quantity_hint': '5000 boxes',
+                'city': 'Ho Chi Minh City',
+                'requested_deadline': '2026-04-25',
+                'file_required': 'yes',
+                'file_links': 'https://files.example/spec.pdf',
+                'notes': 'Initial intake',
+            },
+        )
+        draft = self.service._store().list_request_drafts()[0]
+        request_result = self._post_form(
+            f"/ui/actions/request-drafts/{draft['id']}/submit",
+            {
+                'source_channel': 'web_form',
+                'customer_reference': 'CUST-REQ-1',
+                'request_status': 'needs_review',
+                'notes': 'Escalate for operator review',
+            },
+        )
+
+        company_page = self._get_text(f'/ui/companies/{company_id}')
+        draft_list_page = self._get_text('/ui/request-drafts')
+        request_list_page = self._get_text('/ui/requests')
+        request = self.service._store().list_request_intakes()[0]
+        draft_detail_page = self._get_text(f"/ui/request-drafts/{draft['id']}")
+        request_detail_page = self._get_text(f"/ui/requests/{request['id']}")
+
+        self.assertIn('Request draft created', draft_result)
+        self.assertIn('Request created from draft', request_result)
+        self.assertIn('Request drafts', company_page)
+        self.assertIn('Requests', company_page)
+        self.assertIn('5000 corrugated cartons', company_page)
+        self.assertIn('needs review', request_list_page.lower())
+        self.assertIn('Request drafts', draft_list_page)
+        self.assertIn('REQ-', request_detail_page)
+        self.assertIn('Submit into request', draft_detail_page)
+        self.assertEqual(self.service._store().get_request_draft(draft['id'])['draft_status'], 'submitted')
 
     def test_standalone_commercial_ownership_boundary_is_editable_end_to_end(self):
         self._post_json('/runs', {'fixture': str(self.fixture_path)})
