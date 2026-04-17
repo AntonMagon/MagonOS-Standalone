@@ -60,15 +60,26 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 07:59 +07`
+- Updated at: `2026-04-17 08:29 +07`
 - Branch: `develop`
-- Current focus: Keep the Russian shell visually clear and semantically readable while architecture work continues.
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
+- Current focus: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 08:29 +07 | develop
+- Summary: Optimized standalone UI checks for a low-memory MacBook by keeping browser inspection manual, single-window, and outside the default verify path.
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/components/sections/section-intro.tsx
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
 ### 2026-04-17 07:59 +07 | develop
 - Summary: Cleaned standalone web layout and semantic load on the Russian home and project map surfaces.
 - Changed:

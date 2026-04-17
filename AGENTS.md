@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 07:59 +07`
-- Current focus: Keep the Russian shell visually clear and semantically readable while architecture work continues.
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
+- Auto-synced at: `2026-04-17 08:29 +07`
+- Current focus: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
 - Validated contour:
   - company
   - commercial/customer context

@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 07:59 +07``
+Обновлено: ``2026-04-17 08:29 +07``
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep the Russian shell visually clear and semantically readable while architecture work continues.
-- Последний подтверждённый статус workflow: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
+- Текущий фокус: Keep verification cheap enough for an M2 Air while preserving one-window manual browser review.
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: Manual browser review still depends on an already running local shell and does not prove every interactive path unless we explicitly drive that one session.
 
 ## Автоматические контуры контроля
 
