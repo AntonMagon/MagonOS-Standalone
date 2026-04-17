@@ -108,6 +108,35 @@ task autosync:watch
 - русские комментарии/docstrings в неочевидной изменённой логике
 - явный `RU:` marker в staged diff изменённого кодового файла
 
+## Naming contract для repo-local skills
+
+Repo-local skills в `skills/` теперь тоже считаются частью operating-layer и не должны называться хаотично.
+
+Правило:
+- только `kebab-case`
+- только lowercase ASCII
+- от `2` до `4` токенов
+- первый токен — из общего словаря действий:
+  - `audit`
+  - `automation`
+  - `ci`
+  - `docs`
+  - `donor`
+  - `git`
+  - `operate`
+  - `project`
+  - `release`
+  - `skill`
+  - `verify`
+  - `web`
+- `name:` в frontmatter `SKILL.md` обязан совпадать с именем папки
+
+Это теперь не только договорённость:
+- `./.venv/bin/python scripts/check_skill_naming.py`
+- `./scripts/verify_workflow.sh`
+
+оба режут drift, если новый skill назван не по контракту.
+
 Если меняется код, а русский слой не меняется, commit должен считаться неполным.
 
 ## Минимальный рабочий путь

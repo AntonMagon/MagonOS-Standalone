@@ -56,6 +56,8 @@ bash -n \
 ./.venv/bin/python scripts/sync_operating_docs.py --check
 # RU: Статический locale-guard режет verify ещё до runtime, если русский source-of-truth снова протёк английскими доменными ярлыками.
 ./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
+# RU: Имена repo-local skills тоже держим под guard, чтобы automation и ручной вызов skills опирались на один читаемый naming-contract.
+./.venv/bin/python scripts/check_skill_naming.py
 
 ./.venv/bin/python -m unittest \
   tests.test_persistence \
@@ -68,6 +70,7 @@ bash -n \
   tests.test_locale_integrity \
   tests.test_repo_autosync \
   tests.test_repo_workflow \
+  tests.test_skill_naming \
   tests.test_operating_docs_sync \
   tests.test_russian_comment_contract
 

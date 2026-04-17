@@ -397,6 +397,25 @@ Installer постоянного Watchman trigger для этого репози
 - тяжёлые агенты не стреляли каждый час
 - активная разработка не тонула в overlapping automation runs
 
+## Naming contract для `skills/`
+
+Repo-local skills больше не должны называться произвольно.
+
+Теперь есть явный guard:
+- `scripts/check_skill_naming.py`
+- `src/magon_standalone/skill_naming.py`
+
+Он проверяет:
+- lowercase `kebab-case`
+- от `2` до `4` токенов
+- разрешённый первый токен действия
+- совпадение имени папки и `name:` во frontmatter `SKILL.md`
+
+Смысл:
+- не плодить похожие skills с хаотичными именами
+- не ломать читаемость automation prompt layer
+- не путать repo-local skills с plugin/curated skills
+
 ### `Taskfile.yml`
 
 Короткий task-runner слой поверх канонических repo scripts.

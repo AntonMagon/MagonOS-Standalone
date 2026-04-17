@@ -109,8 +109,8 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 09:29 +07`
-- Current focus: Added a shared automation-context skill and rewired all Codex automations to restore the same standalone repo context before running checks or reviews.
+- Auto-synced at: `2026-04-17 09:37 +07`
+- Current focus: Enforced a repo-local skill naming contract and added a verify guard so new skills cannot drift into хаотичные имена.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh`
 - Biggest operational risk: no additional risk recorded
 - Validated contour:
