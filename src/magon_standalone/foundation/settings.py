@@ -27,6 +27,7 @@ def _env_bool(name: str, default: bool) -> bool:
 class FoundationSettings:
     app_name: str
     env_name: str
+    system_mode: str
     host: str
     port: int
     database_url: str
@@ -76,6 +77,8 @@ def load_settings() -> FoundationSettings:
     return FoundationSettings(
         app_name=_env("MAGON_FOUNDATION_APP_NAME", "magon-foundation"),
         env_name=env_name,
+        # RU: System mode фиксируем как явный operational switch первой волны, чтобы maintenance/emergency не оставались только в документации.
+        system_mode=_env("MAGON_FOUNDATION_SYSTEM_MODE", "test" if env_name == "test" else "normal").strip().lower(),
         host=_env("MAGON_FOUNDATION_HOST", "0.0.0.0"),
         port=int(_env("MAGON_FOUNDATION_PORT", "8091")),
         database_url=_env("MAGON_FOUNDATION_DATABASE_URL", local_sqlite),

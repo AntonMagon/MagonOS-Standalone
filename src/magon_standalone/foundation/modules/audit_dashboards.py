@@ -25,7 +25,7 @@ from ..models import (
 )
 from ..security import ROLE_ADMIN, ROLE_OPERATOR, AuthContext
 from ..workflow_support import ROLE_CUSTOMER, WorkflowSupportService, visibility_scopes_for_audience
-from .shared import order_public_view, request_operator_view, supplier_operator_view, timeline_event_view
+from .shared import order_public_view, request_operator_view, request_public_view, supplier_operator_view, timeline_event_view
 
 router = APIRouter(tags=["AuditDashboards"])
 
@@ -45,6 +45,7 @@ def _notification_view(item: MessageEvent, workflow: WorkflowSupportService) -> 
 
 
 def _dashboard_common(session: Session, workflow: WorkflowSupportService) -> dict[str, object]:
+    # RU: Dashboard summary собирается из готовых scoped-срезов, чтобы UI не читал сырые внутренние события напрямую.
     return {
         "requests_by_status": _group_counts(session, RequestRecord, "request_status"),
         "offers_by_status": _group_counts(session, OfferRecord, "offer_status"),
@@ -239,7 +240,7 @@ def customer_dashboard(customer_ref: str, session: Session = Depends(get_db)) ->
     order = session.scalar(select(OrderRecord).where(OrderRecord.request_id == request.id, OrderRecord.deleted_at.is_(None)).order_by(OrderRecord.created_at.desc()))
     offers = session.scalars(select(OfferRecord).where(OfferRecord.request_id == request.id, OfferRecord.deleted_at.is_(None)).order_by(OfferRecord.created_at.desc())).all()
     return {
-        "request": request_operator_view(request),
+        "request": request_public_view(request),
         "order": order_public_view(order) if order else None,
         "notifications": [_notification_view(item, workflow) for item in notifications],
         "timeline": [_notification_view(item, workflow) for item in timeline],

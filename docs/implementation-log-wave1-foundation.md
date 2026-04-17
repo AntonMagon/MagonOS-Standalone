@@ -37,10 +37,39 @@
 - `RulesEngine`
 - `AuditDashboards`
 
+### Messages / Rules / Dashboards contour
+- Добавлен единый `MessageEvent` timeline-слой для `Request / Offer / Order / Supplier / File / Document`.
+- Добавлены baseline-справочники:
+  - `ReasonCodeCatalog`
+  - `NotificationRule`
+  - `RuleVersion`
+  - `EscalationHint`
+- RulesEngine доведён до explainable-first поведения:
+  - transition guards
+  - blocker reasons
+  - critical action checks
+  - versioned rules metadata
+  - explainability payloads в ошибках
+- Уведомления первой волны генерируются по правилам и сохраняются как role-scoped inbox events с антиспам suppression по `dedupe_key + min_interval_seconds`.
+- Добавлены минимальные рабочие панели:
+  - customer dashboard
+  - operator workbench
+  - admin dashboard
+  - supply dashboard
+  - processing dashboard
+
 ### Persistence / миграции
 - SQLAlchemy foundation models.
 - Alembic bootstrap + initial revision `20260417_0001`.
 - Foundation tables для ролей, пользователей, сессий, компаний, поставщиков, каталога, draft/request/offer/order, файлов, документов, comms, rules, audit.
+- Дополнительная revision `20260417_0008` добавила:
+  - `message_events`
+  - `reason_codes`
+  - `rules_engine_rule_versions`
+  - `notification_rules`
+  - `escalation_hints`
+  - новые поля `rule_kind`, `latest_version_no`, `metadata_json` в `rules_engine_rules`
+  - backfill существующих `audit_events` в unified `message_events`
 
 ### Безопасность
 - DB-backed opaque session auth.
@@ -115,9 +144,18 @@
 - `GET /api/v1/operator/document-versions/{version_code}/download`
 - `GET /api/v1/operator/comms/threads`
 - `POST /api/v1/operator/comms/threads`
+- `GET /api/v1/operator/comms/notifications`
 - `GET /api/v1/operator/rules`
+- `GET /api/v1/operator/rules/{rule_code}/versions`
+- `GET /api/v1/operator/reason-codes`
 - `GET /api/v1/operator/audit/events`
+- `GET /api/v1/operator/timeline/{owner_type}/{owner_code}`
+- `GET /api/v1/operator/workbench`
+- `GET /api/v1/operator/dashboard/supply`
+- `GET /api/v1/operator/dashboard/processing`
 - `GET /api/v1/operator/dashboard/summary`
+- `GET /api/v1/public/requests/{customer_ref}/dashboard`
+- `GET /api/v1/public/requests/{customer_ref}/notifications`
 - `GET /api/v1/meta/modules`
 
 ### Только admin
@@ -230,6 +268,28 @@
   - `MAGON_FOUNDATION_LEGACY_ENABLED` теперь по умолчанию `false` в settings, compose и env skeletons;
   - canonical local-up и smoke-check больше не включают legacy bridge автоматически;
   - legacy `/status` и `/ui/*` подтверждены только как opt-in compatibility surface, а не как штатный runtime первой волны.
+
+## Messages / dashboards verification
+
+### Что добавлено в тесты
+- новый suite:
+  - `tests.test_foundation_events_dashboards`
+- покрывает цепочку:
+  - event emitted
+  - role-scoped visibility
+  - notification rule evaluated
+  - dashboard metrics updated
+  - public payload не тянет operator-only поля
+
+### Что добавлено в smoke
+- новый smoke:
+  - `scripts/foundation_messages_dashboards_smoke_check.sh`
+- проверяет:
+  - customer dashboard
+  - operator workbench
+  - processing dashboard
+  - admin dashboard
+  - operator timeline по request
 
 ## Supplier / Companies business module
 
@@ -624,3 +684,118 @@
   - `tests.test_foundation_orders`
   - обновлены `tests.test_foundation_api` и `tests.test_foundation_offers`
   - проверен сценарий `accepted offer -> order created -> status transitions -> payment updates -> audit intact`.
+
+## Acceptance hardening и эксплуатационный доводочный проход
+
+### Что показал gap-audit
+
+По критериям приёмки из `gpt_doc/codex_wave1_spec_ru.docx` основной бизнес-контур уже был собран, но до приемочного состояния не хватало нескольких эксплуатационных вещей:
+
+- supplier ingest при падении не оставлял устойчивое retryable state, потому что ошибка откатывала транзакцию целиком;
+- режимы `maintenance / emergency` были зафиксированы в документации, но не работали как runtime guard;
+- архивный контур для managed files/documents был частично описан, но active views ещё не отрезали archived items;
+- не было отдельного migration acceptance gate;
+- не было одного end-to-end demo smoke на весь путь `supplier -> storefront -> draft -> request -> offer -> order -> file/document -> timeline/dashboard`;
+- CI pipeline отставал от фактического foundation scope.
+
+### Что добавлено в schema
+
+- Новая migration `20260417_0009_wave1_acceptance_hardening.py`.
+- `SupplierRawIngest` расширен полями:
+  - `failed_at`
+  - `last_retry_at`
+  - `retry_count`
+  - `failure_code`
+  - `failure_detail`
+
+### Что доведено в runtime
+
+- Введён env-driven system mode:
+  - `normal`
+  - `test`
+  - `maintenance`
+  - `emergency`
+- `MAGON_FOUNDATION_SYSTEM_MODE` стал частью foundation settings.
+- Добавлен middleware guard:
+  - в `maintenance` блокируются write-path операции, но health/meta/read endpoints остаются доступны;
+  - в `emergency` режется почти весь трафик, кроме health/meta surfaces.
+- Health/observability теперь публикуют `system_mode`.
+- Добавлен endpoint:
+  - `GET /api/v1/meta/system-mode`
+
+### Что доведено в supplier ingest contour
+
+- Inline ingest теперь сохраняет failed state, а не теряет его на rollback.
+- В `SupplierRawIngest` пишутся:
+  - статус ошибки
+  - код исключения
+  - detail ошибки
+  - время падения
+  - счётчик retry
+- Добавлен ручной retry path:
+  - `POST /api/v1/operator/supplier-ingests/{ingest_code}/retry`
+- Retry умеет:
+  - очищать старые raw/normalized/dedup rows этого ingest-run
+  - увеличивать `retry_count`
+  - повторно прогонять ingest inline или через job path
+- Fixture supplier adapter теперь поддерживает управляемый demo-failure через `force_error`, чтобы failure/retry состояние можно было проверять тестом и smoke.
+
+### Что доведено в archive behavior
+
+- Active views по files/documents теперь исключают archived items, а не только deleted.
+- Добавлены operator actions:
+  - `POST /api/v1/operator/files/{asset_code}/archive`
+  - `POST /api/v1/operator/documents/{document_code}/archive`
+- Архивация:
+  - сохраняет причину
+  - оставляет audit trail
+  - для document version переводит текущую версию в `archived`, если она была активной
+
+### Что добавлено в automated checks
+
+- Unit/API:
+  - `tests.test_foundation_acceptance`
+  - `tests.test_foundation_migrations`
+- Acceptance tests теперь отдельно проверяют:
+  - maintenance mode blocking
+  - supplier ingest failed -> retry -> completed
+  - archive hiding для files/documents
+- Добавлены отдельные gates:
+  - `scripts/foundation_migration_check.sh`
+  - `scripts/foundation_wave1_demo_smoke_check.sh`
+- Demo smoke прогоняет end-to-end сценарий:
+  - supplier ingest -> normalized supplier
+  - storefront -> draft
+  - draft -> request
+  - request -> versioned offer
+  - accepted offer -> order
+  - file/document flow
+  - timeline/audit/dashboard visibility
+
+### Что добавлено в CI / quality gates
+
+- `.github/workflows/ci.yml` обновлён под актуальный foundation contour.
+- В CI теперь отдельно гоняются:
+  - foundation quality gate через `./scripts/verify_workflow.sh`
+  - migration check
+  - foundation smoke pack
+  - web lint/typecheck/build
+- `scripts/verify_workflow.sh` расширен до фактического wave1 suite, включая:
+  - suppliers
+  - catalog
+  - draft/request
+  - offers
+  - orders
+  - files/documents
+  - events/dashboards
+  - acceptance
+  - migrations
+
+### Что подтверждено после hardening-прохода
+
+- запрещённые переходы и explainability guards остаются зелёными;
+- role access boundaries не размыты;
+- archive/soft-delete не ломают active выдачи;
+- async supplier ingest имеет устойчивые failure/retry states;
+- environment boot остаётся консистентным через migration/seed/api/web/smoke path;
+- wave1 contour теперь можно демонстрировать целиком без ручного "доклеивания" пробелов по runtime.

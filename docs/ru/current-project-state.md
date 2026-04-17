@@ -93,6 +93,8 @@
   - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
 - поднять unified foundation локально:
   - `./scripts/run_foundation_unified.sh --fresh`
+- desktop launcher для того же локального контура:
+  - `./Start_Platform.command`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`

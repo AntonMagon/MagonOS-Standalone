@@ -298,78 +298,170 @@ class SupplierPipelineService:
             select(SupplierRawIngest).where(SupplierRawIngest.idempotency_key == idempotency_key)
         )
         if existing is not None:
+            if existing.ingest_status != "failed":
+                return SupplierIngestSummary(
+                    ingest_code=existing.code,
+                    ingest_status=existing.ingest_status,
+                    source_registry_code=registry.code,
+                    raw_count=existing.raw_count,
+                    normalized_count=existing.normalized_count,
+                    merged_count=existing.merged_count,
+                    candidate_count=existing.candidate_count,
+                    replayed=True,
+                )
+            ingest = existing
+            ingest.ingest_status = "running"
+            ingest.started_at = utc_now()
+            ingest.finished_at = None
+            ingest.failed_at = None
+            ingest.last_retry_at = utc_now()
+            ingest.retry_count = int(ingest.retry_count or 0) + 1
+            ingest.failure_code = None
+            ingest.failure_detail = None
+            ingest.raw_count = 0
+            ingest.normalized_count = 0
+            ingest.merged_count = 0
+            ingest.candidate_count = 0
+            # RU: При retry переиспользуем ingest row и idempotency key, чтобы история падения и повторного запуска не терялась.
+            self._cleanup_ingest_rows(ingest=ingest)
+            self.session.flush()
+        else:
+            ingest = SupplierRawIngest(
+                code=reserve_code(self.session, "supplier_raw_ingests", "ING"),
+                source_registry_id=registry.id,
+                idempotency_key=idempotency_key,
+                ingest_status="running",
+                reason_code=reason_code,
+                trigger_mode=trigger_mode,
+                adapter_key=registry.adapter_key,
+                started_at=utc_now(),
+                requested_by_user_id=auth.user_id if auth else None,
+            )
+            self.session.add(ingest)
+            self.session.flush()
+
+        try:
+            adapter = get_supplier_source_adapter(registry.adapter_key)
+            pulled = adapter.pull(registry.config_json or {})
+            raw_records = self._store_raw_records(registry, ingest, pulled.records)
+            normalization_results = self._normalize_raw_records(ingest, raw_records)
+
+            merged_count = 0
+            candidate_count = 0
+            for item in normalization_results:
+                outcome = self._promote_normalized_result(item, registry, ingest, auth)
+                if outcome == "merged":
+                    merged_count += 1
+                if outcome == "candidate":
+                    candidate_count += 1
+
+            ingest.ingest_status = "completed"
+            ingest.finished_at = utc_now()
+            ingest.raw_count = len(raw_records)
+            ingest.normalized_count = len(normalization_results)
+            ingest.merged_count = merged_count
+            ingest.candidate_count = candidate_count
+
+            record_audit_event(
+                self.session,
+                module_name="suppliers",
+                action="ingest_completed",
+                entity_type="supplier_ingest",
+                entity_id=ingest.id,
+                entity_code=ingest.code,
+                auth=auth,
+                reason=reason_code,
+                payload_json={
+                    "source_registry_code": registry.code,
+                    "raw_count": ingest.raw_count,
+                    "normalized_count": ingest.normalized_count,
+                    "merged_count": ingest.merged_count,
+                    "candidate_count": ingest.candidate_count,
+                    "retry_count": ingest.retry_count,
+                },
+            )
             return SupplierIngestSummary(
-                ingest_code=existing.code,
-                ingest_status=existing.ingest_status,
+                ingest_code=ingest.code,
+                ingest_status=ingest.ingest_status,
                 source_registry_code=registry.code,
-                raw_count=existing.raw_count,
-                normalized_count=existing.normalized_count,
-                merged_count=existing.merged_count,
-                candidate_count=existing.candidate_count,
-                replayed=True,
+                raw_count=ingest.raw_count,
+                normalized_count=ingest.normalized_count,
+                merged_count=ingest.merged_count,
+                candidate_count=ingest.candidate_count,
+                replayed=False,
+            )
+        except Exception as exc:
+            ingest.ingest_status = "failed"
+            ingest.failed_at = utc_now()
+            ingest.finished_at = ingest.failed_at
+            ingest.failure_code = exc.__class__.__name__
+            ingest.failure_detail = str(exc)[:2000]
+            record_audit_event(
+                self.session,
+                module_name="suppliers",
+                action="ingest_failed",
+                entity_type="supplier_ingest",
+                entity_id=ingest.id,
+                entity_code=ingest.code,
+                auth=auth,
+                reason=reason_code,
+                payload_json={
+                    "source_registry_code": registry.code,
+                    "failure_code": ingest.failure_code,
+                    "failure_detail": ingest.failure_detail,
+                    "retry_count": ingest.retry_count,
+                },
+            )
+            return SupplierIngestSummary(
+                ingest_code=ingest.code,
+                ingest_status=ingest.ingest_status,
+                source_registry_code=registry.code,
+                raw_count=ingest.raw_count,
+                normalized_count=ingest.normalized_count,
+                merged_count=ingest.merged_count,
+                candidate_count=ingest.candidate_count,
+                replayed=False,
             )
 
-        ingest = SupplierRawIngest(
-            code=reserve_code(self.session, "supplier_raw_ingests", "ING"),
-            source_registry_id=registry.id,
-            idempotency_key=idempotency_key,
-            ingest_status="running",
+    def retry_ingest(
+        self,
+        *,
+        ingest_code: str,
+        auth: AuthContext | None,
+        reason_code: str,
+        trigger_mode: str = "manual",
+    ) -> SupplierIngestSummary:
+        ingest = self.session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.code == ingest_code))
+        if ingest is None:
+            raise LookupError("supplier_ingest_not_found")
+        if ingest.ingest_status != "failed":
+            raise ValueError("supplier_ingest_retry_not_allowed")
+        registry = self.session.get(SupplierSourceRegistry, ingest.source_registry_id)
+        if registry is None:
+            raise LookupError("supplier_source_not_found")
+        return self.run_ingest(
+            source_registry_code=registry.code,
+            idempotency_key=ingest.idempotency_key,
+            auth=auth,
             reason_code=reason_code,
             trigger_mode=trigger_mode,
-            adapter_key=registry.adapter_key,
-            started_at=utc_now(),
-            requested_by_user_id=auth.user_id if auth else None,
         )
-        self.session.add(ingest)
-        self.session.flush()
 
-        adapter = get_supplier_source_adapter(registry.adapter_key)
-        pulled = adapter.pull(registry.config_json or {})
-        raw_records = self._store_raw_records(registry, ingest, pulled.records)
-        normalization_results = self._normalize_raw_records(ingest, raw_records)
-
-        merged_count = 0
-        candidate_count = 0
-        for item in normalization_results:
-            outcome = self._promote_normalized_result(item, registry, ingest, auth)
-            if outcome == "merged":
-                merged_count += 1
-            if outcome == "candidate":
-                candidate_count += 1
-
-        ingest.ingest_status = "completed"
-        ingest.finished_at = utc_now()
-        ingest.raw_count = len(raw_records)
-        ingest.normalized_count = len(normalization_results)
-        ingest.merged_count = merged_count
-        ingest.candidate_count = candidate_count
-
-        record_audit_event(
-            self.session,
-            module_name="suppliers",
-            action="ingest_completed",
-            entity_type="supplier_ingest",
-            entity_id=ingest.id,
-            entity_code=ingest.code,
-            auth=auth,
-            reason=reason_code,
-            payload_json={
-                "source_registry_code": registry.code,
-                "raw_count": ingest.raw_count,
-                "normalized_count": ingest.normalized_count,
-                "merged_count": ingest.merged_count,
-                "candidate_count": ingest.candidate_count,
-            },
+    def _cleanup_ingest_rows(self, *, ingest: SupplierRawIngest) -> None:
+        normalization_ids = list(
+            self.session.scalars(select(SupplierNormalizationResult.id).where(SupplierNormalizationResult.ingest_id == ingest.id)).all()
         )
-        return SupplierIngestSummary(
-            ingest_code=ingest.code,
-            ingest_status=ingest.ingest_status,
-            source_registry_code=registry.code,
-            raw_count=ingest.raw_count,
-            normalized_count=ingest.normalized_count,
-            merged_count=ingest.merged_count,
-            candidate_count=ingest.candidate_count,
-        )
+        if normalization_ids:
+            for candidate in self.session.scalars(
+                select(SupplierDedupCandidate).where(SupplierDedupCandidate.ingest_id == ingest.id)
+            ).all():
+                self.session.delete(candidate)
+            for item in self.session.scalars(
+                select(SupplierNormalizationResult).where(SupplierNormalizationResult.id.in_(normalization_ids))
+            ).all():
+                self.session.delete(item)
+        for raw in self.session.scalars(select(SupplierRawRecord).where(SupplierRawRecord.ingest_id == ingest.id)).all():
+            self.session.delete(raw)
 
     def apply_trust_transition(
         self,

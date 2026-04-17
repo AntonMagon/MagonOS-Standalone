@@ -59,6 +59,8 @@ async def _lifespan(app: FastAPI):
 
 def create_app(settings: FoundationSettings | None = None) -> FastAPI:
     actual_settings = settings or load_settings()
+    if actual_settings.system_mode not in {"normal", "test", "maintenance", "emergency"}:
+        raise RuntimeError(f"foundation_system_mode_invalid:{actual_settings.system_mode}")
     configure_logging(actual_settings.log_level)
     init_backend_observability()
 
@@ -89,12 +91,25 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
     async def _telemetry(request, call_next):
         return await telemetry_middleware(request, call_next, telemetry)
 
+    @app.middleware("http")
+    async def _system_mode_guard(request, call_next):
+        # RU: System mode guard блокирует write-paths в maintenance/emergency до входа в доменные модули.
+        path = request.url.path
+        mode = actual_settings.system_mode
+        health_or_meta = path.startswith("/health") or path.startswith("/observability") or path.startswith("/api/v1/meta")
+        auth_safe = path in {"/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/auth/me"}
+        if mode == "maintenance" and request.method not in {"GET", "HEAD", "OPTIONS"} and not (health_or_meta or auth_safe):
+            return JSONResponse(status_code=503, content={"detail": "system_in_maintenance_mode", "system_mode": mode})
+        if mode == "emergency" and not (health_or_meta or path == "/health"):
+            return JSONResponse(status_code=503, content={"detail": "system_in_emergency_mode", "system_mode": mode})
+        return await call_next(request)
+
     for router in MODULE_ROUTERS:
         app.include_router(router)
 
     @app.get("/health/live", tags=["Health"])
     def health_live() -> dict[str, object]:
-        return {"status": "ok", "service": actual_settings.app_name, "env": actual_settings.env_name}
+        return {"status": "ok", "service": actual_settings.app_name, "env": actual_settings.env_name, "system_mode": actual_settings.system_mode}
 
     @app.get("/health/ready", tags=["Health"])
     def health_ready() -> dict[str, object]:
@@ -109,6 +124,7 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
                 "redis": redis_health,
                 "celery": celery_health,
                 "legacy_mount_enabled": actual_settings.legacy_enabled,
+                "system_mode": actual_settings.system_mode,
             },
         }
 
@@ -119,6 +135,7 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
             "status": ready["status"],
             "service": actual_settings.app_name,
             "env": actual_settings.env_name,
+            "system_mode": actual_settings.system_mode,
             "database_url": actual_settings.database_url,
             "legacy_enabled": actual_settings.legacy_enabled,
         }
@@ -128,6 +145,7 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
         return {
             "service": actual_settings.app_name,
             "env": actual_settings.env_name,
+            "system_mode": actual_settings.system_mode,
             "telemetry": telemetry.snapshot(),
             "logging": {"level": actual_settings.log_level},
             "error_reporting": {"sentry_enabled": bool(actual_settings.sentry_dsn)},
@@ -152,6 +170,15 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
                 "AuditDashboards",
             ],
             "legacy_mount_enabled": actual_settings.legacy_enabled,
+            "system_mode": actual_settings.system_mode,
+        }
+
+    @app.get("/api/v1/meta/system-mode", tags=["Meta"])
+    def system_mode() -> dict[str, object]:
+        return {
+            "system_mode": actual_settings.system_mode,
+            "write_blocked": actual_settings.system_mode in {"maintenance", "emergency"},
+            "read_blocked": actual_settings.system_mode == "emergency",
         }
 
     if actual_settings.legacy_enabled:

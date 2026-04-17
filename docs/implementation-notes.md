@@ -39,6 +39,15 @@
 29. Для `local/test` storage backend первой волны по умолчанию `local` с корнем `data/file-assets`, а object storage оставлен как готовый архитектурный adapter stub без обязательного подключения в этой волне.
 30. Базовые file checks intentionally lightweight: `presence / size / extension / type + manual_review`. Тяжёлая предпечатная проверка, визуальный diff и production-grade prepress automation в первую волну не входят.
 31. Документные шаблоны первой волны генерируются как markdown-backed managed documents (`offer_proposal`, `offer_confirmation`, `invoice_like`, `internal_job`). Это рабочий управляемый слой документооборота первой волны, а не обязательный полнофункциональный редактор или DMS.
+32. Unified `MessageEvent` первой волны строится как explainable timeline-layer поверх уже существующего `AuditEvent`, а не как отдельный event bus. Source-of-truth для критичных переходов остаётся audit trail; `MessageEvent` — производный read/write слой для role-scoped timeline и notifications.
+33. Notification delivery первой волны ограничен внутренним `inbox`-каналом в БД. Email, мессенджеры, webhook fanout и внешние очереди сознательно не включаются в обязательный контур и должны идти через отдельный integrations-layer в следующих волнах.
+34. Role-scoped visibility для сообщений и уведомлений первой волны фиксируется четырьмя scopes: `public`, `customer`, `supplier`, `internal`. Operator/admin получают объединённый внутренний обзор; customer/supplier видят только свои разрешённые срезы без внутренних user ownership полей.
+35. SLA / escalation contour первой волны intentionally lightweight: `EscalationHint` хранит baseline thresholds и dashboard hints для review/processing, но не запускает отдельный scheduler, pager duty или внешнюю эскалационную оркестрацию.
+36. Customer dashboard первой волны опирается на существующий public request surface и дополняется отдельным summary endpoint. Полный отдельный customer portal с авторизацией и профилями не строится в этой волне.
+37. Runtime system modes первой волны intentionally minimal: `normal / test / maintenance / emergency` задаются через env и режут трафик coarse-grained, без сложной feature-by-feature degradation matrix.
+38. Failure/retry contour для supplier ingest первой волны обязан быть объяснимым и устойчивым: failed state хранится прямо в `SupplierRawIngest`, а retry идёт через тот же сервисный слой с очисткой промежуточных rows этого ingest-run, а не через "переигрывание поверх мусора".
+39. Архивный контур первой волны считается достаточным, если историчность сохраняется, archived items исчезают из active views и audit/timeline не теряются. Полный operator archive-кабинет для всех сущностей специально не входит в wave1.
+40. Demo readiness первой волны считается закрытой не по словам, а по отдельному end-to-end smoke сценарному прогону. Поэтому `scripts/foundation_wave1_demo_smoke_check.sh` является частью обязательного acceptance набора, а не необязательной демонстрацией.
 
 ## Явно исключено из этого шага
 

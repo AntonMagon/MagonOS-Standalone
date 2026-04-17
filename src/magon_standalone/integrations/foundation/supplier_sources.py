@@ -24,6 +24,10 @@ class FixtureSupplierSourceAdapter(SupplierSourceAdapter):
 
     def pull(self, config: dict | None = None) -> SupplierSourcePullResult:
         actual_config = config or {}
+        forced_error = str(actual_config.get("force_error") or "").strip()
+        if forced_error:
+            # RU: Детерминированный сбой адаптера нужен для проверяемого retry/failure контура, а не для "магических" моков вне системы.
+            raise RuntimeError(forced_error)
         fixture_path = Path(actual_config.get("fixture_path") or (_repo_root() / "tests" / "fixtures" / "vn_suppliers_raw.json"))
         source_label = str(actual_config.get("source_label") or "fixture_vn_suppliers")
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))

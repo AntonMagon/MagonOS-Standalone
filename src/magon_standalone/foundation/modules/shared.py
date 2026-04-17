@@ -223,6 +223,21 @@ def request_operator_view(record) -> dict[str, object]:
     }
 
 
+def request_public_view(record) -> dict[str, object]:
+    return {
+        "code": record.code,
+        "customer_ref": record.customer_ref,
+        "title": record.title,
+        "summary": record.summary,
+        "item_service_context": record.item_service_context,
+        "city": record.city,
+        "request_status": record.request_status,
+        "requested_deadline_at": iso_or_none(record.requested_deadline_at),
+        "created_at": iso_or_none(record.created_at),
+        "updated_at": iso_or_none(record.updated_at),
+    }
+
+
 def required_field_state_view(item) -> dict[str, object]:
     return {
         "code": item.code,
@@ -267,6 +282,18 @@ def request_reason_view(item) -> dict[str, object]:
     }
 
 
+def request_reason_public_view(item) -> dict[str, object]:
+    return {
+        "code": item.code,
+        "reason_kind": item.reason_kind,
+        "reason_code": item.reason_code,
+        "note": item.note,
+        "is_active": item.is_active,
+        "resolved_at": iso_or_none(item.resolved_at),
+        "created_at": iso_or_none(item.created_at),
+    }
+
+
 def clarification_cycle_view(item) -> dict[str, object]:
     return {
         "id": item.id,
@@ -293,6 +320,20 @@ def follow_up_item_view(item) -> dict[str, object]:
         "detail": item.detail,
         "follow_up_status": item.follow_up_status,
         "owner_user_id": item.owner_user_id,
+        "due_at": iso_or_none(item.due_at),
+        "customer_visible": item.customer_visible,
+        "closed_reason_code": item.closed_reason_code,
+        "closed_at": iso_or_none(item.closed_at),
+        "created_at": iso_or_none(item.created_at),
+    }
+
+
+def follow_up_item_public_view(item) -> dict[str, object]:
+    return {
+        "code": item.code,
+        "title": item.title,
+        "detail": item.detail,
+        "follow_up_status": item.follow_up_status,
         "due_at": iso_or_none(item.due_at),
         "customer_visible": item.customer_visible,
         "closed_reason_code": item.closed_reason_code,
@@ -356,6 +397,7 @@ def file_version_view(item) -> dict[str, object]:
 
 
 def file_asset_view(item, *, latest_version=None, checks: list | None = None, download_url: str | None = None) -> dict[str, object]:
+    # RU: File view формирует безопасное представление для API и не отдаёт наружу storage/internal-only поля.
     return {
         "id": item.id,
         "code": item.code,
@@ -374,6 +416,24 @@ def file_asset_view(item, *, latest_version=None, checks: list | None = None, do
         "uploaded_by_user_id": item.uploaded_by_user_id,
         "latest_version": file_version_view(latest_version) if latest_version else None,
         "checks": [file_check_view(check) for check in (checks or [])],
+        "download_url": download_url,
+        "archived_at": iso_or_none(item.archived_at),
+        "deleted_at": iso_or_none(item.deleted_at),
+        "created_at": iso_or_none(item.created_at),
+        "updated_at": iso_or_none(item.updated_at),
+    }
+
+
+def file_asset_public_view(item, *, latest_version=None, download_url: str | None = None) -> dict[str, object]:
+    return {
+        "code": item.code,
+        "file_type": item.file_type,
+        "title": item.title,
+        "current_version_no": item.current_version_no,
+        "check_state": item.check_state,
+        "visibility_scope": item.visibility_scope,
+        "final_flag": item.final_flag,
+        "latest_version": file_version_view(latest_version) if latest_version else None,
         "download_url": download_url,
         "created_at": iso_or_none(item.created_at),
         "updated_at": iso_or_none(item.updated_at),
@@ -419,6 +479,25 @@ def document_view(item, *, current_version=None, download_url: str | None = None
         "confirmation_state": item.confirmation_state,
         "file_id": item.file_id,
         "created_by_user_id": item.created_by_user_id,
+        "current_version": document_version_view(current_version, download_url=download_url) if current_version else None,
+        "download_url": download_url,
+        "archived_at": iso_or_none(item.archived_at),
+        "deleted_at": iso_or_none(item.deleted_at),
+        "created_at": iso_or_none(item.created_at),
+        "updated_at": iso_or_none(item.updated_at),
+    }
+
+
+def document_public_view(item, *, current_version=None, download_url: str | None = None) -> dict[str, object]:
+    return {
+        "code": item.code,
+        "document_type": item.document_type,
+        "template_key": item.template_key,
+        "title": item.title,
+        "visibility_scope": item.visibility_scope,
+        "current_version_no": item.current_version_no,
+        "sent_state": item.sent_state,
+        "confirmation_state": item.confirmation_state,
         "current_version": document_version_view(current_version, download_url=download_url) if current_version else None,
         "download_url": download_url,
         "created_at": iso_or_none(item.created_at),

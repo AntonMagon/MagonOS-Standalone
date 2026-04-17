@@ -194,3 +194,14 @@ task autosync:watch
 
 Подробности:
 - `docs/ru/performance-and-observability.md`
+
+## Локальные Codex plugins
+
+В репозитории можно держать repo-local плагины для Codex в `plugins/`.
+
+RU: базовый scaffold нового плагина должен включать `.codex-plugin/plugin.json`, а если плагин нужно показывать в локальном каталоге Codex — ещё и запись в `.agents/plugins/marketplace.json`.
+
+Текущий пример стартовой структуры:
+- `plugins/example-plugin/`
+- `plugins/example-plugin/.codex-plugin/plugin.json`
+- `.agents/plugins/marketplace.json`

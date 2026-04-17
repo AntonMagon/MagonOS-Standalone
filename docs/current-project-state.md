@@ -84,6 +84,8 @@ Do not pretend full CRM/quote parity exists.
   - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
 - unified foundation local-up:
   - `./scripts/run_foundation_unified.sh --fresh`
+- desktop launcher for the same local contour:
+  - `./Start_Platform.command`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`

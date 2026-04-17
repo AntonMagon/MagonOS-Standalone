@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 09:51 +07``
+Обновлено: ``2026-04-17 20:27 +07``
 
 ## Контур движения
 
@@ -15,9 +15,17 @@ flowchart LR
 
 ## Что уже принадлежит standalone
 
+- контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
 - нормализация / обогащение / дедупликация / скоринг
-- очередь проверки
+- ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
+- autosave / abandoned / archive-ready слой Draft
+- центральная операторская очередь Review для Request с blocker/clarification flow
+- переход `draft -> request` с блокировкой по обязательным полям
+- versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order
+- слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
+- управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
+- foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
 - оценка трудозатрат
@@ -25,6 +33,7 @@ flowchart LR
 ## Что сейчас является ядром контура
 
 - компания
+- граница черновика запроса / intake-заявки
 - коммерческий контекст клиента
 - сделка
 - заявка на расчёт / граница RFQ
@@ -48,9 +57,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`
-- Главный операционный риск: no additional risk recorded
+- Текущий фокус: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Главный операционный риск: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 
 ## Автоматические контуры контроля
 
@@ -74,5 +83,6 @@ flowchart LR
 - project-visual-map
 - release-readiness-gate
 - skill-pattern-scan
+- skill-project-bootstrap
 - verify-implementation
 - web-regression-pass

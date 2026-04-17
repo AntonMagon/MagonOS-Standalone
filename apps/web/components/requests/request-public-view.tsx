@@ -1,7 +1,7 @@
 // RU: Файл входит в проверенный контур первой волны.
 "use client";
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
@@ -38,7 +38,47 @@ type RequestDetail = {
     download_url?: string | null;
   }>;
   order?: {code: string; order_status: string; payment_state: string; logistics_state: string; readiness_state: string} | null;
-  timeline: Array<{code: string; action: string; reason?: string | null; created_at?: string | null}>;
+  timeline: Array<{
+    code: string;
+    action?: string | null;
+    entry_kind?: string | null;
+    reason?: string | null;
+    reason_code?: string | null;
+    title?: string | null;
+    body?: string | null;
+    created_at?: string | null;
+    reason_display?: {title: string; severity: string} | null;
+  }>;
+};
+
+type RequestDashboard = {
+  request: {
+    code: string;
+    customer_ref: string;
+    request_status: string;
+  };
+  order?: {code: string; order_status: string; payment_state: string; logistics_state: string; readiness_state: string} | null;
+  notifications: Array<{
+    code: string;
+    title?: string | null;
+    body?: string | null;
+    reason_code?: string | null;
+    created_at?: string | null;
+    reason_display?: {title: string; severity: string} | null;
+  }>;
+  timeline: Array<{
+    code: string;
+    entry_kind: string;
+    action?: string | null;
+    reason?: string | null;
+    title?: string | null;
+    body?: string | null;
+    reason_code?: string | null;
+    created_at?: string | null;
+    reason_display?: {title: string; severity: string} | null;
+  }>;
+  offers_pending_confirmation: number;
+  documents_waiting_confirmation: number;
 };
 
 type OfferCompareItem = {
@@ -70,33 +110,38 @@ type OfferCompareItem = {
 
 type RequestPayload = {item: RequestDetail};
 type ComparePayload = {request: RequestDetail; items: OfferCompareItem[]};
+type DashboardPayload = RequestDashboard;
 
 export function RequestPublicView({customerRef}: {customerRef: string}) {
+  // RU: Публичный request view показывает customer-safe timeline и документы без operator-only деталей и служебных полей.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState<RequestDetail | null>(null);
+  const [dashboard, setDashboard] = useState<RequestDashboard | null>(null);
   const [offers, setOffers] = useState<OfferCompareItem[]>([]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [requestPayload, comparePayload] = await Promise.all([
+      const [requestPayload, comparePayload, dashboardPayload] = await Promise.all([
         fetchFoundationJson<RequestPayload>(`/api/v1/public/requests/${customerRef}`),
         fetchFoundationJson<ComparePayload>(`/api/v1/public/requests/${customerRef}/offers/compare`),
+        fetchFoundationJson<DashboardPayload>(`/api/v1/public/requests/${customerRef}/dashboard`),
       ]);
       setItem(requestPayload.item);
       setOffers(comparePayload.items);
+      setDashboard(dashboardPayload);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "request_load_failed");
     } finally {
       setLoading(false);
     }
-  }
+  }, [customerRef]);
 
   useEffect(() => {
     void load();
-  }, [customerRef]);
+  }, [load]);
 
   async function respondToOffer(offerCode: string, action: "accept" | "decline") {
     setError(null);
@@ -145,9 +190,39 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
             Заказ {item.order.code}: {item.order.order_status} · payment {item.order.payment_state} · logistics {item.order.logistics_state}
           </div>
         ) : null}
+        {dashboard ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Pending offers</div>
+              <div className="mt-2 text-3xl leading-none">{dashboard.offers_pending_confirmation}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Documents waiting</div>
+              <div className="mt-2 text-3xl leading-none">{dashboard.documents_waiting_confirmation}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Customer notifications</div>
+              <div className="mt-2 text-3xl leading-none">{dashboard.notifications.length}</div>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
+
+      <Card className="glass-panel border-white/12 p-5">
+        <h2 className="text-xl">Уведомления и причины</h2>
+        <div className="mt-4 space-y-3 text-sm">
+          {dashboard?.notifications.map((notification) => (
+            <div key={notification.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div className="font-medium">{notification.title ?? notification.reason_display?.title ?? notification.reason_code ?? notification.code}</div>
+              {notification.body ? <div className="mt-2 text-foreground/80">{notification.body}</div> : null}
+              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">{notification.created_at ?? "unknown_time"}</div>
+            </div>
+          ))}
+          {!dashboard?.notifications.length ? <div className="text-muted-foreground">Пока нет customer-visible уведомлений.</div> : null}
+        </div>
+      </Card>
 
       <Card className="glass-panel border-white/12 p-5">
         <h2 className="text-xl">Сравнение предложений</h2>
@@ -273,10 +348,11 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
       <Card className="glass-panel border-white/12 p-5">
         <h2 className="text-xl">Timeline</h2>
         <div className="mt-4 space-y-3 text-sm">
-          {item.timeline.map((event) => (
+          {(dashboard?.timeline ?? item.timeline).map((event) => (
             <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-              <div className="font-medium">{event.action}</div>
-              <div className="mt-1 text-muted-foreground">{event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
+              <div className="font-medium">{event.title ?? event.action ?? event.reason_display?.title ?? event.reason_code ?? event.code}</div>
+              {event.body ? <div className="mt-2 text-foreground/80">{event.body}</div> : null}
+              <div className="mt-1 text-muted-foreground">{event.reason_code ?? event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
             </div>
           ))}
         </div>

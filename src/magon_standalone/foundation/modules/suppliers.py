@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
+from starlette.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -78,6 +79,11 @@ class SupplierStatusPayload(BaseModel):
     note: str | None = None
 
 
+class SupplierIngestRetryPayload(BaseModel):
+    reason_code: str = "manual_supplier_ingest_retry"
+    mode: Literal["inline", "job"] = "inline"
+
+
 class SupplierDedupDecisionPayload(BaseModel):
     decision: Literal["merge", "reject"]
     reason_code: str
@@ -89,6 +95,7 @@ def _service(session: Session) -> SupplierPipelineService:
 
 
 def _ingest_view(item: SupplierRawIngest, registry: SupplierSourceRegistry | None = None) -> dict[str, object]:
+    # RU: Retry/failure поля показываем явно, чтобы оператор видел explainable async state без чтения task backend вручную.
     return {
         "id": item.id,
         "code": item.code,
@@ -106,6 +113,12 @@ def _ingest_view(item: SupplierRawIngest, registry: SupplierSourceRegistry | Non
         "candidate_count": item.candidate_count,
         "started_at": iso_or_none(item.started_at),
         "finished_at": iso_or_none(item.finished_at),
+        "failed_at": iso_or_none(item.failed_at),
+        "last_retry_at": iso_or_none(item.last_retry_at),
+        "retry_count": item.retry_count,
+        "failure_code": item.failure_code,
+        "failure_detail": item.failure_detail,
+        "retry_allowed": item.ingest_status == "failed",
         "created_at": iso_or_none(item.created_at),
     }
 
@@ -330,6 +343,15 @@ def run_supplier_ingest_inline(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if summary.ingest_status == "failed":
+        ingest = session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.code == summary.ingest_code))
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "supplier_ingest_failed",
+                "item": _ingest_view(ingest, session.get(SupplierSourceRegistry, ingest.source_registry_id) if ingest else None),
+            },
+        )
     return {"item": _ingest_summary_view(summary)}
 
 
@@ -389,6 +411,48 @@ def get_supplier_ingest(
             for item in candidates
         ],
     }
+
+
+@router.post("/api/v1/operator/supplier-ingests/{ingest_code}/retry")
+def retry_supplier_ingest(
+    ingest_code: str,
+    payload: SupplierIngestRetryPayload,
+    auth: AuthContext = Depends(require_roles(ROLE_OPERATOR, ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    service = _service(session)
+    try:
+        ingest = session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.code == ingest_code))
+        if ingest is None:
+            raise LookupError("supplier_ingest_not_found")
+        registry = session.get(SupplierSourceRegistry, ingest.source_registry_id)
+        if registry is None:
+            raise LookupError("supplier_source_not_found")
+        if payload.mode == "job":
+            task = run_supplier_ingest.delay(registry.code, ingest.idempotency_key, payload.reason_code, "job_retry")
+            ingest.task_id = task.id
+            ingest.trigger_mode = "job_retry"
+            return {"task_id": task.id, "status": "queued", "ingest": _ingest_view(ingest, registry)}
+        summary = service.retry_ingest(
+            ingest_code=ingest_code,
+            auth=auth,
+            reason_code=payload.reason_code,
+            trigger_mode="inline_retry",
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if summary.ingest_status == "failed":
+        ingest = session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.code == ingest_code))
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "supplier_ingest_failed",
+                "item": _ingest_view(ingest, session.get(SupplierSourceRegistry, ingest.source_registry_id) if ingest else None),
+            },
+        )
+    return {"item": _ingest_summary_view(summary)}
 
 
 def _ingest_summary_view(summary: SupplierIngestSummary) -> dict[str, object]:

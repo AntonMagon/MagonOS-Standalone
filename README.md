@@ -172,10 +172,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 16:44 +07`
-- Current focus: Implemented wave1 managed files and documents contour
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents && bash ./scripts/foundation_files_documents_smoke_check.sh && (cd apps/web && npm run typecheck) && ./scripts/verify_workflow.sh`
-- Biggest operational risk: legacy thin catalog/supplier references still coexist with new foundation entities outside the already verified wave1 boundaries
+- Auto-synced at: `2026-04-17 20:27 +07`
+- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 - Validated contour:
   - company
   - request draft / intake boundary

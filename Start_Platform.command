@@ -6,9 +6,10 @@ BACKEND_HOST="${MAGON_BACKEND_HOST:-127.0.0.1}"
 BACKEND_PORT="${MAGON_BACKEND_PORT:-8091}"
 WEB_HOST="${MAGON_WEB_HOST:-127.0.0.1}"
 WEB_PORT="${MAGON_WEB_PORT:-3000}"
-DB_PATH="${MAGON_DB_PATH:-$REPO_ROOT/data/platform.sqlite3}"
-BACKEND_LOG="/tmp/magon-standalone-backend.log"
-WEB_LOG="/tmp/magon-standalone-web.log"
+DB_PATH="${MAGON_DB_PATH:-$REPO_ROOT/data/foundation.local.sqlite3}"
+BACKEND_LOG="/tmp/magon-foundation-backend.log"
+WEB_LOG="/tmp/magon-foundation-web.log"
+UNIFIED_LOG="/tmp/magon-foundation-unified.log"
 OPEN_BROWSER="1"
 SEED_FLAG="--seed"
 KEEP_DB="0"
@@ -21,14 +22,14 @@ Usage: ./Start_Platform.command [options]
 Hard-restarts the standalone platform:
 - kills anything bound to backend/web ports
 - clears local runtime state by default
-- starts backend and web shell fresh
+- starts the wave1 foundation backend and web shell fresh
 - opens the browser when ready
 
 Options:
   --backend-port <port>  Backend port (default: $BACKEND_PORT)
   --web-port <port>      Web port (default: $WEB_PORT)
   --keep-db              Keep the existing SQLite DB
-  --no-seed              Do not seed fixture data on backend start
+  --no-seed              Do not seed fixture data on foundation start
   --no-open              Do not open browser automatically
   --detach               Start in background instead of foreground
   --help                 Show this help
@@ -99,17 +100,14 @@ wait_for_url() {
   return 1
 }
 
-seed_mode_arg() {
-  if [[ "$SEED_FLAG" == "--no-seed" ]]; then
-    printf '%s\n' "--no-seed"
-  else
-    printf '%s\n' "--seed"
-  fi
-}
-
 if [[ ! -x "$REPO_ROOT/.venv/bin/python" ]]; then
   echo "Missing Python virtualenv: $REPO_ROOT/.venv/bin/python" >&2
   echo "Run: python3 -m venv .venv && ./.venv/bin/pip install -e ." >&2
+  exit 1
+fi
+
+if [[ ! -x "$REPO_ROOT/.venv/bin/alembic" ]]; then
+  echo "Missing alembic in repo virtualenv: $REPO_ROOT/.venv/bin/alembic" >&2
   exit 1
 fi
 
@@ -126,8 +124,8 @@ fi
 kill_port "$WEB_PORT"
 kill_port "$BACKEND_PORT"
 
-rm -f "$BACKEND_LOG" "$WEB_LOG"
-rm -f /tmp/magon-standalone-backend.pid /tmp/magon-standalone-web.pid
+rm -f "$BACKEND_LOG" "$WEB_LOG" "$UNIFIED_LOG"
+rm -f /tmp/magon-foundation-unified.pid
 rm -rf "$REPO_ROOT/apps/web/.next"
 
 if [[ "$KEEP_DB" == "0" ]]; then
@@ -137,55 +135,61 @@ fi
 
 mkdir -p "$(dirname "$DB_PATH")"
 
-backend_args=(
-  --host "$BACKEND_HOST"
-  --port "$BACKEND_PORT"
-  --db-path "$DB_PATH"
-  "$SEED_FLAG"
-)
-if [[ "$KEEP_DB" == "0" ]]; then
-  backend_args+=(--fresh)
-fi
-
-if [[ "$DETACH" == "1" ]]; then
-  echo "[magon-restart] starting backend on http://$BACKEND_HOST:$BACKEND_PORT"
-  start_detached "$BACKEND_LOG" /tmp/magon-standalone-backend.pid \
-    "$REPO_ROOT/scripts/run_platform.sh" "${backend_args[@]}"
-  wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health" "backend"
-
-  echo "[magon-restart] starting web on http://$WEB_HOST:$WEB_PORT"
-  # RU: Detach-ветка должна поднимать тот же устойчивый Next dev runtime, что и канонический run_unified_platform.sh, иначе на macOS снова всплывёт EMFILE.
-  start_detached "$WEB_LOG" /tmp/magon-standalone-web.pid \
-    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
-  wait_for_url "http://$WEB_HOST:$WEB_PORT/" "web"
-
-  echo
-  echo "Public shell:     http://$WEB_HOST:$WEB_PORT/"
-  echo "Ops workbench:    http://$WEB_HOST:$WEB_PORT/ops-workbench"
-  echo "Companies:        http://$WEB_HOST:$WEB_PORT/ui/companies"
-  echo "Backend health:   http://$BACKEND_HOST:$BACKEND_PORT/health"
-  echo "Backend log:      $BACKEND_LOG"
-  echo "Web log:          $WEB_LOG"
-
-  if [[ "$OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
-    open "http://$WEB_HOST:$WEB_PORT/" >/dev/null 2>&1 || true
-  fi
-  exit 0
-fi
-
-echo "[magon-restart] launching unified platform in foreground"
-if [[ "$OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
-  (sleep 5; open "http://$WEB_HOST:$WEB_PORT/" >/dev/null 2>&1 || true) &
-fi
-
-# RU: Foreground-режим всегда идёт через канонический unified entrypoint; этот .command-файл только desktop-обёртка для жёсткого рестарта и автo-open браузера.
 unified_args=(
   --backend-port "$BACKEND_PORT"
   --web-port "$WEB_PORT"
-  "$(seed_mode_arg)"
 )
+if [[ "$SEED_FLAG" == "--no-seed" ]]; then
+  unified_args+=(--no-seed)
+fi
 if [[ "$KEEP_DB" == "0" ]]; then
   unified_args+=(--fresh)
 fi
 
-exec "$REPO_ROOT/scripts/run_unified_platform.sh" "${unified_args[@]}"
+export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_PATH"
+export MAGON_FOUNDATION_HOST="$BACKEND_HOST"
+export MAGON_FOUNDATION_PORT="$BACKEND_PORT"
+export MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT"
+
+if [[ "$DETACH" == "1" ]]; then
+  echo "[magon-restart] migrating foundation DB"
+  "$REPO_ROOT/.venv/bin/alembic" upgrade head >/tmp/magon-foundation-migrate.log 2>&1
+  if [[ "$SEED_FLAG" != "--no-seed" ]]; then
+    echo "[magon-restart] seeding foundation DB"
+    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-seed.json 2>&1
+  fi
+
+  echo "[magon-restart] starting foundation backend on http://$BACKEND_HOST:$BACKEND_PORT"
+  start_detached "$BACKEND_LOG" /tmp/magon-foundation-backend.pid \
+    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$BACKEND_HOST" --port "$BACKEND_PORT"
+  wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health/ready" "foundation backend"
+
+  echo "[magon-restart] starting foundation web on http://$WEB_HOST:$WEB_PORT"
+  # RU: Detach-ветка должна поднимать тот же foundation web runtime, но без foreground trap из run_foundation_unified.sh, иначе launcher сам убивает уже готовые процессы.
+  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid \
+    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' MAGON_WEB_DIST_DIR='.next-dev' WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
+  wait_for_url "http://$WEB_HOST:$WEB_PORT/login" "foundation web"
+
+  echo
+  echo "Public shell:     http://$WEB_HOST:$WEB_PORT/"
+  echo "Catalog:          http://$WEB_HOST:$WEB_PORT/catalog"
+  echo "Login:            http://$WEB_HOST:$WEB_PORT/login"
+  echo "Request WB:       http://$WEB_HOST:$WEB_PORT/request-workbench"
+  echo "Orders:           http://$WEB_HOST:$WEB_PORT/orders"
+  echo "Backend health:   http://$BACKEND_HOST:$BACKEND_PORT/health/ready"
+  echo "Backend log:      $BACKEND_LOG"
+  echo "Web log:          $WEB_LOG"
+
+  if [[ "$OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
+    open "http://$WEB_HOST:$WEB_PORT/login" >/dev/null 2>&1 || true
+  fi
+  exit 0
+fi
+
+echo "[magon-restart] launching foundation platform in foreground"
+if [[ "$OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
+  (sleep 5; open "http://$WEB_HOST:$WEB_PORT/login" >/dev/null 2>&1 || true) &
+fi
+
+# RU: Foreground-режим всегда идёт через канонический foundation unified entrypoint; .command остаётся только desktop-обёрткой для жёсткого рестарта и автo-open браузера.
+exec "$REPO_ROOT/scripts/run_foundation_unified.sh" "${unified_args[@]}"

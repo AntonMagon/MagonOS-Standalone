@@ -27,6 +27,8 @@ bash -n \
   scripts/install_launchd_periodic_checks.sh \
   scripts/run_platform.sh \
   scripts/platform_smoke_check.sh \
+  scripts/foundation_migration_check.sh \
+  scripts/foundation_wave1_demo_smoke_check.sh \
   scripts/run_perf_suite.sh \
   scripts/launchd_periodic_checks_status.sh \
   scripts/render_launchd_periodic_checks.py \
@@ -62,6 +64,16 @@ bash -n \
 ./.venv/bin/python scripts/check_automation_contract.py
 
 ./.venv/bin/python -m unittest \
+  tests.test_foundation_api \
+  tests.test_foundation_suppliers \
+  tests.test_foundation_catalog \
+  tests.test_foundation_draft_request \
+  tests.test_foundation_offers \
+  tests.test_foundation_orders \
+  tests.test_foundation_files_documents \
+  tests.test_foundation_events_dashboards \
+  tests.test_foundation_acceptance \
+  tests.test_foundation_migrations \
   tests.test_persistence \
   tests.test_api \
   tests.test_operations \
@@ -78,5 +90,6 @@ bash -n \
   tests.test_russian_comment_contract
 
 if [[ "$WITH_WEB" == "1" ]]; then
+  # RU: Web-проход остаётся опциональным флагом, чтобы быстрый backend verify и полный shell+web gate жили в одном entrypoint.
   (cd apps/web && npm run typecheck)
 fi

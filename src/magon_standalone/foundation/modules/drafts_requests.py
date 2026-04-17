@@ -18,12 +18,17 @@ from .shared import (
     clarification_cycle_view,
     draft_public_view,
     follow_up_item_view,
+    follow_up_item_public_view,
     intake_file_link_view,
     file_asset_view,
+    file_asset_public_view,
     document_view,
+    document_public_view,
     order_public_view,
+    request_public_view,
     request_operator_view,
     request_reason_view,
+    request_reason_public_view,
     required_field_state_view,
     timeline_event_view,
 )
@@ -168,7 +173,11 @@ def _request_detail(service: RequestIntakeService, request_record, *, customer_v
                 download_url = f"/platform-api/api/v1/public/requests/{request_record.customer_ref}/files/{latest_version.code}/download"
             else:
                 download_url = f"/platform-api/api/v1/operator/file-versions/{latest_version.code}/download"
-        managed_files.append(file_asset_view(asset, latest_version=latest_version, checks=checks, download_url=download_url))
+        managed_files.append(
+            file_asset_public_view(asset, latest_version=latest_version, download_url=download_url)
+            if customer_visible_only
+            else file_asset_view(asset, latest_version=latest_version, checks=checks, download_url=download_url)
+        )
     managed_documents = []
     for document in file_service.list_request_related_documents(request_record, customer_visible_only=customer_visible_only):
         current_version = service.session.scalar(
@@ -184,12 +193,22 @@ def _request_detail(service: RequestIntakeService, request_record, *, customer_v
                 download_url = f"/platform-api/api/v1/public/requests/{request_record.customer_ref}/documents/{current_version.code}/download"
             else:
                 download_url = f"/platform-api/api/v1/operator/document-versions/{current_version.code}/download"
-        managed_documents.append(document_view(document, current_version=current_version, download_url=download_url))
+        managed_documents.append(
+            document_public_view(document, current_version=current_version, download_url=download_url)
+            if customer_visible_only
+            else document_view(document, current_version=current_version, download_url=download_url)
+        )
     return {
-        **request_operator_view(request_record),
-        "reasons": [request_reason_view(item) for item in service.list_request_reasons(request_record.id)],
+        **(request_public_view(request_record) if customer_visible_only else request_operator_view(request_record)),
+        "reasons": [
+            (request_reason_public_view(item) if customer_visible_only else request_reason_view(item))
+            for item in service.list_request_reasons(request_record.id)
+        ],
         "clarification_cycles": [clarification_cycle_view(item) for item in service.list_clarification_cycles(request_record.id)],
-        "follow_up_items": [follow_up_item_view(item) for item in service.list_follow_up_items(request_record.id)],
+        "follow_up_items": [
+            (follow_up_item_public_view(item) if customer_visible_only else follow_up_item_view(item))
+            for item in service.list_follow_up_items(request_record.id)
+        ],
         "file_links": [intake_file_link_view(item) for item in service.list_file_links("request", request_record.id)],
         "managed_files": managed_files,
         "documents": managed_documents,
@@ -508,6 +527,7 @@ def add_request_follow_up(
     auth: AuthContext = Depends(require_roles(ROLE_OPERATOR, ROLE_ADMIN)),
     session: Session = Depends(get_db),
 ) -> dict[str, object]:
+    # RU: Follow-up остаётся отдельной сущностью, чтобы причины и действия не прятались в комментариях запроса.
     service = RequestIntakeService(session)
     try:
         request_record = service.get_request_by_code(request_code)

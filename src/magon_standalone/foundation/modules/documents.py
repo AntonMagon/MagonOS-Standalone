@@ -48,7 +48,9 @@ def list_documents(
         owner = service.resolve_owner(owner_type, owner_code)
         items = service.list_documents_for_owner(owner.owner_type, owner.owner_id)
     else:
-        items = session.scalars(select(Document).where(Document.deleted_at.is_(None)).order_by(Document.created_at.asc())).all()
+        items = session.scalars(
+            select(Document).where(Document.deleted_at.is_(None), Document.archived_at.is_(None)).order_by(Document.created_at.asc())
+        ).all()
     payload = []
     for item in items:
         current_version = session.scalar(
@@ -174,6 +176,35 @@ def replace_document(
         replace_document_code=document_code,
     )
     return {"item": document_view(document, current_version=version, download_url=f"/platform-api/api/v1/operator/document-versions/{version.code}/download")}
+
+
+@router.post("/api/v1/operator/documents/{document_code}/archive")
+def archive_document(
+    document_code: str,
+    payload: DocumentActionPayload,
+    auth: AuthContext = Depends(require_roles(ROLE_OPERATOR, ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    # RU: Endpoint архивирует документ мягко: он исчезает из active lists, но остаётся в audit/timeline.
+    service = FileDocumentService(session)
+    try:
+        document = service.archive_document(document_code=document_code, auth=auth, reason_code=payload.reason_code, note=payload.note)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    current_version = session.scalar(
+        select(DocumentVersion).where(
+            DocumentVersion.document_id == document.id,
+            DocumentVersion.version_no == document.current_version_no,
+            DocumentVersion.deleted_at.is_(None),
+        )
+    )
+    return {
+        "item": document_view(
+            document,
+            current_version=current_version,
+            download_url=f"/platform-api/api/v1/operator/document-versions/{current_version.code}/download" if current_version else None,
+        )
+    }
 
 
 @router.get("/api/v1/operator/document-versions/{version_code}/download")

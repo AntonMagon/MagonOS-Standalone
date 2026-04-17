@@ -23,6 +23,7 @@
   Визуальная папка проекта: сгенерированные графические карты и структурные схемы.
 - `skills/`
   Локальные project-specific skills для типовых режимов работы по этому репозиторию.
+  Новый bootstrap-навык для создания таких skills по repo contract лежит в `skills/skill-project-bootstrap/`.
 - `.codex/`
   Project memory и repo-level config для агентного workflow.
 - `.githooks/`
@@ -168,7 +169,7 @@ Desktop launcher-обёртка для локального старта с Find
 
 Важно:
 - это не новый канонический runtime path
-- реальный all-in-one entrypoint всё равно `scripts/run_unified_platform.sh`
+- реальный all-in-one foundation entrypoint теперь `scripts/run_foundation_unified.sh`
 - `Start_Platform.command` просто подготавливает окружение и в foreground передаёт управление туда
 
 ### `scripts/finalize_task.py`

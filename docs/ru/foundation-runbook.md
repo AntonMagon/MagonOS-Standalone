@@ -137,6 +137,14 @@ curl -s http://127.0.0.1:8091/health/ready
 curl -s http://127.0.0.1:8091/observability/summary
 ```
 
+Проверка текущего system mode:
+
+```bash
+curl -s http://127.0.0.1:8091/api/v1/meta/system-mode
+```
+
+RU: Для wave1 это coarse-grained operational guard. В `maintenance` режутся write-path операции, в `emergency` почти весь traffic кроме health/meta.
+
 ## Login smoke
 
 Admin login:
@@ -193,6 +201,18 @@ Web smoke через Next shell:
 7. проверяет supplier list
 8. проверяет raw layer
 
+Проверка failure/retry сценария supplier ingest идёт отдельным acceptance suite:
+
+```bash
+./.venv/bin/python -m unittest tests.test_foundation_acceptance
+```
+
+Внутри него подтверждается:
+
+- ingest может упасть с сохранением `failed` state;
+- ошибка остаётся видимой через API;
+- retry переводит тот же ingest в `completed`, если источник снова стал валидным.
+
 ## Supplier workbench surfaces
 
 - supplier list / workbench: `http://127.0.0.1:3000/suppliers`
@@ -212,6 +232,10 @@ Web smoke через Next shell:
 - customer compare block предложений: `http://127.0.0.1:3000/requests/{customerRef}`
 - operator compare / revision block предложений: `http://127.0.0.1:3000/request-workbench/{requestCode}`
 - managed files/documents в request: `http://127.0.0.1:3000/request-workbench/{requestCode}` и `http://127.0.0.1:3000/requests/{customerRef}`
+- operator workbench: `http://127.0.0.1:3000/ops-workbench`
+- admin dashboard: `http://127.0.0.1:3000/admin-dashboard`
+- supply dashboard: `http://127.0.0.1:3000/supply-dashboard`
+- processing dashboard: `http://127.0.0.1:3000/processing-dashboard`
 
 ## Catalog smoke
 
@@ -290,6 +314,13 @@ Web smoke через Next shell:
 9. конвертирует accepted offer в order
 10. генерирует internal job document на order и проверяет request/order/customer views
 
+Archive path для managed files/documents теперь отдельный рабочий операторский сценарий:
+
+- `POST /api/v1/operator/files/{asset_code}/archive`
+- `POST /api/v1/operator/documents/{document_code}/archive`
+
+После архивации объект остаётся в истории и audit trail, но исчезает из active views.
+
 ## Order smoke
 
 ```bash
@@ -308,6 +339,70 @@ Web smoke через Next shell:
 8. проходит order actions `assign_supplier -> confirm_start -> mark_production -> ready -> delivery -> complete -> dispute`
 9. проходит payment transitions `pending -> confirmed -> partially_refunded`
 10. проверяет operator order detail и customer request view с привязанным order summary
+
+## Messages / dashboards smoke
+
+```bash
+./scripts/foundation_messages_dashboards_smoke_check.sh
+```
+
+Он делает:
+
+1. поднимает временную foundation DB
+2. применяет миграции и seed
+3. стартует API
+4. создаёт public draft и переводит его в request
+5. переводит request в `needs_clarification`
+6. добавляет blocker reason
+7. читает customer dashboard
+8. читает operator workbench
+9. читает processing dashboard
+10. читает admin dashboard
+11. читает unified operator timeline по request
+
+## Migration check
+
+```bash
+./scripts/foundation_migration_check.sh
+```
+
+Он подтверждает:
+
+1. `alembic upgrade head` проходит на чистой БД;
+2. head revision совпадает с актуальной wave1;
+3. критичные acceptance-таблицы и поля реально существуют.
+
+## Demo end-to-end smoke
+
+```bash
+./scripts/foundation_wave1_demo_smoke_check.sh
+```
+
+Он прогоняет единый демонстрационный поток:
+
+1. supplier ingest
+2. storefront -> draft
+3. draft -> request
+4. request -> versioned offer
+5. accepted offer -> order
+6. file/document version flow
+7. timeline/audit/dashboard visibility
+
+Этот smoke нужен именно для demo readiness, а не только для low-level API проверки.
+
+## Полный verification path
+
+```bash
+./scripts/verify_workflow.sh
+```
+
+Сейчас он покрывает:
+
+- unit/API tests по foundation contour;
+- acceptance tests;
+- migration gate;
+- shell/smoke script syntax;
+- существующие repo verification checks.
 
 ## Compose skeleton
 
@@ -332,5 +427,8 @@ docker compose up --build
 - по умолчанию foundation contour идёт без legacy mount;
 - legacy `/status`, `/companies`, `/ui/*` доступны только если явно включить `MAGON_FOUNDATION_LEGACY_ENABLED=true`;
 - foundation API живёт отдельно под `/api/v1/*`, `/health*`, `/observability/*`;
+- system mode доступен через `/api/v1/meta/system-mode`;
 - draft/request/offer/order разведены в разные таблицы и разные переходы;
 - тяжёлые ERP/payment/MES контуры сюда не добавлялись.
+
+Сводный as-built map смотри в `docs/ru/foundation-architecture-as-built.md`, а текущие границы wave1 — в `docs/ru/wave1-known-limitations.md`.

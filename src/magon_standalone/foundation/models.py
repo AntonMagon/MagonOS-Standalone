@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import ArchiveMixin, Base, TimestampMixin, new_uuid, utc_now
 
+# RU: Foundation schema первой волны держит Draft/Request/Offer/Order раздельно и не схлопывает их в один универсальный record.
 
 class RoleDefinition(Base, TimestampMixin):
     __tablename__ = "users_access_roles"
@@ -144,6 +145,11 @@ class SupplierRawIngest(Base, TimestampMixin, ArchiveMixin):
     candidate_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    failure_code: Mapped[str | None] = mapped_column(String(128))
+    failure_detail: Mapped[str | None] = mapped_column(Text())
     requested_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users_access_users.id"))
 
 

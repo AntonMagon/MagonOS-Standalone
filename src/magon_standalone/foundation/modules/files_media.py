@@ -39,7 +39,9 @@ def list_files(
         owner = service.resolve_owner(owner_type, owner_code)
         items = service.list_files_for_owner(owner.owner_type, owner.owner_id)
     else:
-        items = session.scalars(select(FileAsset).where(FileAsset.deleted_at.is_(None)).order_by(FileAsset.created_at.asc())).all()
+        items = session.scalars(
+            select(FileAsset).where(FileAsset.deleted_at.is_(None), FileAsset.archived_at.is_(None)).order_by(FileAsset.created_at.asc())
+        ).all()
     payload = []
     for item in items:
         latest_version = session.scalar(select(FileVersion).where(FileVersion.id == item.latest_version_id)) if item.latest_version_id else None
@@ -160,6 +162,24 @@ def finalize_file(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     checks = service.list_file_checks(version.id)
     return {"item": file_asset_view(asset, latest_version=version, checks=checks)}
+
+
+@router.post("/api/v1/operator/files/{asset_code}/archive")
+def archive_file(
+    asset_code: str,
+    payload: FileFinalizePayload,
+    auth: AuthContext = Depends(require_roles(ROLE_OPERATOR, ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    # RU: Archive endpoint убирает файл из активных списков, но не ломает download/audit trail для истории.
+    service = FileDocumentService(session)
+    try:
+        asset = service.archive_file_asset(asset_code=asset_code, auth=auth, reason_code=payload.reason_code, note=payload.note)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    latest_version = session.scalar(select(FileVersion).where(FileVersion.id == asset.latest_version_id)) if asset.latest_version_id else None
+    checks = service.list_file_checks(latest_version.id) if latest_version else []
+    return {"item": file_asset_view(asset, latest_version=latest_version, checks=checks)}
 
 
 @router.get("/api/v1/operator/file-versions/{version_code}/download")

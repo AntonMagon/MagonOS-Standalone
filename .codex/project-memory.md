@@ -74,15 +74,106 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 16:44 +07`
-- Branch: `develop`
-- Current focus: Implemented wave1 managed files and documents contour
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents && bash ./scripts/foundation_files_documents_smoke_check.sh && (cd apps/web && npm run typecheck) && ./scripts/verify_workflow.sh`
-- Biggest operational risk: legacy thin catalog/supplier references still coexist with new foundation entities outside the already verified wave1 boundaries
+- Updated at: `2026-04-17 20:27 +07`
+- Branch: `codex/wave1-foundation`
+- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 20:27 +07 | codex/wave1-foundation
+- Summary: Closed the main wave1 acceptance gaps and hardened the demo-ready contour
+- Changed:
+  - alembic/versions/20260417_0009_wave1_acceptance_hardening.py
+  - src/magon_standalone/foundation/settings.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/integrations/foundation/supplier_sources.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - src/magon_standalone/foundation/file_document_services.py
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/modules/files_media.py
+  - src/magon_standalone/foundation/modules/documents.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - tests/test_foundation_acceptance.py
+  - tests/test_foundation_migrations.py
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - .github/workflows/ci.yml
+  - apps/web/eslint.config.mjs
+  - apps/web/components/requests/request-public-view.tsx
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/foundation-runbook.md
+  - docs/ru/foundation-architecture-as-built.md
+  - docs/ru/wave1-acceptance-checklist.md
+  - docs/ru/wave1-known-limitations.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+  - PASS `bash ./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_supplier_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_request_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_offer_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_order_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Risk:
+  - Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
+### 2026-04-17 20:08 +07 | codex/wave1-foundation
+- Summary: Aligned Start_Platform.command with foundation runtime
+- Changed:
+  - Start_Platform.command
+  - scripts/run_foundation_unified.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `bash -n ./Start_Platform.command`
+  - PASS `bash -n ./scripts/run_foundation_unified.sh`
+  - PASS `./Start_Platform.command --help`
+  - PASS `./Start_Platform.command --detach --no-open`
+- Risk:
+  - Detached background persistence cannot be observed from the Codex command harness because child processes are cleaned when the exec session ends; Finder or a normal terminal remains the intended launcher path.
+### 2026-04-17 19:57 +07 | codex/wave1-foundation
+- Summary: implement wave1 messages, rules, notifications and dashboards contour
+- Changed:
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/audit.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/request_intake_services.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/order_services.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/modules/drafts_requests.py
+  - src/magon_standalone/foundation/modules/comms.py
+  - src/magon_standalone/foundation/modules/rules_engine.py
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/components/requests/request-public-view.tsx
+  - apps/web/app/ops-workbench/page.tsx
+  - apps/web/app/admin-dashboard/page.tsx
+  - apps/web/app/supply-dashboard/page.tsx
+  - apps/web/app/processing-dashboard/page.tsx
+  - tests/test_foundation_events_dashboards.py
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/foundation-runbook.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_draft_request tests.test_foundation_offers tests.test_foundation_orders tests.test_foundation_files_documents tests.test_foundation_events_dashboards`
+  - PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `cd apps/web && npm run typecheck`
+- Risk:
+  - supplier/public timeline aggregation across related request-offer-order owners still stays intentionally narrow and may need explicit cross-owner joins in a later wave.
 ### 2026-04-17 16:44 +07 | develop
 - Summary: Implemented wave1 managed files and documents contour
 - Changed:

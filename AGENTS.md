@@ -109,12 +109,13 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 09:51 +07`
-- Current focus: Enforced a Codex automation contract guard so scheduled repo checks share the same context, cwd, model family, and supported schedule shapes.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
-- Biggest operational risk: no additional risk recorded
+- Auto-synced at: `2026-04-17 20:27 +07`
+- Current focus: Keep the standalone wave1 contour demo-ready and evolution-safe without widening into post-wave-1 modules.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`, PASS `bash ./scripts/foundation_migration_check.sh`, PASS `bash ./scripts/foundation_supplier_smoke_check.sh`, PASS `bash ./scripts/foundation_request_smoke_check.sh`, PASS `bash ./scripts/foundation_offer_smoke_check.sh`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `bash ./scripts/foundation_files_documents_smoke_check.sh`, PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`, PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`, PASS `cd apps/web && npm run lint && npm run typecheck && npm run build`
+- Biggest operational risk: Wave1 still intentionally stops short of a full archive UI, full escalation orchestration, and broader payment/supplier portal scope; the main remaining build warning comes from third-party Sentry/Prisma/OpenTelemetry integration code rather than product code.
 - Validated contour:
   - company
+  - request draft / intake boundary
   - commercial/customer context
   - opportunity
   - quote intent / RFQ boundary
@@ -144,6 +145,7 @@ A task is done only when:
   - project-visual-map
   - release-readiness-gate
   - skill-pattern-scan
+  - skill-project-bootstrap
   - verify-implementation
   - web-regression-pass
 <!-- AUTO-SYNC:AGENTS:END -->

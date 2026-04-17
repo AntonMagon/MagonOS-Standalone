@@ -150,13 +150,17 @@ class FileDocumentService:
         )
 
     def _file_asset_by_code(self, asset_code: str) -> FileAsset:
-        item = self.session.scalar(select(FileAsset).where(FileAsset.code == asset_code, FileAsset.deleted_at.is_(None)))
+        item = self.session.scalar(
+            select(FileAsset).where(FileAsset.code == asset_code, FileAsset.deleted_at.is_(None), FileAsset.archived_at.is_(None))
+        )
         if item is None:
             raise LookupError("file_asset_not_found")
         return item
 
     def _document_by_code(self, document_code: str) -> Document:
-        item = self.session.scalar(select(Document).where(Document.code == document_code, Document.deleted_at.is_(None)))
+        item = self.session.scalar(
+            select(Document).where(Document.code == document_code, Document.deleted_at.is_(None), Document.archived_at.is_(None))
+        )
         if item is None:
             raise LookupError("document_not_found")
         return item
@@ -321,14 +325,14 @@ class FileDocumentService:
     def list_files_for_owner(self, owner_type: str, owner_id: str) -> list[FileAsset]:
         return self.session.scalars(
             select(FileAsset)
-            .where(FileAsset.owner_type == owner_type, FileAsset.owner_id == owner_id, FileAsset.deleted_at.is_(None))
+            .where(FileAsset.owner_type == owner_type, FileAsset.owner_id == owner_id, FileAsset.deleted_at.is_(None), FileAsset.archived_at.is_(None))
             .order_by(FileAsset.created_at.asc())
         ).all()
 
     def list_documents_for_owner(self, owner_type: str, owner_id: str) -> list[Document]:
         return self.session.scalars(
             select(Document)
-            .where(Document.owner_type == owner_type, Document.owner_id == owner_id, Document.deleted_at.is_(None))
+            .where(Document.owner_type == owner_type, Document.owner_id == owner_id, Document.deleted_at.is_(None), Document.archived_at.is_(None))
             .order_by(Document.created_at.asc())
         ).all()
 
@@ -521,6 +525,32 @@ class FileDocumentService:
             payload_json={"version_code": version.code, "note": _clean(note)},
         )
         return asset, version
+
+    def archive_file_asset(
+        self,
+        *,
+        asset_code: str,
+        auth: AuthContext,
+        reason_code: str,
+        note: str | None = None,
+    ) -> FileAsset:
+        # RU: Archive выводит файл из активных списков, но не уничтожает версии и историю аудита.
+        asset = self._file_asset_by_code(asset_code)
+        asset.archived_at = _utc_now()
+        asset.archived_reason = reason_code
+        asset.final_flag = False
+        record_audit_event(
+            self.session,
+            module_name="files_media",
+            action="file_archived",
+            entity_type="file_asset",
+            entity_id=asset.id,
+            entity_code=asset.code,
+            auth=auth,
+            reason=reason_code,
+            payload_json={"note": _clean(note)},
+        )
+        return asset
 
     def owner_code_for_asset(self, asset: FileAsset) -> str:
         return self.owner_code_from_ref(asset.owner_type, asset.owner_id)
@@ -807,10 +837,43 @@ class FileDocumentService:
         )
         return document, version
 
+    def archive_document(
+        self,
+        *,
+        document_code: str,
+        auth: AuthContext,
+        reason_code: str,
+        note: str | None = None,
+    ) -> Document:
+        # RU: Document archive повторяет мягкое архивирование: hide from active views, keep history for audit/timeline.
+        document = self._document_by_code(document_code)
+        document.archived_at = _utc_now()
+        document.archived_reason = reason_code
+        current_version = self.session.scalar(
+            select(DocumentVersion)
+            .where(DocumentVersion.document_id == document.id, DocumentVersion.version_no == document.current_version_no, DocumentVersion.deleted_at.is_(None))
+        )
+        if current_version is not None and current_version.version_status not in {"replaced", "archived"}:
+            current_version.version_status = "archived"
+        record_audit_event(
+            self.session,
+            module_name="documents",
+            action="document_archived",
+            entity_type="document",
+            entity_id=document.id,
+            entity_code=document.code,
+            auth=auth,
+            reason=reason_code,
+            payload_json={"document_version_code": current_version.code if current_version else None, "note": _clean(note)},
+        )
+        return document
+
     def list_request_related_files(self, request: RequestRecord, *, customer_visible_only: bool) -> list[FileAsset]:
         offer_ids = list(self.session.scalars(select(OfferRecord.id).where(OfferRecord.request_id == request.id, OfferRecord.deleted_at.is_(None))).all())
         order_ids = list(self.session.scalars(select(OrderRecord.id).where(OrderRecord.request_id == request.id, OrderRecord.deleted_at.is_(None))).all())
-        assets = self.session.scalars(select(FileAsset).where(FileAsset.deleted_at.is_(None)).order_by(FileAsset.created_at.asc())).all()
+        assets = self.session.scalars(
+            select(FileAsset).where(FileAsset.deleted_at.is_(None), FileAsset.archived_at.is_(None)).order_by(FileAsset.created_at.asc())
+        ).all()
         allowed_visibility = {"customer", "public"} if customer_visible_only else ALLOWED_VISIBILITY_SCOPES
         return [
             item
@@ -826,7 +889,9 @@ class FileDocumentService:
     def list_request_related_documents(self, request: RequestRecord, *, customer_visible_only: bool) -> list[Document]:
         offer_ids = list(self.session.scalars(select(OfferRecord.id).where(OfferRecord.request_id == request.id, OfferRecord.deleted_at.is_(None))).all())
         order_ids = list(self.session.scalars(select(OrderRecord.id).where(OrderRecord.request_id == request.id, OrderRecord.deleted_at.is_(None))).all())
-        documents = self.session.scalars(select(Document).where(Document.deleted_at.is_(None)).order_by(Document.created_at.asc())).all()
+        documents = self.session.scalars(
+            select(Document).where(Document.deleted_at.is_(None), Document.archived_at.is_(None)).order_by(Document.created_at.asc())
+        ).all()
         allowed_visibility = {"customer", "public"} if customer_visible_only else ALLOWED_VISIBILITY_SCOPES
         return [
             item

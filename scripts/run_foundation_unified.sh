@@ -11,6 +11,7 @@ BACKEND_PORT="${MAGON_FOUNDATION_PORT:-8091}"
 WEB_HOST="127.0.0.1"
 WEB_PORT="3000"
 FRESH="0"
+SEED="1"
 
 usage() {
   cat <<USAGE
@@ -24,6 +25,7 @@ Options:
   --backend-port <port>   Backend port (default: $BACKEND_PORT)
   --web-port <port>       Web port (default: $WEB_PORT)
   --fresh                 Delete local sqlite foundation DB before migrate+seed
+  --no-seed               Skip fixture seeding after migrations
   --help                  Show this help
 USAGE
 }
@@ -36,6 +38,8 @@ while [[ $# -gt 0 ]]; do
       WEB_PORT="$2"; shift 2 ;;
     --fresh)
       FRESH="1"; shift ;;
+    --no-seed)
+      SEED="0"; shift ;;
     --help|-h)
       usage; exit 0 ;;
     *)
@@ -87,8 +91,13 @@ echo "[magon-foundation] running migrations"
 cd "$REPO_ROOT"
 "$ALEMBIC_BIN" upgrade head
 
-echo "[magon-foundation] seeding foundation"
-"$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-seed.json
+if [[ "$SEED" == "1" ]]; then
+  echo "[magon-foundation] seeding foundation"
+  "$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-seed.json
+else
+  # RU: Desktop launcher и локальные smoke-сценарии должны уметь поднять уже существующую базу без повторного наполнения фикстурами.
+  echo "[magon-foundation] skipping seed"
+fi
 
 echo "[magon-foundation] starting backend on http://$BACKEND_HOST:$BACKEND_PORT"
 "$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$BACKEND_HOST" --port "$BACKEND_PORT" >/tmp/magon-foundation-backend.log 2>&1 &

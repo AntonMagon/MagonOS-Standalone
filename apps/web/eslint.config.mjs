@@ -8,7 +8,8 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 
 const config = [
   {
-    ignores: [".next/**", "next-env.d.ts"]
+    // RU: Dev-runtime артефакты Next не являются source-of-truth и не должны ломать quality gate.
+    ignores: [".next/**", ".next-dev/**", "next-env.d.ts"]
   },
   ...compat.extends("next/core-web-vitals", "next/typescript")
 ];
