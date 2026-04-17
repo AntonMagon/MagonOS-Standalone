@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-17 08:55 +07``
+Обновлено: ``2026-04-17 09:10 +07``
 
 ## Контур движения
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.
-- Последний подтверждённый статус workflow: PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
-- Главный операционный риск: The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
+- Текущий фокус: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh`
+- Главный операционный риск: no additional risk recorded
 
 ## Автоматические контуры контроля
 

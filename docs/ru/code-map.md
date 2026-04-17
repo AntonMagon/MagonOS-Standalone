@@ -359,6 +359,35 @@ Installer постоянного Watchman trigger для этого репози
 - autosync scripts и watchman installer тоже входят в этот contract
 - если verification не знает про новый launcher или guard, значит repo drift уже начался
 
+## Codex automation topology
+
+### `~/.codex/automations/`
+
+Тут живут Codex cron-автоматизации, которые не заменяют локальный `launchd`, а дают inbox-facing контроль поверх репозитория.
+
+Текущий рабочий набор:
+- `Platform Smoke 2h`
+- `Repo Guard 3h`
+- `RU Locale Guard 6h`
+- `Architecture Drift Watch`
+- `Operator Flow Audit`
+- `Visual Map Daily`
+- `PR Branch Hygiene`
+- `Daily Project Digest`
+- `Nightly Deep Review`
+- `Weekly Release Gate`
+
+Смысловой порядок такой:
+- сначала быстрые guard’ы и smoke
+- потом дневные бизнес- и архитектурные аудиты
+- потом вечерние review/digest
+- в конце недели — release verdict
+
+Это нужно, чтобы:
+- локальный autosync не тащил на себе весь review-контур
+- тяжёлые агенты не стреляли каждый час
+- активная разработка не тонула в overlapping automation runs
+
 ### `Taskfile.yml`
 
 Короткий task-runner слой поверх канонических repo scripts.

@@ -60,15 +60,23 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 08:55 +07`
+- Updated at: `2026-04-17 09:10 +07`
 - Branch: `develop`
-- Current focus: Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
-- Biggest operational risk: The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
+- Current focus: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: no additional risk recorded
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 09:10 +07 | develop
+- Summary: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Changed:
+  - docs/ru/performance-and-observability.md, docs/ru/code-map.md, ~/.codex/automations/*/automation.toml
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
 ### 2026-04-17 08:55 +07 | develop
 - Summary: Extended the Russian locale guard so it also blocks bad hybrid technical copy in the Russian docs and shell layer.
 - Changed:

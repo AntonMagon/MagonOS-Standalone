@@ -126,10 +126,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 08:55 +07`
-- Current focus: Keep the Russian docs and shell protected from both English leakage and bad technical hybrid copy.
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_locale_integrity`, PASS `./scripts/verify_workflow.sh`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
-- Biggest operational risk: The guard now catches known English leaks and bad hybrid phrases, but it still cannot judge whether a sentence sounds commercially good without manual review.
+- Auto-synced at: `2026-04-17 09:10 +07`
+- Current focus: Implemented a staggered Codex automation topology for active development with guard, audit, review, and digest layers.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: no additional risk recorded
 - Validated contour:
   - company
   - commercial/customer context
@@ -145,10 +145,16 @@ Detailed workflow: `docs/repo-workflow.md`
   - feedback ledger / projection
   - workforce estimation
 - Active repo automations:
+  - Architecture Drift Watch
+  - Daily Project Digest
+  - Dev Review Pulse
   - Platform Smoke 2h
   - Repo Guard 3h
-  - Visual Map 6h
-  - RU Locale Guard
+  - Visual Map Daily
+  - Nightly Deep Review
+  - Operator Flow Audit
+  - PR Branch Hygiene
+  - RU Locale Guard 6h
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`

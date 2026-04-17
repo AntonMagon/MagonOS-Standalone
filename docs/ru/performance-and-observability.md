@@ -103,13 +103,75 @@ task checks:periodic
 
 ## Как разведён тайминг
 
-- локальный `launchd`-runner остаётся частым silent-maintenance слоем
-- Codex automations не должны дублировать его каждый час одним и тем же тяжёлым проходом
-- правильный контур такой:
-  - `launchd` каждые `1800` секунд держит sync/smoke/perf-smoke в фоне
-  - `Platform Smoke` идёт реже как inbox-facing контроль живости
-  - `Repo Guard` идёт ещё реже как drift-аудит
-  - `Visual Map` идёт редко, потому что карта и так пересобирается file-watch/periodic контуром
+Слои теперь разделены так, чтобы они не мешали друг другу:
+
+- file-watch autosync реагирует сразу на реальные изменения файлов
+- локальный `launchd`-runner каждые `1800` секунд держит тихий maintenance-контур
+- Codex automations работают как inbox-facing аудиты и review, а не как дубль локального runner
+
+Правильная хронология теперь такая:
+
+### 1. Мгновенный слой
+
+- Watchman trigger `magonos-repo-auto`
+  - реагирует на source-of-truth файлы
+  - запускает repo-native sync и verify по реальному набору изменений
+
+### 2. Локальный тихий слой
+
+- `launchd` каждые `1800` секунд
+  - `scripts/sync_operating_docs.py`
+  - `scripts/update_project_visual_map.py`
+  - `scripts/check_russian_locale_integrity.py --static-only`
+  - runtime smoke и `k6 smoke`, только если локальная платформа уже жива
+
+### 3. Частые Codex guard-автоматизации
+
+- `Platform Smoke 2h`
+  - каждые 2 часа
+  - подтверждает живость backend/web/operator surfaces
+- `Repo Guard 3h`
+  - каждые 3 часа
+  - ловит docs/runtime/skills drift
+- `RU Locale Guard 6h`
+  - каждые 6 часов
+  - ловит английские утечки и плохой гибридный технический русский
+
+### 4. Дневные смысловые аудиты
+
+- `Architecture Drift Watch`
+  - каждый день в `11:30`
+  - следит за границами standalone и scope drift
+- `Operator Flow Audit`
+  - каждый день в `14:00`
+  - проверяет операторский и supplier-intelligence путь
+- `Visual Map Daily`
+  - каждый день в `15:30`
+  - проверяет, что визуальная карта не отстала от project memory и current-state
+- `PR Branch Hygiene`
+  - каждый день в `18:15`
+  - проверяет, не пора ли резать накопившийся diff в PR и не уплыл ли `develop`
+
+### 5. Вечерний review-слой
+
+- `Daily Project Digest`
+  - каждый день в `20:30`
+  - собирает краткий итог по изменениям, зелёным проверкам и главным рискам
+- `Nightly Deep Review`
+  - каждый день в `21:15`
+  - делает более тяжёлый code-review проход по свежему delta
+
+### 6. Недельный gate
+
+- `Weekly Release Gate`
+  - пятница в `19:00`
+  - даёт жёсткий verdict `Ready / Ready with caveats / Not ready`
+
+Важно:
+- лёгкие guard’ы идут чаще, потому что они дешёвые
+- смысловые и архитектурные аудиты разведены по разным часам, чтобы не наслаиваться
+- вечерние review идут после дневной активной разработки, чтобы не мешать рабочему темпу
+- weekly release gate вынесен на конец недели, а не на понедельник утром
 
 ## Sentry env contract
 
