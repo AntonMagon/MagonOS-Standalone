@@ -60,15 +60,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 07:43 +07`
+- Updated at: `2026-04-17 07:59 +07`
 - Branch: `develop`
-- Current focus: Keep Russian shell text and docs from drifting while architecture work continues
-- Last verified workflow status: PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
-- Biggest operational risk: The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks.
+- Current focus: Keep the Russian shell visually clear and semantically readable while architecture work continues.
+- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-17 07:59 +07 | develop
+- Summary: Cleaned standalone web layout and semantic load on the Russian home and project map surfaces.
+- Changed:
+  - apps/web/app/page.tsx
+  - apps/web/app/project-map/page.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/code-map.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping.
 ### 2026-04-17 07:43 +07 | develop
 - Summary: Added automatic Russian locale guard for source-of-truth and live shell routes
 - Changed:

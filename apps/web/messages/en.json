@@ -84,6 +84,29 @@
     "runtimeCompanies": "Canonical companies: {count}",
     "runtimeFeedback": "Feedback events: {count}",
     "runtimeOffline": "The backend is unavailable right now. The public shell is up, but the operator contour did not respond.",
+    "surfacesLabel": "Entry points",
+    "surfacesTitle": "This side of the screen should make the next action obvious.",
+    "surfacesText": "Instead of a dead decorative panel, this area should show where to inspect the system, where to run operations, and where to read the project contour.",
+    "surfaces": {
+      "dashboard": {
+        "title": "Runtime",
+        "body": "Open the current standalone summary, data counts, and working surfaces."
+      },
+      "ops": {
+        "title": "Ops",
+        "body": "Go straight into companies, review, feedback, and production-prep work."
+      },
+      "map": {
+        "title": "Project map",
+        "body": "See what standalone owns, where overlap still exists, and which automations keep the repo in sync."
+      }
+    },
+    "flowPreviewTitle": "How the work continues",
+    "flowPreview": {
+      "one": "Start with the current runtime state and the company data already inside standalone.",
+      "two": "Then the operator moves through review, commercial context, and quote preparation.",
+      "three": "After that, the work moves into handoff and production control without splitting into a separate external surface."
+    },
     "layers": {
       "standalone": {
         "title": "What is already native",
@@ -216,8 +239,8 @@
   },
   "projectMap": {
     "eyebrow": "Visual map",
-    "title": "The project map shows the product contour, risks, skills, and automated control loops in one place.",
-    "text": "This surface exists so the project reads as a living structure rather than a pile of chat history: what standalone already owns, where overlap remains, and which automated loops keep the system aligned.",
+    "title": "The project map shows the working contour, risks, and automated checks in one place.",
+    "text": "This surface should read as a live map of the product: what standalone already owns, where dangerous overlap still remains, and which checks keep the system aligned.",
     "statusLabel": "Current focus",
     "fallbackFocus": "No active focus has been extracted yet",
     "fallbackRisk": "The operational risk has not been extracted from project memory yet.",
@@ -225,11 +248,12 @@
     "openOps": "Open ops",
     "flowLabel": "Flow contour",
     "flowTitle": "How the working chain moves today",
+    "flowStep": "Step {index}",
     "ownedLabel": "Native core",
     "ownedTitle": "What standalone already owns",
     "overlapLabel": "Danger zone",
     "overlapTitle": "Where overlap still remains",
-    "scopeLabel": "Scope guard",
+    "scopeLabel": "Scope boundary",
     "scopeTitle": "What should not expand",
     "automationLabel": "Automation loops",
     "automationTitle": "Which recurring checks should keep the project aligned",

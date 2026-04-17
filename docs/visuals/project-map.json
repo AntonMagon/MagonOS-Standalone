@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-17 07:43 +07`",
+  "generated_at": "`2026-04-17 07:59 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -63,13 +63,18 @@
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-17 07:43 +07`",
+    "updated_at": "`2026-04-17 07:59 +07`",
     "branch": "`develop`",
-    "current_focus": "Keep Russian shell text and docs from drifting while architecture work continues",
-    "last_verified_workflow_status": "PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./scripts/verify_workflow.sh --with-web`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`",
-    "biggest_operational_risk": "The guard now blocks known English domain leakage in Russian source/runtime layers, but deeper wording quality is still a product review problem beyond exact forbidden-term checks."
+    "current_focus": "Keep the Russian shell visually clear and semantically readable while architecture work continues.",
+    "last_verified_workflow_status": "PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "Russian shell wording still depends on upstream project-memory summaries, so uncommon new English phrases may still need explicit localization mapping."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-17 07:59 +07 | develop",
+      "summary": "Cleaned standalone web layout and semantic load on the Russian home and project map surfaces.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-17 07:43 +07 | develop",
       "summary": "Added automatic Russian locale guard for source-of-truth and live shell routes",
@@ -78,11 +83,6 @@
     {
       "heading": "2026-04-17 06:50 +07 | develop",
       "summary": "Stabilized full-project audit runtime across web, perf, and periodic checks",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-17 06:08 +07 | develop",
-      "summary": "Fixed smoke-runtime CI by making run_platform.sh fall back to PATH python when .venv is absent",
       "risk": "See worklog entry"
     }
   ],

@@ -88,6 +88,10 @@ App Router страницы Next.js:
 - `project-map/page.tsx` — визуальная карта проекта: контур, риски, automation loops и последние verified changes
 - `personalize/page.tsx` — страница границ/контракта
 
+Важно:
+- главная витрина не должна превращаться в декоративный 3D-экран без смысла; правая колонка обязана объяснять следующий рабочий шаг
+- `project-map/page.tsx` не должен читать как сырой technical log; для русского locale он обязан отдавать нормальные деловые формулировки, а не полуанглийский project-memory dump
+
 ### `apps/web/components/navigation/site-header.tsx`
 
 Главный header web shell.
