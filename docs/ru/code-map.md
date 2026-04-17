@@ -233,6 +233,7 @@ Project-safe wrapper вокруг установленного `playwright` skil
 - использует `~/.codex/skills/playwright/scripts/playwright_cli.sh`
 - уводит `npx` cache в `.cache/npm-playwright`
 - обходит проблему с root-owned файлами в `~/.npm`
+- жёстко форсирует `Google Chrome` и режет попытки поднять Firefox/WebKit
 - по умолчанию переиспользует одну живую playwright-сессию из `.cache/playwright-session`
 - повторный `open` не должен плодить новые окна Chrome; если окно уже открыто, wrapper ведёт тот же браузер в новый URL
 - это именно ручной lightweight-инструмент для одного окна, а не тяжёлый suite внутри каждого `verify`

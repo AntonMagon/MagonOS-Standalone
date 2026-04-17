@@ -102,6 +102,21 @@
   - `/login`
   - `/suppliers`
 
+## 2026-04-18 — Chrome-only browser automation policy
+
+### Что было найдено
+- Playwright wrapper уже был project-safe, но жёсткое правило про единственный браузер не было зафиксировано.
+- Из-за старых Playwright caches можно было решить, что репозиторий тащит Firefox/WebKit как часть обязательного рантайма.
+
+### Что изменено
+- `scripts/run_playwright_cli.sh` теперь всегда форсирует `Google Chrome`.
+- Попытки явно передать другой браузер или поставить другой browser runtime режутся с ошибкой.
+- Runtime-docs и RU docs теперь фиксируют правило: для этого репозитория browser automation допускается только через Chrome.
+
+### Что проверено
+- `bash -n scripts/run_playwright_cli.sh`
+- `bash scripts/run_playwright_cli.sh --help`
+
 ### Что проверено
 - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
 - `cd apps/web && npm run lint`

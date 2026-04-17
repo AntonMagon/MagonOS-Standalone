@@ -133,6 +133,13 @@
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
 
+## Правило по браузерам
+
+- В этом репозитории browser automation жёстко фиксируется на `Google Chrome`.
+- Канонический вход один: `./scripts/run_playwright_cli.sh`
+- Firefox, WebKit и любые альтернативные Playwright browser runtimes для этого проекта не поднимаем.
+- Если от старых прогонов остались browser caches, их удаляем, а не сохраняем как часть рабочего контура.
+
 ## Локальные поверхности
 
 - public shell: `http://127.0.0.1:3000/`

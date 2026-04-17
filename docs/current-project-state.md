@@ -122,6 +122,12 @@ Do not pretend full CRM/quote parity exists.
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
+## Browser automation rule
+- Project browser automation is Chrome-only.
+- Use `./scripts/run_playwright_cli.sh` only with Google Chrome.
+- Do not start Firefox, WebKit, or alternate Playwright browser runtimes for this repo.
+- If old Playwright browser caches exist, they should be removed instead of reused.
+
 ## Runtime surfaces
 - public shell: `http://127.0.0.1:3000/`
 - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`

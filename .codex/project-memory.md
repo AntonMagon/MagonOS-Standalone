@@ -1140,3 +1140,18 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - the branch now has a clear reference surface, but the repo still contains unrelated dirty worktree state outside this task and it must be staged intentionally
+### 2026-04-18 04:38 +07 | main
+- Summary: locked browser automation to Google Chrome only, documented the rule, and marked old Playwright Firefox/WebKit caches as disposable instead of part of the project runtime
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/README.md
+  - docs/ru/code-map.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n scripts/run_playwright_cli.sh`
+  - PASS `bash scripts/run_playwright_cli.sh --help`
+- Risk:
+  - old Playwright caches can still exist on disk until they are explicitly removed, but they are no longer part of the supported repo workflow
