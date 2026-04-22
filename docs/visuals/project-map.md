@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-23 00:47 +07``
+Updated: ``2026-04-23 01:32 +07``
 
 ## Flow contour
 
@@ -30,6 +30,7 @@ flowchart LR
 - versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
 - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
 - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+- admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
 - foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection
@@ -57,5 +58,5 @@ flowchart LR
 - invoice / payment
 - full ERP order management
 - giant generic CRM
-- broad legacy donor entity mirroring
+- broad legacy entity mirroring
 - source repo feature growth

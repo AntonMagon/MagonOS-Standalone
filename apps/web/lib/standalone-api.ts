@@ -76,13 +76,7 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 export async function getPlatformStatus(): Promise<PlatformStatus | null> {
-  // RU: Сначала пробуем старый /status, затем foundation health, чтобы shell переживал переходный период без скрытого дрейфа.
-  const legacyStatus = await fetchJson<PlatformStatus>('/status');
-  if (legacyStatus) {
-    return legacyStatus;
-  }
-
-  // RU: Foundation runtime по умолчанию больше не держит legacy `/status`, поэтому public shell должен собирать online-state из канонического `/health`.
+  // RU: Public shell берёт online-state только из активного foundation contour, чтобы не держать скрытый fallback в старый runtime.
   const [health, companies] = await Promise.all([
     fetchJson<FoundationHealth>('/health'),
     fetchJson<PublicCompaniesPayload>('/api/v1/public/companies'),
@@ -103,7 +97,7 @@ export async function getPlatformStatus(): Promise<PlatformStatus | null> {
 }
 
 export async function getRecentCompanies(limit = 5): Promise<PlatformCompany[]> {
-  // RU: Для standalone-first контура читаем публичный foundation company-registry, а legacy `/companies` оставляем только как fallback совместимости.
+  // RU: Для active standalone shell читаем только foundation company-registry и не прячем старый runtime за fallback-логикой.
   const foundationPayload = await fetchJson<PublicCompaniesPayload>('/api/v1/public/companies');
   if (foundationPayload?.items) {
     return foundationPayload.items.slice(0, limit).map((item) => ({
@@ -112,11 +106,7 @@ export async function getRecentCompanies(limit = 5): Promise<PlatformCompany[]> 
       canonical_name: item.name,
     }));
   }
-
-  const legacyPayload = await fetchJson<{items: PlatformCompany[]}>(
-    `/companies?limit=${encodeURIComponent(String(limit))}&offset=0`
-  );
-  return legacyPayload?.items || [];
+  return [];
 }
 
 export function getOperatorUrl(path = ''): Route {

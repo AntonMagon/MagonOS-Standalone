@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # RU: Скрипт собирает единый демонстрационный поток первой волны на одной временной БД без разрыва по шагам.
+# RU: Demo smoke должен совпадать с product demo по тем же сущностям, переходам и аудит-событиям.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,7 +46,6 @@ export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
-export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_STORAGE_BACKEND="local"
 export MAGON_FOUNDATION_STORAGE_LOCAL_ROOT="$STORAGE_DIR"
 export MAGON_FOUNDATION_PORT="$PORT"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # RU: Скрипт проверяет или поднимает контур первой волны.
+# RU: Files/documents smoke фиксирует verisoning и visibility в одном foundation runtime.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -43,7 +44,6 @@ export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
-export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_STORAGE_BACKEND=local
 export MAGON_FOUNDATION_STORAGE_LOCAL_ROOT="$STORAGE_ROOT"
 export MAGON_FOUNDATION_PORT="$PORT"

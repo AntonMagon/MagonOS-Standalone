@@ -7,7 +7,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
+from ..audit import record_audit_event
 from ..dependencies import get_container, get_db, require_roles
 from ..models import (
     AuditEvent,
@@ -29,6 +31,27 @@ from .shared import order_public_view, request_operator_view, request_public_vie
 
 # RU: Этот router собирает operator/admin read-model без обхода workflow-guard слоя и сырых таблиц.
 router = APIRouter(tags=["AuditDashboards"])
+
+
+class ReasonCodeCreatePayload(BaseModel):
+    code: str = Field(min_length=2)
+    title: str = Field(min_length=2)
+    category: str = Field(min_length=2)
+    severity: str = "info"
+    default_visibility_scope: str = "internal"
+    description: str | None = None
+    metadata_json: dict | None = None
+    is_active: bool = True
+
+
+class ReasonCodeUpdatePayload(BaseModel):
+    title: str | None = Field(default=None, min_length=2)
+    category: str | None = Field(default=None, min_length=2)
+    severity: str | None = None
+    default_visibility_scope: str | None = None
+    description: str | None = None
+    metadata_json: dict | None = None
+    is_active: bool | None = None
 
 
 def _group_counts(session: Session, model, field_name: str) -> dict[str, int]:
@@ -188,9 +211,92 @@ def list_reason_codes(_: AuthContext = Depends(require_roles(ROLE_OPERATOR, ROLE
                 "severity": item.severity,
                 "default_visibility_scope": item.default_visibility_scope,
                 "description": item.description,
+                "metadata_json": dict(item.metadata_json or {}),
+                "is_active": item.is_active,
             }
             for item in items
         ]
+    }
+
+
+@router.post("/api/v1/admin/reason-codes")
+def create_reason_code(
+    payload: ReasonCodeCreatePayload,
+    auth: AuthContext = Depends(require_roles(ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    existing = session.scalar(select(ReasonCodeCatalog).where(ReasonCodeCatalog.code == payload.code))
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="reason_code_already_exists")
+    item = ReasonCodeCatalog(
+        code=payload.code,
+        title=payload.title,
+        category=payload.category,
+        severity=payload.severity,
+        default_visibility_scope=payload.default_visibility_scope,
+        description=payload.description,
+        metadata_json=payload.metadata_json or {},
+        is_active=payload.is_active,
+    )
+    session.add(item)
+    session.flush()
+    # RU: Изменения reason catalog должны проходить через аудит, иначе оператор не поймёт, почему guard/notification поменяли поведение.
+    record_audit_event(
+        session,
+        module_name="audit_dashboards",
+        action="reason_code_created",
+        entity_type="reason_code",
+        entity_id=item.id,
+        entity_code=item.code,
+        auth=auth,
+        reason="admin_create_reason_code",
+        payload_json={"category": item.category, "severity": item.severity},
+    )
+    return {"item": {"code": item.code, "title": item.title}}
+
+
+@router.patch("/api/v1/admin/reason-codes/{reason_code}")
+def update_reason_code(
+    reason_code: str,
+    payload: ReasonCodeUpdatePayload,
+    auth: AuthContext = Depends(require_roles(ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    item = session.scalar(select(ReasonCodeCatalog).where(ReasonCodeCatalog.code == reason_code, ReasonCodeCatalog.deleted_at.is_(None)))
+    if item is None:
+        raise HTTPException(status_code=404, detail="reason_code_not_found")
+    changed: dict[str, object] = {}
+    for field_name in ("title", "category", "severity", "default_visibility_scope", "description", "is_active"):
+        value = getattr(payload, field_name)
+        if value is not None:
+            setattr(item, field_name, value)
+            changed[field_name] = value
+    if payload.metadata_json is not None:
+        item.metadata_json = payload.metadata_json
+        changed["metadata_json"] = payload.metadata_json
+    session.flush()
+    record_audit_event(
+        session,
+        module_name="audit_dashboards",
+        action="reason_code_updated",
+        entity_type="reason_code",
+        entity_id=item.id,
+        entity_code=item.code,
+        auth=auth,
+        reason="admin_update_reason_code",
+        payload_json=changed,
+    )
+    return {
+        "item": {
+            "code": item.code,
+            "title": item.title,
+            "category": item.category,
+            "severity": item.severity,
+            "default_visibility_scope": item.default_visibility_scope,
+            "description": item.description,
+            "metadata_json": dict(item.metadata_json or {}),
+            "is_active": item.is_active,
+        }
     }
 
 

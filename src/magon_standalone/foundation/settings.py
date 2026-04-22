@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+# RU: Foundation settings больше не держат active legacy bridge как часть runtime-контракта.
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
@@ -53,11 +54,6 @@ class FoundationSettings:
     llm_base_url: str
     llm_timeout_seconds: float
     llm_max_input_chars: int
-    legacy_enabled: bool
-    legacy_db_path: str
-    legacy_default_query: str
-    legacy_default_country: str
-    legacy_integration_token: str
     default_admin_email: str
     default_admin_password: str
     default_operator_email: str
@@ -114,12 +110,6 @@ def load_settings() -> FoundationSettings:
         llm_base_url=_env("MAGON_FOUNDATION_LLM_BASE_URL", ""),
         llm_timeout_seconds=float(_env("MAGON_FOUNDATION_LLM_TIMEOUT_SECONDS", "20")),
         llm_max_input_chars=int(_env("MAGON_FOUNDATION_LLM_MAX_INPUT_CHARS", "12000")),
-        # RU: Wave1 foundation по умолчанию стартует без legacy WSGI-моста; старый контур включается только явным opt-in через env.
-        legacy_enabled=_env_bool("MAGON_FOUNDATION_LEGACY_ENABLED", False),
-        legacy_db_path=_env("MAGON_STANDALONE_DB_PATH", str(repo_root / "data" / "platform.sqlite3")),
-        legacy_default_query=_env("MAGON_STANDALONE_DEFAULT_QUERY", "printing packaging vietnam"),
-        legacy_default_country=_env("MAGON_STANDALONE_DEFAULT_COUNTRY", "VN"),
-        legacy_integration_token=_env("MAGON_STANDALONE_INTEGRATION_TOKEN", ""),
         default_admin_email=_env("MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL", "admin@example.com"),
         default_admin_password=_env("MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD", "admin123"),
         default_operator_email=_env("MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL", "operator@example.com"),

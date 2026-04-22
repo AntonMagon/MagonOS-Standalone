@@ -12,6 +12,7 @@
     "dashboard": "Dashboard",
     "suppliers": "Suppliers",
     "ops": "Ops",
+    "adminConfig": "Config",
     "login": "Login",
     "projectMap": "Map",
     "reference": "Reference",
@@ -71,10 +72,10 @@
       "contractText": "The public shell and the operator workflow should behave like one product layer. Internal ERP links are acceptable only as a transition dependency, not as the place where new logic should grow.",
       "openDialog": "Open the runtime view",
       "rules": {
-        "one": "If an entity is part of the product long term, it needs a standalone source of truth instead of living only in the legacy donor contour.",
+        "one": "If an entity is part of the product long term, it needs a standalone source of truth instead of living only in an external historical contour.",
         "two": "The public shell should explain the working product contour clearly: company intelligence, commercial context, handoff prep, and operator workflow.",
         "three": "Bridge dependencies must be shown honestly. A transitional contour should not be presented as a completed migration.",
-        "four": "New work belongs in the standalone repository by default. Donor code is for inspection, extraction, or final cut-off only."
+        "four": "New work belongs in the standalone repository by default. Historical source code is for inspection, extraction, or final cut-off only."
       }
     }
   },
@@ -82,7 +83,7 @@
     "badge": "Standalone product platform",
     "eyebrow": "Company intelligence and ops",
     "title": "MagonOS moves a company from canonical intake and operator review into commercial context and production handoff.",
-    "text": "This is no longer a shell sitting on top of the old donor contour. The active contour now lives in standalone: company intelligence, review, customer context, opportunity tracking, and quote intent. Internal ERP bridges still exist, but they no longer define the product layer.",
+    "text": "This is no longer a shell sitting on top of an old external contour. The active contour now lives in standalone: company intelligence, review, customer context, opportunity tracking, and quote intent. Internal ERP links still exist, but they no longer define the product layer.",
     "openCatalog": "Open showcase",
     "openDashboard": "Open runtime view",
     "openOps": "Open ops workbench",
@@ -130,7 +131,7 @@
       },
       "bridge": {
         "title": "Where the bridge remains",
-        "body": "Some CRM and ERP semantics, plus historical identifiers, still carry legacy bridge traces. That is a bridge fact, not the product target."
+        "body": "Some CRM and ERP semantics, plus historical identifiers, still carry transition-era traces. That is a temporary fact, not the product target."
       },
       "next": {
         "title": "What comes next",

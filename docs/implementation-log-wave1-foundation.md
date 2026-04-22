@@ -58,6 +58,37 @@
   - supply dashboard
   - processing dashboard
 
+## 2026-04-23 — Единый foundation contour без active legacy drift
+
+### Что было найдено
+- Основной foundation runtime уже был рабочим, но в продуктовой оболочке и operating docs оставались переходные следы старого контура:
+  - часть shell-текста всё ещё объясняла платформу через `bridge`/`donor`;
+  - базовые wave1-настройки по `reason codes / rules / notification rules / supplier sources` всё ещё не имели полного admin-first UI/API и местами оставались seed-only;
+  - foundation smoke и app shell уже жили на новом контуре, но часть policy/copy всё ещё держала старые формулировки как будто это active runtime truth.
+- В результате код, UI, docs и automation сходились не до конца в одной продуктовой картине.
+
+### Что изменено
+- Добавлен реальный admin configuration contour:
+  - создание и обновление `reason codes`;
+  - создание и обновление `rules`;
+  - создание новых `rule versions`;
+  - создание и обновление `notification rules`;
+  - обновление `supplier source` schedule/classification/settings.
+- Добавлена страница `/admin-config`, чтобы базовая wave1-настройка больше не жила только в сид-данных или коде.
+- Из active foundation app удалён runtime-зависимый legacy bridge:
+  - foundation health/meta больше не рекламируют старый bridge как часть текущего контура;
+  - legacy `/status` зафиксирован как выключенный surface для foundation runtime.
+- `apps/web/lib/standalone-api.ts` переведён на один активный foundation contract без fallback в старые `/status` и `/companies`.
+- README, `docs/current-project-state.md`, `docs/ru/current-project-state.md` и shell copy выровнены под одну простую истину:
+  - активный продукт живёт в standalone foundation contour;
+  - исторический source repo нужен только для сверки;
+  - product-facing surfaces больше не объясняются через Odoo/donor/bridge как через рабочее ядро.
+
+### Что подтверждено
+- Проверка нового admin configuration contour покрыта тестом `tests/test_foundation_admin_config.py`.
+- Полный `./scripts/verify_workflow.sh --with-web` остаётся зелёным после удаления active legacy drift и добавления новых admin surfaces.
+- Web typecheck проходит с новым `/admin-config` и обновлёнными shell messages.
+
 ## 2026-04-23 — Полный audit контекста, automation-layer и perf smoke cleanup
 
 ### Что было найдено

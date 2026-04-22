@@ -1,5 +1,6 @@
 "use client";
 // RU: Компонент собирает wave1 dashboards только из role-scoped API payloads и не склеивает customer/operator/admin данные.
+// RU: Быстрый переход в admin-config делает настройку правил частью рабочего dashboard-контура.
 
 import type {Route} from "next";
 import Link from "next/link";
@@ -351,6 +352,7 @@ function WorkbenchLinks() {
       <Link href="/processing-dashboard"><Button variant="secondary">Производство</Button></Link>
       <Link href="/supply-dashboard"><Button variant="secondary">Снабжение</Button></Link>
       <Link href="/admin-dashboard"><Button variant="secondary">Админ</Button></Link>
+      <Link href="/admin-config"><Button variant="secondary">Настройка</Button></Link>
     </div>
   );
 }

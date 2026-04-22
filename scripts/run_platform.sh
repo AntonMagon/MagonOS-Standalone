@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# RU: Этот wrapper не должен рекламировать compatibility-shell как рабочий путь проекта.
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_PYTHON="$REPO_ROOT/.venv/bin/python"
 FALLBACK_PYTHON="$(command -v python3 || command -v python || true)"
@@ -21,7 +23,7 @@ usage() {
   cat <<USAGE
 Usage: scripts/run_platform.sh [options]
 
-Starts the standalone MagonOS platform without Odoo.
+Starts the standalone MagonOS platform without the old compatibility shell.
 
 Options:
   --host <host>                 Bind host (default: $HOST)

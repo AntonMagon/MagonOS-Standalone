@@ -2,7 +2,7 @@
 
 ## Canonical repo roles
 - Active product repo: `/Users/anton/Desktop/MagonOS-Standalone`
-- Legacy donor / bridge repo: `/Users/anton/Desktop/MagonOS/MagonOS`
+- Historical source repo for evidence-only inspection: `/Users/anton/Desktop/MagonOS/MagonOS`
 
 ## Planning truth
 - Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
@@ -11,12 +11,11 @@
 
 ## Runtime truth
 - Standalone is the primary platform-of-record.
-- The legacy donor/back-office repo is donor/bridge only, not the future runtime.
+- The historical source repo is evidence-only and is not part of the active runtime.
 - Default work happens only in the standalone repo.
-- Source repo is read-only unless the task explicitly requires donor inspection or boundary work.
+- The historical source repo is read-only unless the task explicitly requires evidence inspection or boundary work.
 - Foundation wave1 target runtime is the new FastAPI modular-monolith stack on PostgreSQL/Redis/Celery/Caddy/Compose.
-- Default wave1 runtime starts without the legacy standalone WSGI bridge.
-- Legacy standalone WSGI may still be mounted as an explicit compatibility bridge through `MAGON_FOUNDATION_LEGACY_ENABLED=true`, but it is not the target execution model for wave1.
+- Wave1 runtime truth is the active foundation contour only; old compatibility shells are not part of the current execution model.
 
 ## Verified stack baseline
 - web runtime: `Node v22.22.2`
@@ -62,6 +61,7 @@ Also already standalone-owned:
 - versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
 - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
 - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+- admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
 - foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection
@@ -80,7 +80,7 @@ Do not pretend full CRM/quote parity exists.
 - invoice / payment
 - full ERP order management
 - giant generic CRM
-- broad legacy donor entity mirroring
+- broad legacy entity mirroring
 - source repo feature growth
 
 ## Canonical commands
@@ -104,7 +104,7 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/run_perf_suite.sh smoke`
   - `./scripts/run_perf_suite.sh load`
   - `./scripts/run_perf_suite.sh stress`
-  - perf warmup and k6 probes must use the live foundation URLs (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`) instead of legacy `/status` or donor-era `/ui/*`
+  - perf warmup and k6 probes must use the live foundation URLs (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`) instead of removed legacy surfaces like `/status` or `/ui/*`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
@@ -136,10 +136,6 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/foundation_files_documents_smoke_check.sh`
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - the canonical `./scripts/verify_workflow.sh` path now executes the foundation smoke scripts above on temporary PostgreSQL databases instead of treating them as optional manual-only checks
-- compatibility-only startup when the old shell is explicitly needed:
-  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
-  - `./scripts/run_unified_platform.sh --fresh`
-  - `./scripts/run_platform.sh --fresh --port 8091`
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
@@ -161,6 +157,7 @@ Do not pretend full CRM/quote parity exists.
 - public request view: `http://127.0.0.1:3000/requests/{customerRef}`
 - public request offer compare: `http://127.0.0.1:3000/requests/{customerRef}` (compare block on the same page)
 - foundation login: `http://127.0.0.1:3000/login`
+- admin configuration: `http://127.0.0.1:3000/admin-config`
 - operator request workbench: `http://127.0.0.1:3000/request-workbench`
 - operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
 - operator offer compare / revision: `http://127.0.0.1:3000/request-workbench/{requestCode}` (commercial block on the same page)
@@ -174,13 +171,9 @@ Do not pretend full CRM/quote parity exists.
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
 - supplier source API now also exposes schedule/classification state so operator tooling can tell which source runs continuously, when the next due window arrives, and whether LLM-assisted fallback is enabled
+- admin configuration UI/API now owns baseline business settings for wave1, so reason catalogs, workflow rules, notification rules, and supplier source schedule/classification no longer require code edits
 - operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
 - direct backend debug: `http://127.0.0.1:8091/`
-- compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
-  - `http://127.0.0.1:3000/ops-workbench`
-  - `http://127.0.0.1:3000/ops`
-  - `http://127.0.0.1:3000/ui/*`
-
 ## Reference surface
 - Fast shell entry: `/reference`
 - Russian repo doc: `docs/ru/platform-entity-reference.md`

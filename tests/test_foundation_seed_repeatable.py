@@ -1,4 +1,5 @@
 # RU: Этот regression-test держит repeatable seed живым: повторный bootstrap не должен ломаться на специальных scope вроде users:USR.
+# RU: Repeatable seed нужен, чтобы launcher и smoke не зависели от случайного состояния базы.
 from __future__ import annotations
 
 import os
@@ -27,7 +28,6 @@ class TestFoundationSeedRepeatable(unittest.TestCase):
                 "MAGON_FOUNDATION_REDIS_URL",
                 "MAGON_FOUNDATION_CELERY_BROKER_URL",
                 "MAGON_FOUNDATION_CELERY_RESULT_BACKEND",
-                "MAGON_FOUNDATION_LEGACY_ENABLED",
                 "MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL",
                 "MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD",
                 "MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL",
@@ -41,7 +41,6 @@ class TestFoundationSeedRepeatable(unittest.TestCase):
         os.environ["MAGON_FOUNDATION_REDIS_URL"] = ""
         os.environ["MAGON_FOUNDATION_CELERY_BROKER_URL"] = "memory://"
         os.environ["MAGON_FOUNDATION_CELERY_RESULT_BACKEND"] = "cache+memory://"
-        os.environ["MAGON_FOUNDATION_LEGACY_ENABLED"] = "false"
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL"] = "admin@example.com"
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD"] = "admin123"
         os.environ["MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL"] = "operator@example.com"

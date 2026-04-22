@@ -23,15 +23,12 @@ class TestFoundationApi(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.database_url = f"sqlite+pysqlite:///{Path(self.tmpdir.name) / 'foundation.sqlite3'}"
-        self.legacy_db_path = str(Path(self.tmpdir.name) / "legacy.sqlite3")
         self._previous = {key: os.environ.get(key) for key in [
             "MAGON_ENV",
             "MAGON_FOUNDATION_DATABASE_URL",
             "MAGON_FOUNDATION_REDIS_URL",
             "MAGON_FOUNDATION_CELERY_BROKER_URL",
             "MAGON_FOUNDATION_CELERY_RESULT_BACKEND",
-            "MAGON_FOUNDATION_LEGACY_ENABLED",
-            "MAGON_STANDALONE_DB_PATH",
             "MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL",
             "MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD",
             "MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL",
@@ -44,8 +41,6 @@ class TestFoundationApi(unittest.TestCase):
         os.environ["MAGON_FOUNDATION_REDIS_URL"] = ""
         os.environ["MAGON_FOUNDATION_CELERY_BROKER_URL"] = "memory://"
         os.environ["MAGON_FOUNDATION_CELERY_RESULT_BACKEND"] = "cache+memory://"
-        os.environ["MAGON_FOUNDATION_LEGACY_ENABLED"] = "false"
-        os.environ["MAGON_STANDALONE_DB_PATH"] = self.legacy_db_path
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL"] = "admin@example.com"
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD"] = "admin123"
         os.environ["MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL"] = "operator@example.com"
@@ -222,14 +217,10 @@ class TestFoundationApi(unittest.TestCase):
         self.assertEqual(operator_only.status_code, 403)
         self.assertEqual(public_only.status_code, 401)
 
-    def test_legacy_bridge_is_opt_in(self):
-        os.environ["MAGON_FOUNDATION_LEGACY_ENABLED"] = "true"
-        legacy_client = TestClient(create_app())
-        try:
-            legacy_status = legacy_client.get("/status")
-            self.assertEqual(legacy_status.status_code, 200)
-        finally:
-            legacy_client.close()
+    def test_legacy_status_route_stays_disabled(self):
+        # RU: Старый standalone bridge больше не должен внезапно возвращаться в active foundation runtime.
+        legacy_status = self.client.get("/status")
+        self.assertEqual(legacy_status.status_code, 404)
 
 
 if __name__ == "__main__":

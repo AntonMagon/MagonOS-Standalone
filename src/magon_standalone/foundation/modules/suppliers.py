@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..audit import record_audit_event
 from ..dependencies import get_db, require_roles
 from ..codes import reserve_code
 from ..models import (
@@ -49,6 +50,16 @@ class SupplierSourceCreatePayload(BaseModel):
     adapter_key: str = Field(min_length=3)
     config_json: dict | None = None
     reason_code: str = "admin_create_supplier_source"
+
+
+class SupplierSourceUpdatePayload(BaseModel):
+    label: str | None = Field(default=None, min_length=3)
+    enabled: bool | None = None
+    config_json: dict | None = None
+    schedule_enabled: bool | None = None
+    schedule_interval_minutes: int | None = Field(default=None, ge=5)
+    classification_mode: Literal["deterministic_only", "ai_assisted_fallback"] | None = None
+    reason_code: str = "admin_update_supplier_source"
 
 
 class SupplierIngestPayload(BaseModel):
@@ -372,6 +383,54 @@ def create_supplier_source(
         reason_code=payload.reason_code,
     )
     return {"item": _source_registry_view(item, None)}
+
+
+@router.patch("/api/v1/admin/supplier-sources/{source_registry_code}")
+def update_supplier_source(
+    source_registry_code: str,
+    payload: SupplierSourceUpdatePayload,
+    auth: AuthContext = Depends(require_roles(ROLE_ADMIN)),
+    session: Session = Depends(get_db),
+) -> dict[str, object]:
+    item = _service(session).get_source_registry_by_code(source_registry_code)
+    changed: dict[str, object] = {}
+    if payload.label is not None:
+        item.label = payload.label
+        changed["label"] = payload.label
+    if payload.enabled is not None:
+        item.enabled = payload.enabled
+        changed["enabled"] = payload.enabled
+    config = dict(item.config_json or {})
+    if payload.config_json is not None:
+        config = dict(payload.config_json)
+        changed["config_json"] = config
+    if payload.schedule_enabled is not None:
+        config["schedule_enabled"] = payload.schedule_enabled
+        changed["schedule_enabled"] = payload.schedule_enabled
+    if payload.schedule_interval_minutes is not None:
+        config["schedule_interval_minutes"] = payload.schedule_interval_minutes
+        changed["schedule_interval_minutes"] = payload.schedule_interval_minutes
+    if payload.classification_mode is not None:
+        config["classification_mode"] = payload.classification_mode
+        changed["classification_mode"] = payload.classification_mode
+    item.config_json = config
+    session.flush()
+    # RU: Source registry update обязана оставлять explainable след, иначе оператор не поймёт, почему scheduler/classifier начал вести себя иначе.
+    record_audit_event(
+        session,
+        module_name="suppliers",
+        action="source_registry_updated",
+        entity_type="supplier_source_registry",
+        entity_id=item.id,
+        entity_code=item.code,
+        auth=auth,
+        reason=payload.reason_code,
+        payload_json=changed,
+    )
+    latest_ingest = session.scalar(
+        select(SupplierRawIngest).where(SupplierRawIngest.source_registry_id == item.id).order_by(SupplierRawIngest.created_at.desc())
+    )
+    return {"item": _source_registry_view(item, latest_ingest)}
 
 
 @router.get("/api/v1/operator/supplier-ingests")
