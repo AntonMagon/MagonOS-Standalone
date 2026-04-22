@@ -106,6 +106,7 @@ Do not pretend full CRM/quote parity exists.
   - migrations now assume the same local PostgreSQL contour as launcher/unified instead of a separate SQLite dev truth
   - repeatable `seed_foundation.py` on the local PostgreSQL runtime is now part of the verified path; rerunning migrate + seed must not abort on special scopes like `users:USR` or `request_customer_refs`
   - all foundation smoke scripts now also run on isolated temporary PostgreSQL databases instead of temporary SQLite files
+  - blank `MAGON_FOUNDATION_REDIS_URL` in test/smoke and CI is now treated as an explicit Redis disable signal instead of silently falling back to `redis://127.0.0.1:6379/0`
 - supplier demo pipeline:
   - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - fixture pipeline:

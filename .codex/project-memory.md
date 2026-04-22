@@ -1452,4 +1452,17 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
 - Risk:
   - the branch still needs another push after this tiny locale-only correction
-
+### 2026-04-22 23:30 +07 | codex/entity-help-reference
+- Summary: fixed CI readiness drift where blank Redis env vars in test/smoke were treated as missing and silently fell back to local Redis defaults, which made `/health/ready` return `degraded`
+- Changed:
+  - src/magon_standalone/foundation/settings.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api.TestFoundationApi.test_health_and_login_flow`
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - local runtime and repo verification are green after the blank-env fix, but GitHub Actions still need one more push to prove the same path remotely

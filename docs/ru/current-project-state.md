@@ -115,8 +115,9 @@
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
   - миграции теперь опираются на тот же local PostgreSQL contour, что и launcher/unified, а не на отдельную SQLite-правду для dev-path
-  - repeatable `seed_foundation.py` на локальном PostgreSQL теперь тоже входит в проверенный contract: повторный migrate + seed не должен больше абортироваться на специальных scope вроде `users:USR` или `request_customer_refs`
-  - все foundation smoke-скрипты теперь тоже работают на отдельных временных PostgreSQL базах, а не на временных SQLite-файлах
+- repeatable `seed_foundation.py` на локальном PostgreSQL теперь тоже входит в проверенный contract: повторный migrate + seed не должен больше абортироваться на специальных scope вроде `users:USR` или `request_customer_refs`
+- все foundation smoke-скрипты теперь тоже работают на отдельных временных PostgreSQL базах, а не на временных SQLite-файлах
+- пустой `MAGON_FOUNDATION_REDIS_URL` в test/smoke и CI теперь считается явным отключением Redis, а не скрытым возвратом к `redis://127.0.0.1:6379/0`
 - прогнать supplier demo pipeline:
   - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - прогнать fixture pipeline:

@@ -16,6 +16,13 @@ def _env(name: str, default: str) -> str:
     return value
 
 
+def _env_allow_blank(name: str, default: str) -> str:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value
+
+
 def _env_bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None:
@@ -77,9 +84,10 @@ def load_settings() -> FoundationSettings:
     repo_root = _repo_root()
     local_postgres = "postgresql+psycopg://magon:magon@127.0.0.1:5432/magon"
     env_name = _env("MAGON_ENV", "local")
-    redis_url = _env("MAGON_FOUNDATION_REDIS_URL", "redis://127.0.0.1:6379/0")
-    broker_url = _env("MAGON_FOUNDATION_CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
-    result_backend = _env("MAGON_FOUNDATION_CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/2")
+    # RU: Пустой env здесь означает явное отключение Redis для test/smoke-контуров, а не возврат к локальному default.
+    redis_url = _env_allow_blank("MAGON_FOUNDATION_REDIS_URL", "redis://127.0.0.1:6379/0")
+    broker_url = _env_allow_blank("MAGON_FOUNDATION_CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
+    result_backend = _env_allow_blank("MAGON_FOUNDATION_CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/2")
 
     return FoundationSettings(
         app_name=_env("MAGON_FOUNDATION_APP_NAME", "magon-foundation"),

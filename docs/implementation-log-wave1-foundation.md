@@ -1301,3 +1301,26 @@
 - PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
 - PASS `./Start_Platform.command --detach --no-open`
 - PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-22 — readiness and CI parity fixed for blank Redis env
+
+### Что было найдено
+
+- GitHub Actions run `24773174396` падал в `tests.test_foundation_api.TestFoundationApi.test_health_and_login_flow`.
+- `/health/ready` возвращал `degraded` вместо `ok`.
+- Root cause был в `src/magon_standalone/foundation/settings.py`:
+  - helper `_env()` трактовал пустую строку как отсутствие env;
+  - test/smoke-контуры выставляли `MAGON_FOUNDATION_REDIS_URL=""`, ожидая явное отключение Redis;
+  - в CI это молча откатывалось на `redis://127.0.0.1:6379/0`, и readiness становился degraded.
+
+### Что было доведено
+
+- Добавлен отдельный helper `_env_allow_blank()` для env-переменных, где пустое значение является осознанным operational сигналом.
+- `MAGON_FOUNDATION_REDIS_URL`, `MAGON_FOUNDATION_CELERY_BROKER_URL` и `MAGON_FOUNDATION_CELERY_RESULT_BACKEND` теперь читаются через `_env_allow_blank()`.
+- Пустой Redis env снова означает `disabled` для test/smoke-контуров, а не возврат к локальному default.
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_api.TestFoundationApi.test_health_and_login_flow`
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_seed_repeatable`
+- PASS `./scripts/verify_workflow.sh --with-web`
