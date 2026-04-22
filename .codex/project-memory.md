@@ -1443,4 +1443,13 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`
 - Risk:
   - the GitHub workflow still needs one more push after this fix; until that run completes, the remote gate is not green yet
+### 2026-04-22 17:22 +07 | codex/entity-help-reference
+- Summary: fixed the Russian locale guard regression in `docs/ru/current-project-state.md` after documenting deterministic CI sync for operating docs
+- Changed:
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Risk:
+  - the branch still needs another push after this tiny locale-only correction
 

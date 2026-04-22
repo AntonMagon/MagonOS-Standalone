@@ -148,7 +148,7 @@
 - если менялся web:
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
-  - `sync_operating_docs.py --check` должен быть детерминирован даже на CI runner без `~/.codex/automations`; корневые `AGENTS.md/README.md` в этом случае собираются из repo truth, а не из отсутствующего локального каталога automation
+  - `sync_operating_docs.py --check` должен быть детерминирован даже на CI runner без `~/.codex/автоматизаций`; корневые `AGENTS.md/README.md` в этом случае собираются из repo truth, а не из отсутствующего локального каталога автоматизаций
 
 ## Правило по браузерам
 
