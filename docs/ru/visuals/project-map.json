@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-23 02:21 +07`",
+  "generated_at": "`2026-04-23 05:15 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -32,6 +32,7 @@
     "normalization / enrichment / dedup / scoring",
     "lightweight marketing/conversion layer over showcase + RFQ + guest draft entry",
     "limited catalog / showcase contour with guest draft + RFQ entry",
+    "product-first public shell over `/`, `/marketing`, `/catalog`, and `/rfq` with managed-service copy instead of architecture jargon",
     "draft autosave / abandoned / archive-ready intake layer",
     "central request review queue with blocker/clarification flow",
     "request draft -> request submit flow with required-field gating",
@@ -39,6 +40,7 @@
     "order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench",
     "managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow",
     "admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits",
+    "session-driven operator/admin screens now read one stable foundation-session snapshot through `useFoundationSession()`, so logged-in routes do not flash the guest gate or hit hydration mismatches after localStorage boot",
     "foundation FastAPI skeleton with separate draft/request/offer/order entities",
     "routing / qualification decisions",
     "feedback ledger / projection",
@@ -55,6 +57,7 @@
     "нормализация / обогащение / дедупликация / скоринг",
     "лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа",
     "ограниченный контур каталога / витрины с гостевым входом в draft и RFQ",
+    "product-first public shell над `/`, `/marketing`, `/catalog` и `/rfq`: понятный managed-service оффер без архитектурного жаргона и случайных внутренних терминов",
     "autosave / abandoned / archive-ready слой Draft",
     "центральная операторская очередь Review для Request с blocker/clarification flow",
     "переход `draft -> request` с блокировкой по обязательным полям",
@@ -62,6 +65,7 @@
     "слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench",
     "управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow",
     "контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды",
+    "operator/admin-экраны теперь читают один стабильный session snapshot через `useFoundationSession()`, поэтому после гидратации нельзя возвращать старый эффект с гостевым gate поверх уже авторизованного UI",
     "foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`",
     "маршрутизация / квалификационные решения",
     "журнал обратной связи / проекция",
@@ -94,13 +98,18 @@
     "рост функциональности source-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-23 02:21 +07`",
+    "updated_at": "`2026-04-23 05:15 +07`",
     "branch": "`codex/foundation-admin-config-cleanup`",
-    "current_focus": "Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.",
+    "current_focus": "Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.",
     "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page."
+    "biggest_operational_risk": "The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-23 05:15 +07 | codex/foundation-admin-config-cleanup",
+      "summary": "Rebuild the standalone web shell around the managed-service product language, clean public/operator/admin copy and layout, remove login debug noise, stabilize logged-in hydration through `useFoundationSession()`, reseed demo names, and verify the result through build, browser pass, and canonical workflow checks.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup",
       "summary": "Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.",
@@ -109,11 +118,6 @@
     {
       "heading": "2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment",
       "summary": "Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-23 00:47 +07 | main",
-      "summary": "Audit the standalone repo against its current wave1 context, fix perf/automation drift, align repo operating config with the Postgres-first foundation runtime, and prove the verified contour end-to-end.",
       "risk": "See worklog entry"
     }
   ],

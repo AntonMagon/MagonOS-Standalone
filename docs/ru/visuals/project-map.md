@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-23 02:21 +07``
+Обновлено: ``2026-04-23 05:15 +07``
 
 ## Контур движения
 
@@ -25,6 +25,7 @@ flowchart LR
 - нормализация / обогащение / дедупликация / скоринг
 - лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
 - ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
+- product-first public shell над `/`, `/marketing`, `/catalog` и `/rfq`: понятный managed-service оффер без архитектурного жаргона и случайных внутренних терминов
 - autosave / abandoned / archive-ready слой Draft
 - центральная операторская очередь Review для Request с blocker/clarification flow
 - переход `draft -> request` с блокировкой по обязательным полям
@@ -32,6 +33,7 @@ flowchart LR
 - слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
 - управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
 - контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды
+- operator/admin-экраны теперь читают один стабильный session snapshot через `useFoundationSession()`, поэтому после гидратации нельзя возвращать старый эффект с гостевым gate поверх уже авторизованного UI
 - foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
@@ -64,9 +66,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Текущий фокус: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
 - Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
+- Главный операционный риск: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
 
 ## Автоматические контуры контроля
 

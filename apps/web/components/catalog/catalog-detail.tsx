@@ -57,6 +57,28 @@ function intakeChannelForMode(mode: CatalogItem["mode"]): "catalog_ready" | "cat
   return "rfq_public";
 }
 
+function detailExplain(mode: CatalogItem["mode"], locale: string) {
+  if (mode === "ready") {
+    return {
+      fit: locale === "ru" ? "Подходит для понятного типового заказа, когда уже известны базовые параметры." : "Best for a straightforward job when the basic parameters are already clear.",
+      prep: locale === "ru" ? "Подготовь размер, материал, тираж, дедлайн и ссылку на макет или пример." : "Prepare size, material, quantity, deadline, and a link to artwork or a reference.",
+      flow: locale === "ru" ? "После отправки оператор проверит ввод, подтвердит расчёт и переведёт кейс в рабочую заявку." : "After submit, the operator reviews the input, confirms the estimate, and moves the case into a working request.",
+    };
+  }
+  if (mode === "config") {
+    return {
+      fit: locale === "ru" ? "Подходит для типового продукта с уточнениями по материалу, формату или отделке." : "Best for a standard product that still needs decisions on material, format, or finish.",
+      prep: locale === "ru" ? "Подготовь описание задачи, важные параметры, пример упаковки и дедлайн." : "Prepare the job description, key parameters, a packaging reference, and the deadline.",
+      flow: locale === "ru" ? "Сначала собираем параметры, потом оператор проверяет ограничения и готовит коммерческий вариант." : "First we collect the parameters, then the operator checks constraints and prepares a commercial option.",
+    };
+  }
+  return {
+    fit: locale === "ru" ? "Подходит для нестандартного проекта, когда карточка не может честно обещать финальную цену." : "Best for a non-standard project where the card cannot honestly promise a final price.",
+    prep: locale === "ru" ? "Подготовь задачу, желаемый результат, ограничения по производству, сроки и все исходные файлы." : "Prepare the brief, expected outcome, production constraints, timing, and all source files.",
+    flow: locale === "ru" ? "Запрос уйдёт в ручной разбор. После проверки оператор соберёт предложение и маршрут исполнения." : "The request goes into manual review first. After validation, the operator prepares the offer and fulfillment route.",
+  };
+}
+
 export function CatalogDetail({itemCode}: {itemCode: string}) {
   const t = useTranslations("catalogDetail");
   const locale = useLocale();
@@ -92,15 +114,15 @@ export function CatalogDetail({itemCode}: {itemCode: string}) {
     return <Card className="glass-panel border-white/12 p-6 text-sm text-muted-foreground">{t("loading")}</Card>;
   }
 
+  const explain = detailExplain(item.mode, locale);
+
   return (
     <div className="space-y-6">
-      <Card className="glass-panel border-white/12 p-6">
-        <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          <span>{localizedCatalogText(item, locale, "category_label")}</span>
-          <span>·</span>
-          <span>{t(`modes.${item.mode}`)}</span>
-          <span>·</span>
-          <span>{t(`pricingModes.${item.pricing_mode}`)}</span>
+      <Card className="paper-panel p-6">
+        <div className="flex flex-wrap gap-2">
+          <span className="status-pill status-pill-muted">{localizedCatalogText(item, locale, "category_label")}</span>
+          <span className={`status-pill ${item.mode === "rfq" ? "status-pill-warn" : item.mode === "config" ? "status-pill-primary" : "status-pill-success"}`}>{t(`modes.${item.mode}`)}</span>
+          <span className="status-pill status-pill-muted">{t(`pricingModes.${item.pricing_mode}`)}</span>
         </div>
         <h1 className="mt-3 text-4xl leading-tight">{localizedCatalogText(item, locale, "title")}</h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-muted-foreground">{localizedCatalogText(item, locale, "description")}</p>
@@ -124,20 +146,35 @@ export function CatalogDetail({itemCode}: {itemCode: string}) {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <Card className="glass-panel border-white/12 p-6">
+        <Card className="paper-panel p-6">
           <div className="space-y-4">
             <div>
               <div className="text-sm uppercase tracking-[0.22em] text-muted-foreground">{t("optionsLabel")}</div>
               <h2 className="mt-2 text-2xl leading-tight">{t("optionsTitle")}</h2>
             </div>
+            <div className="grid gap-3">
+              {/* RU: Эти блоки объясняют карточку по-человечески: кому подходит, что подготовить и что произойдёт после отправки. */}
+              <div className="rounded-[1.4rem] border border-border/75 bg-white/54 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{locale === "ru" ? "Кому подходит" : "Best for"}</div>
+                <div className="mt-2 text-sm leading-6 text-foreground/84">{explain.fit}</div>
+              </div>
+              <div className="rounded-[1.4rem] border border-border/75 bg-white/54 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{locale === "ru" ? "Что подготовить" : "Prepare before submit"}</div>
+                <div className="mt-2 text-sm leading-6 text-foreground/84">{explain.prep}</div>
+              </div>
+              <div className="rounded-[1.4rem] border border-border/75 bg-white/54 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{locale === "ru" ? "Что будет дальше" : "What happens next"}</div>
+                <div className="mt-2 text-sm leading-6 text-foreground/84">{explain.flow}</div>
+              </div>
+            </div>
             <div className="space-y-3">
               {localizedOptions(item, locale).map((entry) => (
-                <div key={entry} className="rounded-3xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-6 text-foreground/82">
+                <div key={entry} className="rounded-[1.4rem] border border-border/75 bg-white/54 px-4 py-3 text-sm leading-6 text-foreground/82">
                   {entry}
                 </div>
               ))}
             </div>
-            <div className="rounded-3xl border border-white/10 bg-black/10 p-4">
+            <div className="rounded-[1.4rem] border border-border/75 bg-white/54 p-4">
               <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t("pricingLabel")}</div>
               <div className="mt-2 text-sm leading-6 text-foreground/86">{localizedCatalogText(item, locale, "pricing_summary")}</div>
               {item.pricing_note ? <div className="mt-2 text-sm leading-6 text-muted-foreground">{item.pricing_note}</div> : null}

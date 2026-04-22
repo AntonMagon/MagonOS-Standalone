@@ -5,6 +5,8 @@ export const siteNav = [
   { href: "/", labelKey: "overview" },
   { href: "/marketing", labelKey: "marketing" },
   { href: "/catalog", labelKey: "catalog" },
+  // RU: RFQ оставляем отдельным входом, потому что сложный запрос нельзя прятать внутри типовой карточки каталога.
+  { href: "/rfq", labelKey: "rfq" },
   { href: "/request-workbench", labelKey: "requests" },
   { href: "/orders", labelKey: "orders" },
   { href: "/dashboard", labelKey: "dashboard" },

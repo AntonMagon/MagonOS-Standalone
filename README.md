@@ -145,10 +145,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-23 02:21 +07`
-- Current focus: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Auto-synced at: `2026-04-23 05:15 +07`
+- Current focus: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
+- Biggest operational risk: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -167,6 +167,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - normalization / enrichment / dedup / scoring
   - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
   - limited catalog / showcase contour with guest draft + RFQ entry
+  - product-first public shell over `/`, `/marketing`, `/catalog`, and `/rfq` with managed-service copy instead of architecture jargon
   - draft autosave / abandoned / archive-ready intake layer
   - central request review queue with blocker/clarification flow
   - request draft -> request submit flow with required-field gating
@@ -174,6 +175,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
   - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
   - admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
+  - session-driven operator/admin screens now read one stable foundation-session snapshot through `useFoundationSession()`, so logged-in routes do not flash the guest gate or hit hydration mismatches after localStorage boot
   - foundation FastAPI skeleton with separate draft/request/offer/order entities
   - routing / qualification decisions
   - feedback ledger / projection
@@ -192,6 +194,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
+  - public shell, marketing, catalog, RFQ, request, order, supplier, and admin pages were rechecked in the browser after the latest product-copy/layout pass; the live shell must stay free of raw technical dumps, split-language UI drift, and hydration mismatch errors
   - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
   - public marketing layer: `http://127.0.0.1:3000/marketing`
   - public showcase: `http://127.0.0.1:3000/catalog`

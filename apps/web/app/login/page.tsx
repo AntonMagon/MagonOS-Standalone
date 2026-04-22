@@ -7,10 +7,11 @@ export default function LoginPage() {
     <main className="container py-10">
       <section className="hero-shell rounded-[2.4rem] border border-white/12 px-6 py-7 shadow-panel md:px-8 md:py-8 lg:px-10">
         <div className="max-w-3xl space-y-3">
-          <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Первая волна</div>
-          <h1 className="text-4xl leading-tight">Вход в рабочий контур платформы</h1>
+          <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Вход в платформу</div>
+          <h1 className="text-4xl leading-tight">Открой свой рабочий раздел без лишних экранов</h1>
+          {/* RU: Этот экран должен объяснять только вход и следующий рабочий маршрут, без debug-панелей и token dump. */}
           <p className="text-sm leading-7 text-muted-foreground">
-            Этот экран нужен для проверенного входа в платформу: тестовые пользователи, выдача рабочей сессии и разграничение доступа для ролей `guest / customer / operator / admin`.
+            Здесь можно войти под тестовой ролью и сразу попасть в нужный раздел: заявки, заказы, поставщики или админ-настройки.
           </p>
         </div>
       </section>

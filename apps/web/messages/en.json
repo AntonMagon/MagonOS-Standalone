@@ -5,28 +5,30 @@
   },
   "nav": {
     "overview": "Home",
-    "marketing": "Marketing",
-    "catalog": "Showcase",
+    "marketing": "How it works",
+    "catalog": "Catalog",
+    "rfq": "Complex request",
     "requests": "Requests",
     "orders": "Orders",
-    "dashboard": "Dashboard",
+    "dashboard": "Overview",
     "suppliers": "Suppliers",
     "ops": "Ops",
-    "adminConfig": "Config",
+    "adminConfig": "Admin",
     "login": "Login",
     "projectMap": "Map",
     "reference": "Reference",
-    "personalize": "Settings"
+    "personalize": "Appearance"
   },
   "header": {
     "homeAria": "Open the MagonOS home page",
-    "shell": "Standalone product layer",
+    "shell": "Print and packaging without chaos",
     "mainNavAria": "Primary navigation",
     "mobileMenuOpen": "Open navigation menu",
-    "mobileMenuTitle": "Navigation and quick settings",
-    "mobileMenuText": "Switch language, adjust the theme, and jump into the working surfaces from here.",
+    "mobileMenuTitle": "Sections and settings",
+    "mobileMenuText": "The header keeps only the main paths. Everything operational and system-level lives here.",
+    "primaryLabel": "Main sections",
     "controlsLabel": "Interface settings",
-    "navigationLabel": "Additional sections",
+    "navigationLabel": "Working and system sections",
     "sessionLabel": "Current session",
     "sessionActive": "Active session",
     "sessionSignedInAs": "{role} · {email}",
@@ -145,9 +147,9 @@
     "openCompanyWorkbench": "Open company workbench"
   },
   "dashboard": {
-    "eyebrow": "Runtime view",
-    "title": "What already lives in standalone and is available to the operator today.",
-    "text": "This view shows the current standalone runtime: data volume, working surfaces, and quick entry points into the actual operator flow. It is neither a marketing shell nor a context-free debug page.",
+    "eyebrow": "Quick overview",
+    "title": "Where the team should work right now.",
+    "text": "This screen is not a fake analytics wall. It is the short entry point into requests, suppliers, orders, and core system configuration.",
     "runtimeLabel": "Backend status",
     "runtimeOnline": "Runtime is available",
     "runtimeOffline": "Runtime is unavailable",
@@ -156,20 +158,20 @@
     "openConsole": "Open ops console",
     "openBoard": "Open orders",
     "workspaceLabel": "Key surfaces",
-    "workspaceTitle": "Where the operator enters from the shared product shell",
-    "workspaceText": "These are direct entry points into the current standalone-first contour: suppliers, intake requests, and orders. All three now live inside the same product shell as the public layer.",
+    "workspaceTitle": "Where the operator works every day",
+    "workspaceText": "These are direct entry points into the live contour: requests, orders, and suppliers. No decorative cards, only working surfaces.",
     "surfaces": {
       "suppliers": {
         "title": "Suppliers",
-        "body": "Open the supplier registry, trust levels, ingest jobs, and manual verification in one place."
+        "body": "Review sources, recent runs, similar companies, and confirmed suppliers."
       },
       "requests": {
         "title": "Requests",
-        "body": "Go into the intake workbench, `draft/request` states, and operator transitions without the legacy review queue."
+        "body": "Open the full intake flow: drafts, working requests, commercial options, and blockers."
       },
       "orders": {
         "title": "Orders",
-        "body": "Open the order workbench, documents, and confirmed execution without the legacy production board."
+        "body": "Check payment, readiness, supplier, delivery, and documents for active orders."
       }
     },
     "metrics": {
@@ -186,12 +188,26 @@
         "detail": "Downstream feedback events"
       }
     },
-    "recentLabel": "Recent companies",
-    "recentTitle": "Quick entry into company records",
+    "recentLabel": "Needs attention",
+    "recentTitle": "Jump straight into the section where work needs to happen",
     "recentPublicLabel": "public",
     "recentUnknownCity": "City not set",
     "recentNoEmail": "Email not set",
-    "recentEmpty": "There are no companies to show in the runtime yet."
+    "recentEmpty": "If you need a deeper review, go to requests, suppliers, or admin config.",
+    "actions": {
+      "requests": {
+        "title": "Review incoming requests",
+        "body": "Check new cases, clear blockers, and decide the next commercial step."
+      },
+      "suppliers": {
+        "title": "Review supplier intake",
+        "body": "Inspect sources, recent runs, and companies that need manual verification."
+      },
+      "config": {
+        "title": "Review rules and reasons",
+        "body": "Open admin config if notification rules, transitions, or supplier sources need to change."
+      }
+    }
   },
   "opsWorkbench": {
     "eyebrow": "Ops workbench",
@@ -319,109 +335,109 @@
     "limitsTitle": "Intentionally left outside the current contour"
   },
   "marketingPage": {
-    "eyebrow": "Public marketing layer",
-    "title": "Wave1 marketing should lead into clear intake, not hide the work behind a decorative landing page.",
-    "text": "The spec defines a light showcase, guest draft intake, and a separate complex RFQ entry. This page turns that into one public marketing surface: promise, entry points, and the path from interest to the actual request contour.",
-    "openCatalog": "Open showcase",
-    "openRfq": "Open complex RFQ",
-    "openDraft": "Start guest draft",
+    "eyebrow": "How we handle the job",
+    "title": "From the first request to the order without chaotic back-and-forth or lost context.",
+    "text": "This page explains how the client enters the service, when to use the catalog, when to send a complex request, and what happens after submit.",
+    "openCatalog": "Open catalog",
+    "openRfq": "Send complex request",
+    "openDraft": "What happens after submit",
     "promiseLabel": "What we promise publicly",
-    "promiseTitle": "The public layer must stay commercially clear.",
-    "promiseText": "Instead of vague AI claims and ERP jargon, this layer needs readable directions, honest pricing language, and a fast path into manual review.",
+    "promiseTitle": "Clear service first, internal operations second.",
+    "promiseText": "The client does not need internal jargon or architecture talk. They need to understand whether they can get a fast offer and what will happen next.",
     "promises": {
-      "one": "A constrained wave1 showcase instead of pretending to be a marketplace for everything.",
-      "two": "Guest draft intake for straightforward cases without forced registration.",
-      "three": "A separate RFQ entry for complex and non-standard requests."
+      "one": "A catalog for understandable standard directions with a fast path into a short request.",
+      "two": "A dedicated complex request path for cases where a card cannot honestly promise a final price.",
+      "three": "Operator handling with readable statuses, files, documents, and next steps."
     },
     "flowLabel": "How interest converts",
-    "flowTitle": "The marketing entry should end in a real working contour.",
+    "flowTitle": "Every entry should end in a working request, not a lost message.",
     "flow": {
       "one": {
-        "title": "Showcase and commercial directions",
-        "body": "The visitor sees limited product directions, indicative pricing, and clear calls to action without noise."
+        "title": "Catalog and clear directions",
+        "body": "The visitor immediately sees what can be ordered, in what format, and which entry path fits the case."
       },
       "two": {
-        "title": "Draft or RFQ",
-        "body": "A simple case goes into a guest draft, a complex one goes into the dedicated RFQ route. These entry points stay intentionally separate."
+        "title": "Short request or complex request",
+        "body": "A standard case goes into a short request. A non-standard job goes into manual review without a fake calculator."
       },
       "three": {
-        "title": "Request and offer contour",
-        "body": "After required fields are checked, the operator moves the draft into a request, prepares versioned offers, and keeps the full decision history."
+        "title": "Operator, offer, and order",
+        "body": "After review, the operator moves the case into a working request, prepares the offer, and drives it into the order with files and documents."
       }
     },
     "surfacesLabel": "Where to send the visitor",
-    "surfacesTitle": "The entry points need to explain the difference between a simple and a complex path.",
+    "surfacesTitle": "Each entry point should explain what the visitor gets after the click.",
     "surfaces": {
       "catalog": {
-        "title": "Showcase",
-        "body": "Displays the curated wave1 directions, product cards, and the path into a draft."
+        "title": "Catalog",
+        "body": "For standard jobs: open a direction, understand the conditions, and submit a short request."
       },
       "rfq": {
-        "title": "Complex RFQ",
-        "body": "A dedicated entry for custom work where a product card cannot honestly promise the final price."
+        "title": "Complex request",
+        "body": "For non-standard work: send the task straight into manual review and skip the wrong card path."
       },
       "request": {
-        "title": "Operator review contour",
-        "body": "After submit, the operator enters the request/offer/order contour through login and continues the case without mixing public and internal surfaces."
+        "title": "What happens after submit",
+        "body": "After submit, the case moves into a working request, offer, files, documents, order, and the next step."
       }
     }
   },
   "catalogShowcase": {
-    "eyebrow": "Limited wave1 showcase",
-    "title": "Show clear directions and a constrained set of products instead of pretending to be a marketplace for everything.",
-    "text": "This showcase exists for guest draft/RFQ intake. It contains only a curated wave1 set: understandable cards, indicative pricing, and a direct path into a request without forced registration.",
-    "openRfq": "Open complex RFQ",
+    "eyebrow": "Catalog directions",
+    "title": "Choose a clear direction and decide immediately whether you need a short request or a manual review path.",
+    "text": "The catalog is not pretending to be a marketplace for everything. It exists to explain the direction, collect basic parameters, and route the case into the correct intake path.",
+    "openRfq": "Send complex request",
     "itemsCount": "items",
     "directionLabel": "Direction",
     "pricingLabel": "Pricing model",
     "priceFrom": "Indicative: {amount} {currency}",
     "viewDetail": "Open card",
-    "startDraft": "Start draft",
+    "startDraft": "Send short request",
     "modes": {
-      "ready": "Ready direction",
-      "config": "Configurable variant",
-      "rfq": "RFQ only"
+      "ready": "Fast start",
+      "config": "Needs parameter review",
+      "rfq": "Manual review only"
     },
     "pricingModes": {
-      "fixed": "Fixed base",
-      "from": "Starts from a base model",
-      "estimate": "Indicative estimate",
+      "fixed": "Base price",
+      "from": "Starts from a model",
+      "estimate": "Initial estimate",
       "rfq": "On request"
     }
   },
   "catalogDetail": {
-    "loading": "Loading showcase card...",
-    "backToCatalog": "Back to showcase",
-    "openRfq": "Open RFQ",
-    "optionsLabel": "What can be specified",
-    "optionsTitle": "Commercially clear wave1 options",
-    "pricingLabel": "How pricing should be read",
+    "loading": "Loading item card...",
+    "backToCatalog": "Back to catalog",
+    "openRfq": "Send complex request",
+    "optionsLabel": "What matters here",
+    "optionsTitle": "Parameters that affect the estimate and the next step",
+    "pricingLabel": "How to read pricing",
     "priceFrom": "Indicative: {amount} {currency}",
     "priceOnRequest": "Pricing is confirmed only after manual estimation",
-    "draftSummary": "We need a fast estimate for this card. Please confirm size, material, volume, and deadlines.",
-    "rfqSummary": "We need a custom project with manual review. Describe the product, volume, deadlines, materials, and constraints.",
+    "draftSummary": "We need a fast estimate for this case. Confirm size, material, quantity, timing, and what matters most.",
+    "rfqSummary": "We need a custom project with manual review. Describe the task, volume, timing, materials, constraints, and expected output.",
     "modes": {
-      "ready": "Ready direction",
-      "config": "Configurable variant",
-      "rfq": "RFQ only"
+      "ready": "Fast start",
+      "config": "Needs parameter review",
+      "rfq": "Manual review only"
     },
     "pricingModes": {
-      "fixed": "Fixed base",
-      "from": "Starts from a base model",
-      "estimate": "Indicative estimate",
+      "fixed": "Base price",
+      "from": "Starts from a model",
+      "estimate": "Initial estimate",
       "rfq": "On request"
     }
   },
   "catalogForms": {
     "labels": {
-      "catalog_ready": "Fast draft from a card",
-      "catalog_config": "Configurable request",
-      "rfq_public": "Complex RFQ"
+      "catalog_ready": "Short request from a card",
+      "catalog_config": "Request with parameter review",
+      "rfq_public": "Complex request"
     },
-    "compactTitle": "Send a request without registration",
-    "fullTitle": "Send a complex request into manual review",
+    "compactTitle": "Send a short request without registration",
+    "fullTitle": "Send a complex case into manual review",
     "linkedItem": "The context is already tied to this card: {title}",
-    "generalLead": "Submit as a guest. An operator will review the input and move it into the request contour without forcing registration.",
+    "generalLead": "Submit as a guest. The operator reviews the input, asks for clarifications if needed, and moves the case into a working request.",
     "customerName": "Name",
     "companyName": "Company / brand",
     "email": "Email",
@@ -432,21 +448,21 @@
     "city": "City / delivery point",
     "deadline": "Target deadline",
     "titlePrefill": "Request for: {title}",
-    "rfqTitlePrefill": "Complex packaging / production RFQ",
+    "rfqTitlePrefill": "Complex packaging / production request",
     "contextPrefill": "Need manual review and estimation for: {title}",
     "contextPlaceholder": "Briefly describe the item or service around which this request is built.",
     "summaryPlaceholder": "Describe the product, size, material, volume, deadlines, and constraints.",
     "websiteTrap": "If you are a bot, fill this field",
     "submitting": "Submitting...",
-    "submit": "Create draft",
-    "privacyHint": "No registration required. This is a manual-first wave1 intake entry point.",
-    "success": "Draft created: {code}. The standalone draft editor with autosave and submit guards will open next."
+    "submit": "Send request",
+    "privacyHint": "No registration required. This is not an instant order. It is a manual-first, reviewable intake path.",
+    "success": "Request saved: {code}. The next screen will open so the case can be completed calmly."
   },
   "rfqPage": {
     "eyebrow": "Complex request",
-    "title": "RFQ stays a separate entry point when a product card cannot honestly promise a final price.",
-    "text": "If the project is non-standard, we do not fake a calculator. The request goes into manual intake so the operator can review context, constraints, and feasibility before moving it into request/offer.",
-    "backToCatalog": "Back to showcase",
+    "title": "If the case is non-standard, it is better to go straight into manual review than into the wrong card.",
+    "text": "Use this path for unusual materials, complex constructions, multiple scenarios, or tight operational constraints. Review comes first, then the offer.",
+    "backToCatalog": "Back to catalog",
     "defaultSummary": "Describe the product, task, volume, deadlines, materials, production constraints, and what matters most for evaluation."
   },
   "common": {

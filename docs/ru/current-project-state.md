@@ -66,6 +66,7 @@
 - нормализация / обогащение / дедупликация / скоринг
 - лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
 - ограниченный контур каталога / витрины с гостевым входом в draft и RFQ
+- product-first public shell над `/`, `/marketing`, `/catalog` и `/rfq`: понятный managed-service оффер без архитектурного жаргона и случайных внутренних терминов
 - autosave / abandoned / archive-ready слой Draft
 - центральная операторская очередь Review для Request с blocker/clarification flow
 - переход `draft -> request` с блокировкой по обязательным полям
@@ -73,6 +74,7 @@
 - слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
 - управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
 - контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды
+- operator/admin-экраны теперь читают один стабильный session snapshot через `useFoundationSession()`, поэтому после гидратации нельзя возвращать старый эффект с гостевым gate поверх уже авторизованного UI
 - foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
@@ -167,6 +169,7 @@
 ## Локальные поверхности
 
 - public shell: `http://127.0.0.1:3000/`
+- public shell, marketing, каталог, RFQ, заявки, заказы, поставщики и admin-config повторно проверены в браузере после product/UI cleanup; регрессиями считаются технические дампы, RU/EN-смесь и hydration mismatch в авторизованном shell
 - встроенная справка по сущностям и зависимостям: `http://127.0.0.1:3000/reference`
 - header public shell теперь держит только ключевые рабочие разделы в верхней строке, а вторичные разделы и переключатели складывает в `Ещё`; возвращать перегруженную шапку нельзя.
 - public shell и `/dashboard` должны определять online-state через foundation `GET /health` и `GET /api/v1/public/companies`; legacy `GET /status` нельзя считать каноническим контрактом при выключенном bridge

@@ -27,26 +27,12 @@ export function FoundationLoginForm() {
   const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [payload, setPayload] = useState<LoginState | null>(null);
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [redirectTarget, setRedirectTarget] = useState<string | null>(null);
-  const roleLabel =
-    payload?.role_code === "admin"
-      ? "Администратор"
-      : payload?.role_code === "operator"
-        ? "Оператор"
-        : payload?.role_code === "customer"
-          ? "Клиент"
-          : payload?.role_code === "guest"
-            ? "Гость"
-            : payload?.role_code ?? "Не определена";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
-    setPayload(null);
-    setProfile(null);
 
     try {
       const response = await fetch("/platform-api/api/v1/auth/login", {
@@ -64,24 +50,9 @@ export function FoundationLoginForm() {
       if (!loginState.token || !loginState.role_code) {
         throw new Error("login_payload_incomplete");
       }
-      setPayload(loginState);
       writeFoundationSession(loginState as FoundationSession);
 
-      try {
-        const meResponse = await fetch("/platform-api/api/v1/auth/me", {
-          headers: {
-            authorization: `Bearer ${loginState.token}`
-          }
-        });
-        const meData = (await meResponse.json()) as Record<string, unknown>;
-        if (meResponse.ok) {
-          setProfile(meData);
-        }
-      } catch {
-        // ignore profile-preview failures; login itself is already successful
-      }
-
-      // RU: После успешного входа пользователь должен сразу попасть в свой рабочий раздел, а не зависать на экране проверки.
+      // RU: После входа сразу ведём в рабочий раздел по роли и не показываем сырые токены или debug-ответы как часть интерфейса.
       const nextTarget = resolveFoundationLoginTarget(loginState.role_code, searchParams.get("next"));
       setRedirectTarget(nextTarget);
       startTransition(() => {
@@ -119,7 +90,7 @@ export function FoundationLoginForm() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Входим..." : "Войти в платформу"}
+            {loading ? "Входим..." : "Войти"}
           </Button>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-muted-foreground">
             Тестовые учётки: `admin@example.com / admin123`, `operator@example.com / operator123`, `customer@example.com / customer123`.
@@ -129,7 +100,7 @@ export function FoundationLoginForm() {
           ) : null}
           {redirectTarget ? (
             <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              Вход выполнен. Переход в рабочий контур: <span className="font-mono">{redirectTarget}</span>
+              Вход выполнен. Открываем раздел: <span className="font-mono">{redirectTarget}</span>
             </div>
           ) : null}
         </form>
@@ -138,35 +109,27 @@ export function FoundationLoginForm() {
       <Card className="glass-panel border-white/12 p-6">
         <div className="space-y-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Контур доступа</div>
-            <h2 className="mt-2 text-2xl leading-tight">Проверка входа и рабочей сессии</h2>
+            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Куда ведёт вход</div>
+            <h2 className="mt-2 text-2xl leading-tight">Выбирай роль и сразу открывай нужный экран</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Экран обращается к FastAPI API через `/platform-api/api/v1/auth/*` и показывает, что тестовые пользователи, рабочая сессия и профиль по роли уже работают.
+              Этот экран нужен только для доступа. После входа платформа сразу ведёт дальше, а не показывает служебные токены и технические ответы API.
             </p>
           </div>
 
-          {payload ? (
-            <div className="space-y-3 rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-foreground/85">
-              <div>
-                <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Сессия</div>
-                <div className="mt-1 break-all font-mono text-xs">{payload.token}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Роль</div>
-                <div className="mt-1">{roleLabel}</div>
-              </div>
+          {/* RU: Вместо raw debug-панелей показываем понятное распределение ролей, чтобы login-экран не выглядел как технический стенд. */}
+          <div className="grid gap-3">
+            <div className="rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-foreground/82">
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Администратор</div>
+              <div className="mt-2">Обзор платформы, настройки правил, поставщики и системные разделы.</div>
             </div>
-          ) : (
-            <div className="rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-muted-foreground">
-              После успешного входа здесь появятся токен сессии и профиль по выбранной роли.
+            <div className="rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-foreground/82">
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Оператор</div>
+              <div className="mt-2">Заявки, предложения, заказы, поставщики и следующий шаг по каждому кейсу.</div>
             </div>
-          )}
-
-          <div className="rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-foreground/78">
-            <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">/auth/me</div>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-xs">
-              {profile ? JSON.stringify(profile, null, 2) : "Пока пусто"}
-            </pre>
+            <div className="rounded-3xl border border-white/10 bg-black/10 p-4 text-sm leading-6 text-foreground/82">
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Клиент</div>
+              <div className="mt-2">Свои запросы, история и документы без внутренних операторских экранов.</div>
+            </div>
           </div>
         </div>
       </Card>

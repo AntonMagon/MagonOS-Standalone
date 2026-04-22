@@ -58,6 +58,55 @@
   - supply dashboard
   - processing dashboard
 
+## 2026-04-23 — Product-first shell cleanup and stable session hydration
+
+### Что было найдено
+- Public, operator и admin UI уже держали рабочий contour, но говорили на смешанном языке:
+  - внутренние термины вроде `draft`, `RFQ`, `ingest`, `первая волна` и другие архитектурные хвосты торчали там, где нужен простой продуктовый текст;
+  - главная, marketing и каталог не объясняли оффер как managed service для печати и упаковки;
+  - login, dashboard, orders, suppliers и admin-config показывали слишком много внутренней техники и слабую иерархию действий;
+  - часть авторизованных страниц читала `readFoundationSession()` прямо в render и из-за localStorage получала hydration mismatch: server рендерил гостевой gate, а клиент сразу рисовал авторизованный экран.
+
+### Что изменено
+- Public shell `/`, `/marketing`, `/catalog`, `/catalog/{itemCode}` и `/rfq` переписан под один понятный оффер:
+  - печать и упаковка без хаоса;
+  - простой вход через каталог;
+  - отдельный сложный запрос;
+  - объяснение того, что происходит после отправки.
+- Header и IA упрощены:
+  - в primary nav оставлены только ключевые пути;
+  - operator/admin разделы собраны в более понятный service layer.
+- Request/order/supplier/admin screens очищены до рабочих operator/admin формулировок:
+  - меньше сырых статусов;
+  - больше следующего шага, легенды и полезного действия.
+- Login больше не показывает token/debug dump и ведёт в рабочую область по роли.
+- Supplier source и demo-данные досидированы под человеческие названия и более ясный operator смысл.
+- Авторизованные экраны переведены на `useFoundationSession()`:
+  - `/suppliers`
+  - `/suppliers/{supplierCode}`
+  - `/supplier-sites/{siteCode}`
+  - `/supplier-ingests/{ingestCode}`
+  - `/request-workbench`
+  - `/request-workbench/{requestCode}`
+  - `/orders`
+  - `/orders/{orderCode}`
+  - `/dashboard`
+  - `/admin-config`
+  - foundation dashboards
+- Это зафиксировало один стабильный session snapshot и убрало hydration mismatch / guest-flash на operator/admin страницах.
+
+### Что подтверждено
+- `./scripts/verify_workflow.sh --with-web`
+- `cd apps/web && npm run build`
+- browser pass по:
+  - `/`
+  - `/marketing`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- browser console на живой сессии без ошибок и предупреждений о hydration mismatch.
+
 ## 2026-04-23 — Единый foundation contour без active legacy drift
 
 ### Что было найдено

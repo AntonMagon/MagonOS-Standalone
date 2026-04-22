@@ -17,11 +17,11 @@ export default async function RfqPage({
   return (
     <main className="container py-10">
       <div className="space-y-6">
-        <Card className="glass-panel border-white/12 p-6">
+        <Card className="paper-panel p-6">
           <div className="space-y-2">
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">{t("eyebrow")}</div>
+            <div className="micro-label">{t("eyebrow")}</div>
             <h1 className="text-4xl leading-tight">{t("title")}</h1>
-            <p className="max-w-4xl text-sm leading-7 text-muted-foreground">{t("text")}</p>
+            <p className="max-w-4xl text-base leading-8 text-muted-foreground">{t("text")}</p>
           </div>
           <div className="mt-5">
             <Link href="/catalog">
@@ -31,6 +31,7 @@ export default async function RfqPage({
         </Card>
 
         <CatalogRequestForm
+          // RU: RFQ всегда ведёт в ручной разбор и не должен маскироваться под мгновенный каталоговый заказ.
           catalogItemCode={params.item}
           intakeChannel="rfq_public"
           defaultSummary={t("defaultSummary")}

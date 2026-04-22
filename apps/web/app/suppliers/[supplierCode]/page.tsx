@@ -3,11 +3,11 @@
 
 import Link from "next/link";
 import {useParams} from "next/navigation";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {
   displayReasonCode,
   displaySupplierStatus,
@@ -39,12 +39,13 @@ type SupplierDetailPayload = {
 export default function SupplierDetailPage() {
   const params = useParams<{supplierCode: string}>();
   const supplierCode = String(params?.supplierCode || "");
-  const session = readFoundationSession();
+  // RU: Карточка поставщика должна гидратироваться из того же session snapshot, что и остальные operator-экраны.
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<SupplierDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!session?.token || !supplierCode) {
       setLoading(false);
       return;
@@ -59,12 +60,12 @@ export default function SupplierDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [session?.token, supplierCode]);
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supplierCode]);
+    // RU: Повторный load нужен и при смене supplierCode, и после появления session token на клиенте.
+  }, [load]);
 
   async function verify(targetTrustLevel: "contact_confirmed" | "capability_confirmed" | "trusted") {
     if (!session?.token) {
@@ -130,7 +131,7 @@ export default function SupplierDetailPage() {
           <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground">← К списку поставщиков</Link>
           <h1 className="mt-2 text-3xl leading-tight">{payload?.supplier.display_name ?? supplierCode}</h1>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Раздельный контур компании, поставщика и площадки: исходные данные, подтверждённая компания, история проверок и движение по доверию.
+            Здесь собраны исходные данные, подтверждённая компания, история проверок и текущий уровень доверия к поставщику.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -60,6 +60,29 @@ function localizedDirectionLabel(direction: CatalogDirection, directionItems: Ca
   return direction.label;
 }
 
+function explainMode(mode: string, locale: string): string {
+  if (mode === "ready") {
+    return locale === "ru"
+      ? "Быстрый старт: оставляешь короткий запрос, а оператор подтверждает детали и расчёт."
+      : "Fast start: send a short request and the operator confirms the details and estimate.";
+  }
+  if (mode === "config") {
+    return locale === "ru"
+      ? "Типовой продукт с уточнениями: карточка помогает собрать параметры до ручной проверки."
+      : "A standard product with options: the card helps collect parameters before manual review.";
+  }
+  return locale === "ru"
+    ? "Сложный кейс: сначала нужен ручной разбор, потом предложение и маршрут исполнения."
+    : "Complex case: it needs manual review before the offer and fulfillment route.";
+}
+
+function nextStepLabel(mode: string, locale: string): string {
+  if (mode === "rfq") {
+    return locale === "ru" ? "Дальше: сложный запрос" : "Next: complex request";
+  }
+  return locale === "ru" ? "Дальше: короткая заявка" : "Next: short request";
+}
+
 export function CatalogShowcase() {
   const t = useTranslations("catalogShowcase");
   const locale = useLocale();
@@ -94,6 +117,7 @@ export function CatalogShowcase() {
   }, []);
 
   const grouped = useMemo(() => {
+    // RU: Группируем по направлениям, чтобы витрина читалась как каталог услуг, а не как плоский список карточек.
     return directions.map((direction) => ({
       ...direction,
       items: items.filter((item) => item.category_code === direction.code),
@@ -102,12 +126,12 @@ export function CatalogShowcase() {
 
   return (
     <div className="space-y-6">
-      <Card className="glass-panel border-white/12 p-6">
+      <Card className="paper-panel p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">{t("eyebrow")}</div>
+            <div className="micro-label">{t("eyebrow")}</div>
             <h1 className="text-4xl leading-tight">{t("title")}</h1>
-            <p className="max-w-3xl text-sm leading-7 text-muted-foreground">{t("text")}</p>
+            <p className="max-w-3xl text-base leading-8 text-muted-foreground">{t("text")}</p>
           </div>
           <Link href="/rfq">
             <Button>{t("openRfq")}</Button>
@@ -119,10 +143,12 @@ export function CatalogShowcase() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {directions.map((direction) => (
-          <Card key={direction.code} className="glass-panel border-white/12 p-5">
-            <div className="text-sm uppercase tracking-[0.22em] text-muted-foreground">{direction.item_count} {t("itemsCount")}</div>
+          <Card key={direction.code} className="paper-panel p-5">
+            <div className="status-pill status-pill-muted">{direction.item_count} {t("itemsCount")}</div>
             <h2 className="mt-2 text-2xl leading-tight">{localizedDirectionLabel(direction, items.filter((item) => item.category_code === direction.code), locale)}</h2>
-            <div className="mt-3 text-sm leading-6 text-muted-foreground">{direction.modes.map((entry) => t(`modes.${entry}`)).join(" · ")}</div>
+            <div className="mt-3 text-sm leading-6 text-muted-foreground">
+              {direction.modes.map((entry) => t(`modes.${entry}`)).join(" · ")}
+            </div>
           </Card>
         ))}
       </div>
@@ -136,29 +162,34 @@ export function CatalogShowcase() {
             </div>
             <div className="grid gap-4 xl:grid-cols-2">
               {direction.items.map((item) => (
-                <Card key={item.code} className="glass-panel border-white/12 p-5">
-                  <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    <span>{t(`modes.${item.mode}`)}</span>
-                    <span>·</span>
-                    <span>{t(`pricingModes.${item.pricing_mode}`)}</span>
+                <Card key={item.code} className="paper-panel p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`status-pill ${item.mode === "rfq" ? "status-pill-warn" : item.mode === "config" ? "status-pill-primary" : "status-pill-success"}`}>
+                      {t(`modes.${item.mode}`)}
+                    </span>
+                    <span className="status-pill status-pill-muted">{t(`pricingModes.${item.pricing_mode}`)}</span>
                   </div>
                   <h4 className="mt-3 text-2xl leading-tight">{localizedCatalogText(item, locale, "title")}</h4>
                   <p className="mt-3 text-sm leading-7 text-muted-foreground">{localizedCatalogText(item, locale, "description")}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {item.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/78">
+                      <span key={tag} className="rounded-full border border-border/75 bg-white/56 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/78">
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <div className="mt-4 space-y-2 rounded-3xl border border-white/10 bg-black/10 p-4">
+                  <div className="mt-4 rounded-[1.5rem] border border-border/75 bg-white/54 p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{nextStepLabel(item.mode, locale)}</div>
+                    <div className="mt-2 text-sm leading-6 text-foreground/84">{explainMode(item.mode, locale)}</div>
+                  </div>
+                  <div className="mt-4 space-y-2 rounded-[1.5rem] border border-border/75 bg-white/54 p-4">
                     {localizedOptions(item, locale).map((entry) => (
                       <div key={entry} className="text-sm leading-6 text-foreground/82">
                         {entry}
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 rounded-3xl border border-white/10 bg-black/10 p-4">
+                  <div className="mt-4 rounded-[1.5rem] border border-border/75 bg-white/54 p-4">
                     <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t("pricingLabel")}</div>
                     <div className="mt-2 text-sm leading-6 text-foreground/86">{localizedCatalogText(item, locale, "pricing_summary")}</div>
                     {item.list_price ? (

@@ -2,11 +2,11 @@
 "use client";
 
 import Link from "next/link";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {
   displayReasonCode,
   displaySupplierStatus,
@@ -103,10 +103,11 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<SuppliersPayload["items"]>([]);
   const [ingests, setIngests] = useState<IngestPayload["items"]>([]);
   const [candidates, setCandidates] = useState<CandidatePayload["items"]>([]);
-  const session = readFoundationSession();
+  // RU: Берём session через useSyncExternalStore-обёртку, чтобы server/client первый render не расходился из-за localStorage.
+  const session = useFoundationSession();
   const [actionCode, setActionCode] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!session?.token) {
       setLoading(false);
       return;
@@ -136,12 +137,12 @@ export default function SuppliersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [session?.token]);
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // RU: После гидратации session появляется асинхронно, поэтому перечитываем sources/suppliers, когда token становится доступен.
+  }, [load]);
 
   useEffect(() => {
     if (!session?.token) {
@@ -155,7 +156,7 @@ export default function SuppliersPage() {
       void load();
     }, 3000);
     return () => window.clearTimeout(timer);
-  }, [ingests, session?.token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ingests, load, session?.token]);
 
   async function enqueueSourceRun(sourceCode: string, reasonCode: string) {
     if (!session?.token || !sourceCode) {
@@ -184,21 +185,22 @@ export default function SuppliersPage() {
   const selectedSource = sources.find((item) => item.code === selectedSourceCode) ?? sources[0] ?? null;
 
   function displaySourceLabel(item: SourcePayload["items"][number]) {
+    // RU: Источник называем по операторскому смыслу, а не по internal adapter key из backend.
     if (item.adapter_key === "scenario_live") {
-      return "Живой парсинг поставщиков";
+      return "Поиск новых поставщиков";
     }
     if (item.adapter_key === "fixture_json") {
-      return "Фикстурный импорт поставщиков";
+      return "Демо-источник поставщиков";
     }
     return item.label;
   }
 
   function displayAdapterKey(adapterKey: string) {
     if (adapterKey === "scenario_live") {
-      return "живой парсинг";
+      return "поиск и первичный разбор";
     }
     if (adapterKey === "fixture_json") {
-      return "фикстурный JSON";
+      return "демо-данные";
     }
     return adapterKey;
   }
@@ -251,7 +253,7 @@ export default function SuppliersPage() {
   if (!session?.token) {
     return (
       <main className="container py-10">
-        <Card className="glass-panel border-white/12 p-6">
+        <Card className="paper-panel p-6">
           <h1 className="text-3xl leading-tight">Панель поставщиков</h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             Для этого экрана нужен вход с ролью оператора или администратора. Сначала авторизуйся в платформе.
@@ -270,11 +272,25 @@ export default function SuppliersPage() {
     <main className="container space-y-6 py-8">
       <div className="paper-panel grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Поставщики · wave 1</div>
-          <h1 className="mt-2 text-3xl leading-tight">Операторская панель поставщиков</h1>
+          <div className="micro-label">Поставщики и проверка источников</div>
+          <h1 className="mt-3 text-3xl leading-tight">Откуда берём поставщиков и что делать дальше</h1>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Источники импорта, первичный слой, разбор дублей и движение по доверию собраны в один ручной контур без скрытой автоматизации.
+            Здесь видно, откуда приходят данные, когда был последний запуск, где есть сбой и какие компании требуют ручной проверки перед коммерческим предложением.
           </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+              <div className="font-medium">Источник</div>
+              <div className="mt-1 text-muted-foreground">Показывает, где мы ищем поставщиков и можно ли этому источнику доверять.</div>
+            </div>
+            <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+              <div className="font-medium">Запуск</div>
+              <div className="mt-1 text-muted-foreground">Каждый запуск фиксирует, что нашли, что объединили и что отправили на ручную проверку.</div>
+            </div>
+            <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+              <div className="font-medium">Следующий шаг</div>
+              <div className="mt-1 text-muted-foreground">При сбое запускаем повтор. При дублях решаем вручную. Подтверждённые компании идут в работу.</div>
+            </div>
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(18rem,22rem)_auto_auto] sm:items-end">
           <label className="flex min-w-0 flex-col gap-2 text-sm text-muted-foreground">
@@ -296,7 +312,7 @@ export default function SuppliersPage() {
             disabled={loading || !selectedSource || actionCode === selectedSource?.code}
             className="h-11"
           >
-            {actionCode === selectedSource?.code ? "Ставлю в очередь..." : "Поставить в очередь"}
+            {actionCode === selectedSource?.code ? "Запускаю..." : "Запустить сейчас"}
           </Button>
           <Button variant="secondary" onClick={() => void load()} disabled={loading} className="h-11">Обновить</Button>
         </div>
@@ -306,7 +322,7 @@ export default function SuppliersPage() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="paper-panel p-5">
-          <h2 className="text-xl">Источники</h2>
+          <h2 className="text-xl">Источники поставщиков</h2>
           <div className="mt-4 space-y-3 text-sm">
             {sources.map((item) => (
               <div key={item.code} className="rounded-[1.4rem] border border-border/80 bg-white/55 p-4 shadow-[0_16px_38px_-32px_rgba(43,46,52,0.35)]">
@@ -321,11 +337,11 @@ export default function SuppliersPage() {
                 </div>
                 <div className="mt-2 text-muted-foreground">
                   {item.adapter_key === "scenario_live"
-                    ? `Живой парсинг: ${String(item.config_json?.query || "printing packaging vietnam")} · ${String(item.config_json?.country || "VN")}`
-                    : "Fixture-импорт для повторяемого demo и тестов"}
+                    ? `Ищем компании по выбранной стране и отрасли: ${String(item.config_json?.country || "VN")} · печать и упаковка.`
+                    : "Используем демонстрационный набор компаний для проверки экрана и сценариев запуска."}
                 </div>
                 <div className="mt-3 rounded-[1.1rem] border border-border/70 bg-background/55 px-3 py-3 text-xs leading-6 text-muted-foreground">
-                  <div>Состояние: {displaySourceHealth(item.health.detail, item.health.payload)}</div>
+                  <div>Состояние источника: {displaySourceHealth(item.health.detail, item.health.payload)}</div>
                   <div>Последний успешный запуск: {formatFoundationDate(item.last_success_at, "Ещё не было")}</div>
                   <div>
                     Постоянный режим: {item.schedule?.enabled ? `включён, каждые ${item.schedule.interval_minutes} мин.` : "выключен"}
@@ -334,7 +350,7 @@ export default function SuppliersPage() {
                     Следующее окно: {formatFoundationDate(item.schedule?.next_run_at, item.schedule?.enabled ? "Запустится при первом свободном окне" : "Не планируется")}
                   </div>
                   <div>
-                    Классификация: {displayClassificationMode(item.classification?.mode)}{item.classification?.llm_enabled ? " · LLM fallback активен" : " · LLM fallback выключен"}
+                    Разбор результатов: {displayClassificationMode(item.classification?.mode)}{item.classification?.llm_enabled ? " · ИИ-подсказка включена" : " · ИИ-подсказка выключена"}
                   </div>
                 </div>
                 {item.latest_ingest ? (
@@ -360,10 +376,10 @@ export default function SuppliersPage() {
                 )}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => void enqueueSourceRun(item.code, "ui_supplier_ingest_enqueue")} disabled={loading || actionCode === item.code}>
-                    В очередь
+                    Запустить сейчас
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => void enqueueSourceRun(item.code, "ui_force_rerun_supplier_ingest")} disabled={loading || actionCode === item.code}>
-                    Перезапустить
+                    Повторить запуск
                   </Button>
                   {item.latest_ingest?.ingest_status === "failed" ? (
                     <Button size="sm" variant="outline" onClick={() => void retryFailedIngest(item.latest_ingest!.code)} disabled={loading || actionCode === item.latest_ingest?.code}>
@@ -382,7 +398,7 @@ export default function SuppliersPage() {
         </Card>
 
         <Card className="paper-panel p-5 lg:col-span-2">
-          <h2 className="text-xl">Последние запуски импорта</h2>
+          <h2 className="text-xl">Последние запуски</h2>
           <div className="mt-4 grid gap-3">
             {ingests.map((item) => (
               <div key={item.code} className="rounded-[1.4rem] border border-border/80 bg-white/55 p-4 shadow-[0_16px_38px_-32px_rgba(43,46,52,0.35)]">
@@ -434,7 +450,7 @@ export default function SuppliersPage() {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Спорные дубли</h2>
+          <h2 className="text-xl">Похожие компании, которые надо проверить вручную</h2>
           <div className="mt-4 space-y-3">
             {candidates.map((item) => (
               <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -481,24 +497,24 @@ function displayTriggerMode(value?: string | null): string {
 
 function displaySourceHealth(detail?: string | null, payload?: Record<string, unknown>): string {
   if (detail === "fixture_ready") {
-    return "Fixture JSON доступен";
+    return "Демо-набор доступен";
   }
   if (detail === "live_parsing_ready") {
     const threshold = payload?.low_confidence_threshold;
-    return threshold !== undefined ? `Живой парсинг готов, порог ${String(threshold)}` : "Живой парсинг готов";
+    return threshold !== undefined ? `Поиск работает, порог проверки ${String(threshold)}` : "Поиск работает";
   }
   if (detail === "live_parsing_unavailable") {
-    return `Живой парсинг недоступен: ${String(payload?.error || "без detail")}`;
+    return `Поиск недоступен: ${String(payload?.error || "без detail")}`;
   }
   return displayReasonCode(detail);
 }
 
 function displayClassificationMode(value?: string | null): string {
   if (value === "ai_assisted_fallback") {
-    return "парсинг + ai-assisted fallback";
+    return "строгие правила + ИИ-подсказка";
   }
   if (value === "deterministic_only") {
-    return "только детерминированный разбор";
+    return "только строгие правила";
   }
   return displayReasonCode(value);
 }

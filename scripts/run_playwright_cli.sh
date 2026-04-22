@@ -26,18 +26,50 @@ export NPM_CONFIG_CACHE="${PLAYWRIGHT_CACHE_DIR}"
 
 has_session_flag="false"
 has_browser_flag="false"
+browser_value=""
+skip_browser_value="false"
+FILTERED_ARGS=()
 for arg in "$@"; do
+  if [[ "${skip_browser_value}" == "true" ]]; then
+    browser_value="${arg}"
+    has_browser_flag="true"
+    skip_browser_value="false"
+    continue
+  fi
   case "$arg" in
-    --session|--session=*)
+    --session|--session=*|-s|-s=*)
       has_session_flag="true"
+      FILTERED_ARGS+=("$arg")
       ;;
-  esac
-  case "$arg" in
-    --browser|--browser=*)
+    --browser)
       has_browser_flag="true"
+      skip_browser_value="true"
+      ;;
+    --browser=*)
+      has_browser_flag="true"
+      browser_value="${arg#*=}"
+      ;;
+    *)
+      FILTERED_ARGS+=("$arg")
       ;;
   esac
 done
+
+if [[ "${skip_browser_value}" == "true" ]]; then
+  echo "Missing value for --browser." >&2
+  exit 2
+fi
+
+if [[ "${has_browser_flag}" == "true" ]]; then
+  if [[ -z "${browser_value}" || "${browser_value}" == "${DEFAULT_BROWSER}" ]]; then
+    :
+  else
+    echo "Only Google Chrome is allowed in this repository. Use --browser=chrome or omit the flag." >&2
+    exit 2
+  fi
+fi
+
+set -- "${FILTERED_ARGS[@]}"
 
 session_name() {
   if [[ -f "${SESSION_FILE}" ]]; then
@@ -63,30 +95,6 @@ forget_session() {
 
 COMMAND="${1:-}"
 CURRENT_SESSION="$(session_name)"
-browser_arg_supported="false"
-
-case "${COMMAND}" in
-  ""|--help|-h|list|close|close-all|kill-all|attach|install|install-browser)
-    browser_arg_supported="false"
-    ;;
-  *)
-    # RU: Meta-команды playwright-cli не принимают --browser, поэтому chrome-фиксацию добавляем только в реальные browser-driven действия.
-    browser_arg_supported="true"
-    ;;
-esac
-
-if [[ "${has_browser_flag}" == "true" ]]; then
-  for arg in "$@"; do
-    case "$arg" in
-      --browser=chrome)
-        ;;
-      --browser=*|--browser)
-        echo "Only Google Chrome is allowed in this repository. Use --browser=chrome or omit the flag." >&2
-        exit 2
-        ;;
-    esac
-  done
-fi
 
 if [[ "${has_session_flag}" != "true" && -n "${CURRENT_SESSION}" ]] && session_is_open "${CURRENT_SESSION}"; then
   export PLAYWRIGHT_CLI_SESSION="${CURRENT_SESSION}"
@@ -121,9 +129,5 @@ case "${COMMAND}" in
     ;;
 esac
 
-# RU: Все browser-driven проверки и ручные walkthrough в этом репозитории идут только через Google Chrome.
-if [[ "${browser_arg_supported}" == "true" && "${has_browser_flag}" != "true" ]]; then
-  exec bash "${PWCLI}" "$@" --browser="${DEFAULT_BROWSER}"
-fi
-
+# RU: Все browser-driven команды проходят через curated wrapper, чтобы policy и reuse одной сессии оставались едиными.
 exec bash "${PWCLI}" "$@"

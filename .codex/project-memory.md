@@ -78,15 +78,60 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-23 02:21 +07`
+- Updated at: `2026-04-23 05:15 +07`
 - Branch: `codex/foundation-admin-config-cleanup`
-- Current focus: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Current focus: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
 - Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
+- Biggest operational risk: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-23 05:15 +07 | codex/foundation-admin-config-cleanup
+- Summary: Rebuild the standalone web shell around the managed-service product language, clean public/operator/admin copy and layout, remove login debug noise, stabilize logged-in hydration through `useFoundationSession()`, reseed demo names, and verify the result through build, browser pass, and canonical workflow checks.
+- Changed:
+  - apps/web/app/admin-config/page.tsx
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/app/globals.css
+  - apps/web/app/login/page.tsx
+  - apps/web/app/marketing/page.tsx
+  - apps/web/app/rfq/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/app/supplier-sites/[siteCode]/page.tsx
+  - apps/web/app/suppliers/[supplierCode]/page.tsx
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/components/auth/foundation-login-form.tsx
+  - apps/web/components/catalog/catalog-detail.tsx
+  - apps/web/components/catalog/catalog-request-form.tsx
+  - apps/web/components/catalog/catalog-showcase.tsx
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/lib/foundation-display.ts
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/en.json
+  - apps/web/messages/ru.json
+  - apps/web/package.json
+  - scripts/run_playwright_cli.sh
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/modules/shared.py
+  - src/magon_standalone/foundation/order_services.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `cd apps/web && npm run build`
+  - PASS browser pass on `/`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`, `/admin-config`
+  - PASS `bash scripts/run_playwright_cli.sh -s=default console --raw`
+- Risk:
+  - The main shell is verified and clean, but secondary routes can still regress if new seed/demo labels or raw backend status names are introduced without the same product-first copy discipline.
 ### 2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup
 - Summary: Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.
 - Changed:

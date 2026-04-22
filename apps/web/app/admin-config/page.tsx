@@ -8,7 +8,7 @@ import {Card} from "@/components/ui/card";
 import {Field, FieldHint, FieldLabel} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 
 type ReasonCodeItem = {
   code: string;
@@ -76,7 +76,7 @@ async function requestFoundation<T>(path: string, token: string, options: Reques
 
 function SessionGate({children}: {children: React.ReactNode}) {
   // RU: Admin-config нельзя отдавать вне admin-сессии, иначе базовые workflow-настройки утекут в публичный или customer-контур.
-  const session = readFoundationSession();
+  const session = useFoundationSession();
   if (!session?.token || session.role_code !== "admin") {
     return (
       <main className="container space-y-6 py-10">
@@ -84,7 +84,7 @@ function SessionGate({children}: {children: React.ReactNode}) {
           <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Админ-настройки</div>
           <h1 className="mt-2 text-3xl leading-tight">Настройка платформы</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Для этого экрана нужен действующий админский токен. Здесь настраиваются сущности и правила wave1, а не сиды в коде.
+            Для этого экрана нужен вход под администратором. Здесь настраиваются причины, правила, уведомления и источники поставщиков без правки кода.
           </p>
           <div className="mt-5 flex gap-3">
             <Link href="/login"><Button>Вход</Button></Link>
@@ -98,7 +98,8 @@ function SessionGate({children}: {children: React.ReactNode}) {
 }
 
 export default function AdminConfigPage() {
-  const session = readFoundationSession();
+  // RU: useFoundationSession держит одинаковый initial snapshot на сервере и клиенте, чтобы admin UI не гидратировался в другой layout.
+  const session = useFoundationSession();
   const token = session?.token ?? "";
   const [reasonCodes, setReasonCodes] = useState<ReasonCodeItem[]>([]);
   const [rules, setRules] = useState<RuleItem[]>([]);
@@ -108,6 +109,7 @@ export default function AdminConfigPage() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
+  // RU: Список правил берём из живого payload, чтобы version forms работали только с реально существующими rule codes.
   const ruleOptions = useMemo(() => rules.map((item) => item.code), [rules]);
 
   const loadAll = useCallback(async () => {
@@ -155,13 +157,13 @@ export default function AdminConfigPage() {
   return (
     <SessionGate>
       <main className="container space-y-6 py-10">
-        <Card className="glass-panel border-white/12 p-6">
+        <Card className="paper-panel p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Системная настройка</div>
-              <h1 className="mt-2 text-3xl leading-tight">Настройка сущностей и правил</h1>
+              <div className="micro-label">Админка настроек</div>
+              <h1 className="mt-3 text-3xl leading-tight">Что именно настраивает работу платформы</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Этот экран убирает зависимость от сидов и правок кода для базовой конфигурации wave1: reason codes, rules, notification rules и supplier source settings.
+                Здесь не технический конфиг ради конфига. Этот экран меняет причины блокировок, правила переходов, уведомления и источники поставщиков, которые потом видят оператор и клиент.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -178,8 +180,8 @@ export default function AdminConfigPage() {
 
         <section className="grid gap-6 xl:grid-cols-2">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Reason codes</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Коды причин и blocker semantics, которые видит workflow и UI.</p>
+            <h2 className="text-xl">Причины и блокеры</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Эти записи объясняют, почему объект встал, что именно требует внимания и какой текст увидит интерфейс.</p>
             <form
               className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4"
               onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -201,36 +203,36 @@ export default function AdminConfigPage() {
                     }),
                   });
                   event.currentTarget.reset();
-                }, "Reason code создан.");
+                }, "Причина создана.");
               }}
             >
               <div className="grid gap-3 md:grid-cols-2">
-                <Field><FieldLabel>Code</FieldLabel><Input name="code" placeholder="customer_artwork_missing" required /></Field>
-                <Field><FieldLabel>Заголовок</FieldLabel><Input name="title" placeholder="Отсутствует artwork" required /></Field>
+                <Field><FieldLabel>Служебный код</FieldLabel><Input name="code" placeholder="customer_artwork_missing" required /></Field>
+                <Field><FieldLabel>Заголовок</FieldLabel><Input name="title" placeholder="Не хватает макета" required /></Field>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field><FieldLabel>Категория</FieldLabel><Input name="category" placeholder="request" required /></Field>
                 <Field>
-                  <FieldLabel>Severity</FieldLabel>
+                  <FieldLabel>Важность</FieldLabel>
                   <select name="severity" className="h-11 rounded-lg border border-input bg-background px-4 text-sm">
-                    <option value="info">info</option>
-                    <option value="warning">warning</option>
-                    <option value="critical">critical</option>
+                    <option value="info">справочно</option>
+                    <option value="warning">нужно внимание</option>
+                    <option value="critical">критично</option>
                   </select>
                 </Field>
                 <Field>
-                  <FieldLabel>Visibility</FieldLabel>
+                  <FieldLabel>Кому показывать</FieldLabel>
                   <select name="default_visibility_scope" className="h-11 rounded-lg border border-input bg-background px-4 text-sm">
-                    <option value="internal">internal</option>
-                    <option value="customer">customer</option>
-                    <option value="supplier">supplier</option>
+                    <option value="internal">только команда</option>
+                    <option value="customer">клиенту</option>
+                    <option value="supplier">поставщику</option>
                   </select>
                 </Field>
               </div>
               <Field><FieldLabel>Описание</FieldLabel><Textarea name="description" placeholder="Короткое объяснение для UI и аудита." /></Field>
-              <Field><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" placeholder='{"owner":"ops"}' /></Field>
+              <Field><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" placeholder='{"owner":"ops"}' /></Field>
               <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="is_active" defaultChecked /> Активен</label>
-              <Button type="submit">Создать reason code</Button>
+              <Button type="submit">Создать причину</Button>
             </form>
             <div className="mt-4 space-y-3">
               {reasonCodes.map((item) => (
@@ -254,7 +256,7 @@ export default function AdminConfigPage() {
                           metadata_json: parseOptionalJson(formData.get("metadata_json")) ?? {},
                         }),
                       });
-                    }, `Reason code ${item.code} обновлён.`);
+                    }, `Причина ${item.code} обновлена.`);
                   }}
                 >
                   <div className="mb-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.code}</div>
@@ -264,25 +266,25 @@ export default function AdminConfigPage() {
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-3">
                     <Field>
-                      <FieldLabel>Severity</FieldLabel>
+                      <FieldLabel>Важность</FieldLabel>
                       <select name="severity" defaultValue={item.severity} className="h-11 rounded-lg border border-input bg-background px-4 text-sm">
-                        <option value="info">info</option>
-                        <option value="warning">warning</option>
-                        <option value="critical">critical</option>
+                        <option value="info">справочно</option>
+                        <option value="warning">нужно внимание</option>
+                        <option value="critical">критично</option>
                       </select>
                     </Field>
                     <Field>
-                      <FieldLabel>Visibility</FieldLabel>
+                      <FieldLabel>Кому показывать</FieldLabel>
                       <select name="default_visibility_scope" defaultValue={item.default_visibility_scope} className="h-11 rounded-lg border border-input bg-background px-4 text-sm">
-                        <option value="internal">internal</option>
-                        <option value="customer">customer</option>
-                        <option value="supplier">supplier</option>
+                        <option value="internal">только команда</option>
+                        <option value="customer">клиенту</option>
+                        <option value="supplier">поставщику</option>
                       </select>
                     </Field>
                     <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="is_active" defaultChecked={item.is_active} /> Активен</label>
                   </div>
                   <Field className="mt-3"><FieldLabel>Описание</FieldLabel><Textarea name="description" defaultValue={item.description ?? ""} /></Field>
-                  <Field className="mt-3"><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
+                  <Field className="mt-3"><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
                   <div className="mt-3 flex justify-end"><Button type="submit" variant="secondary">Сохранить</Button></div>
                 </form>
               ))}
@@ -290,8 +292,8 @@ export default function AdminConfigPage() {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Rules и версии</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Transition guards и explainable rule versions для критичных переходов.</p>
+            <h2 className="text-xl">Правила переходов</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Здесь задаются проверки и версии правил, которые разрешают или блокируют переход заявки, предложения и заказа.</p>
             <form
               className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4"
               onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -317,17 +319,17 @@ export default function AdminConfigPage() {
               }}
             >
               <div className="grid gap-3 md:grid-cols-2">
-                <Field><FieldLabel>Название</FieldLabel><Input name="name" placeholder="Guard: order start requires payment" required /></Field>
-                <Field><FieldLabel>Scope</FieldLabel><Input name="scope" placeholder="order_transition" required /></Field>
+                <Field><FieldLabel>Название</FieldLabel><Input name="name" placeholder="Старт заказа только после подтверждения оплаты" required /></Field>
+                <Field><FieldLabel>Где работает правило</FieldLabel><Input name="scope" placeholder="order_transition" required /></Field>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <Field><FieldLabel>Rule kind</FieldLabel><Input name="rule_kind" defaultValue="transition_guard" required /></Field>
+                <Field><FieldLabel>Тип правила</FieldLabel><Input name="rule_kind" defaultValue="transition_guard" required /></Field>
                 <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="enabled" defaultChecked /> Включено</label>
               </div>
               <Field><FieldLabel>Описание</FieldLabel><Textarea name="description" placeholder="Что именно блокирует или разрешает правило." /></Field>
-              <Field><FieldLabel>Config JSON</FieldLabel><Textarea name="config_json" placeholder='{"required_reason_codes":["payment_confirmed"]}' /></Field>
-              <Field><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" placeholder='{"owner":"admin"}' /></Field>
-              <Field><FieldLabel>Explainability JSON</FieldLabel><Textarea name="explainability_json" placeholder='{"summary":"Start only after payment confirmation."}' /></Field>
+              <Field><FieldLabel>Условия (JSON)</FieldLabel><Textarea name="config_json" placeholder='{"required_reason_codes":["payment_confirmed"]}' /></Field>
+              <Field><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" placeholder='{"owner":"admin"}' /></Field>
+              <Field><FieldLabel>Пояснение для интерфейса (JSON)</FieldLabel><Textarea name="explainability_json" placeholder='{"summary":"Start only after payment confirmation."}' /></Field>
               <Button type="submit">Создать правило</Button>
             </form>
             <div className="mt-4 space-y-3">
@@ -363,14 +365,14 @@ export default function AdminConfigPage() {
                     </div>
                     <div className="grid gap-3 md:grid-cols-2">
                       <Field><FieldLabel>Название</FieldLabel><Input name="name" defaultValue={item.name} required /></Field>
-                      <Field><FieldLabel>Scope</FieldLabel><Input name="scope" defaultValue={item.scope} required /></Field>
+                      <Field><FieldLabel>Где работает правило</FieldLabel><Input name="scope" defaultValue={item.scope} required /></Field>
                     </div>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
-                      <Field><FieldLabel>Rule kind</FieldLabel><Input name="rule_kind" defaultValue={item.rule_kind} required /></Field>
+                      <Field><FieldLabel>Тип правила</FieldLabel><Input name="rule_kind" defaultValue={item.rule_kind} required /></Field>
                       <Field><FieldLabel>Описание</FieldLabel><Input name="description" defaultValue={item.description ?? ""} /></Field>
                     </div>
-                    <Field className="mt-3"><FieldLabel>Config JSON</FieldLabel><Textarea name="config_json" defaultValue={JSON.stringify(item.config_json ?? {}, null, 2)} /></Field>
-                    <Field className="mt-3"><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
+                    <Field className="mt-3"><FieldLabel>Условия (JSON)</FieldLabel><Textarea name="config_json" defaultValue={JSON.stringify(item.config_json ?? {}, null, 2)} /></Field>
+                    <Field className="mt-3"><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
                     <div className="mt-3 flex flex-wrap justify-end gap-2">
                       <Button type="submit" variant="secondary">Сохранить правило</Button>
                       <Button
@@ -401,8 +403,8 @@ export default function AdminConfigPage() {
 
         <section className="grid gap-6 xl:grid-cols-2">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Notification rules</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Шаблоны уведомлений и антиспам-интервалы для role-scoped inbox.</p>
+            <h2 className="text-xl">Кому и когда шлём уведомления</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Эти правила определяют, какие события попадают в inbox, кому они адресованы и как часто можно повторять одно и то же сообщение.</p>
             <form
               className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4"
               onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -425,17 +427,17 @@ export default function AdminConfigPage() {
                     }),
                   });
                   event.currentTarget.reset();
-                }, "Notification rule создан.");
+                }, "Правило уведомлений создано.");
               }}
             >
               <div className="grid gap-3 md:grid-cols-2">
-                <Field><FieldLabel>Event type</FieldLabel><Input name="event_type" placeholder="request_status_changed" required /></Field>
-                <Field><FieldLabel>Entity type</FieldLabel><Input name="entity_type" placeholder="request" required /></Field>
+                <Field><FieldLabel>Событие</FieldLabel><Input name="event_type" placeholder="request_status_changed" required /></Field>
+                <Field><FieldLabel>Сущность</FieldLabel><Input name="entity_type" placeholder="request" required /></Field>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
-                <Field><FieldLabel>Recipient scope</FieldLabel><Input name="recipient_scope" defaultValue="internal" required /></Field>
-                <Field><FieldLabel>Channel</FieldLabel><Input name="channel" defaultValue="inbox" required /></Field>
-                <Field><FieldLabel>Template key</FieldLabel><Input name="template_key" placeholder="request_blocker_internal" required /></Field>
+                <Field><FieldLabel>Кому отправляем</FieldLabel><Input name="recipient_scope" defaultValue="internal" required /></Field>
+                <Field><FieldLabel>Канал</FieldLabel><Input name="channel" defaultValue="inbox" required /></Field>
+                <Field><FieldLabel>Шаблон</FieldLabel><Input name="template_key" placeholder="request_blocker_internal" required /></Field>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field><FieldLabel>Мин. интервал, сек</FieldLabel><Input name="min_interval_seconds" type="number" defaultValue={0} min={0} /></Field>
@@ -448,8 +450,8 @@ export default function AdminConfigPage() {
                 </Field>
                 <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="enabled" defaultChecked /> Включено</label>
               </div>
-              <Field><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" placeholder='{"title":"Нужно уточнение"}' /></Field>
-              <Button type="submit">Создать notification rule</Button>
+              <Field><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" placeholder='{"title":"Нужно уточнение"}' /></Field>
+              <Button type="submit">Создать правило уведомлений</Button>
             </form>
             <div className="mt-4 space-y-3">
               {notificationRules.map((item) => (
@@ -475,18 +477,18 @@ export default function AdminConfigPage() {
                           metadata_json: parseOptionalJson(formData.get("metadata_json")) ?? {},
                         }),
                       });
-                    }, `Notification rule ${item.code} обновлён.`);
+                    }, `Правило уведомлений ${item.code} обновлено.`);
                   }}
                 >
                   <div className="mb-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.code}</div>
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field><FieldLabel>Event type</FieldLabel><Input name="event_type" defaultValue={item.event_type} required /></Field>
-                    <Field><FieldLabel>Entity type</FieldLabel><Input name="entity_type" defaultValue={item.entity_type} required /></Field>
+                    <Field><FieldLabel>Событие</FieldLabel><Input name="event_type" defaultValue={item.event_type} required /></Field>
+                    <Field><FieldLabel>Сущность</FieldLabel><Input name="entity_type" defaultValue={item.entity_type} required /></Field>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-3">
-                    <Field><FieldLabel>Recipient scope</FieldLabel><Input name="recipient_scope" defaultValue={item.recipient_scope} required /></Field>
-                    <Field><FieldLabel>Channel</FieldLabel><Input name="channel" defaultValue={item.channel} required /></Field>
-                    <Field><FieldLabel>Template key</FieldLabel><Input name="template_key" defaultValue={item.template_key} required /></Field>
+                    <Field><FieldLabel>Кому отправляем</FieldLabel><Input name="recipient_scope" defaultValue={item.recipient_scope} required /></Field>
+                    <Field><FieldLabel>Канал</FieldLabel><Input name="channel" defaultValue={item.channel} required /></Field>
+                    <Field><FieldLabel>Шаблон</FieldLabel><Input name="template_key" defaultValue={item.template_key} required /></Field>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-3">
                     <Field><FieldLabel>Мин. интервал, сек</FieldLabel><Input name="min_interval_seconds" type="number" min={0} defaultValue={item.min_interval_seconds} /></Field>
@@ -499,7 +501,7 @@ export default function AdminConfigPage() {
                     </Field>
                     <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="enabled" defaultChecked={item.enabled} /> Включено</label>
                   </div>
-                  <Field className="mt-3"><FieldLabel>Metadata JSON</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
+                  <Field className="mt-3"><FieldLabel>Доп. параметры (JSON)</FieldLabel><Textarea name="metadata_json" defaultValue={JSON.stringify(item.metadata_json ?? {}, null, 2)} /></Field>
                   <div className="mt-3 flex justify-end"><Button type="submit" variant="secondary">Сохранить</Button></div>
                 </form>
               ))}
@@ -507,8 +509,8 @@ export default function AdminConfigPage() {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Supplier source settings</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Настройка periodic parsing/classification без редактирования bootstrap или сидов.</p>
+            <h2 className="text-xl">Источники поставщиков и режим их обновления</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Здесь управляем тем, откуда берём компании, как часто их обновляем и какой режим разбора применяем к результату.</p>
             <div className="mt-4 space-y-3">
               {supplierSources.map((item) => (
                 <form
@@ -539,27 +541,27 @@ export default function AdminConfigPage() {
                       <div className="mt-1 text-sm text-muted-foreground">{item.adapter_key}</div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      LLM fallback: {item.classification.llm_enabled ? "включён" : "выключен"}
+                      ИИ-подсказка: {item.classification.llm_enabled ? "включена" : "выключена"}
                     </div>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <Field><FieldLabel>Название</FieldLabel><Input name="label" defaultValue={item.label} required /></Field>
                     <Field><FieldLabel>Классификация</FieldLabel>
                       <select name="classification_mode" defaultValue={item.classification.mode} className="h-11 rounded-lg border border-input bg-background px-4 text-sm">
-                        <option value="deterministic_only">deterministic_only</option>
-                        <option value="ai_assisted_fallback">ai_assisted_fallback</option>
+                        <option value="deterministic_only">только строгие правила</option>
+                        <option value="ai_assisted_fallback">строгие правила + ИИ-подсказка</option>
                       </select>
                     </Field>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-3">
                     <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="enabled" defaultChecked={item.enabled} /> Источник включён</label>
-                    <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="schedule_enabled" defaultChecked={item.schedule.enabled} /> Periodic запуск</label>
+                    <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="schedule_enabled" defaultChecked={item.schedule.enabled} /> Запуск по расписанию</label>
                     <Field><FieldLabel>Интервал, мин</FieldLabel><Input name="schedule_interval_minutes" type="number" min={5} defaultValue={item.schedule.interval_minutes} /></Field>
                   </div>
                   <Field className="mt-3">
-                    <FieldLabel>Config JSON</FieldLabel>
+                    <FieldLabel>Параметры источника (JSON)</FieldLabel>
                     <Textarea name="config_json" defaultValue={JSON.stringify(item.config_json ?? {}, null, 2)} />
-                    <FieldHint>Здесь же можно явно задать parser/query/source-specific параметры.</FieldHint>
+                    <FieldHint>Здесь можно явно задать поисковый запрос, источник, лимиты и другие параметры конкретного адаптера.</FieldHint>
                   </Field>
                   <div className="mt-3 flex justify-end"><Button type="submit" variant="secondary">Сохранить источник</Button></div>
                 </form>
