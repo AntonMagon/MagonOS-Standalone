@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-23 01:32 +07`
-- Current focus: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
+- Auto-synced at: `2026-04-23 02:21 +07`
+- Current focus: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
 - Validated contour:
   - company
   - request draft / intake boundary

@@ -7,7 +7,11 @@
 ## Planning truth
 - Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
 - Read-only export of the same planning spec: `gpt_doc/codex_wave1_spec_ru.pdf`
-- There are no additional active planning documents in `gpt_doc/`; this file remains the runtime/verification truth, but product planning for the new contour must follow the wave1 spec above.
+- Expanded product/planning canon for the current standalone shaping also includes:
+  - `gpt_doc/platform_documentation_pack_ru_v3.docx`
+  - `gpt_doc/platform_documentation_pack_ru_with_marketing.docx`
+  - `gpt_doc/project_marketing_research_vietnam_ru.docx`
+- This file remains the runtime/verification truth, but product-facing UX, IA, marketing copy, and role surfaces must now be checked against that expanded `gpt_doc` package instead of reading the raw wave1 spec in isolation.
 
 ## Runtime truth
 - Standalone is the primary platform-of-record.

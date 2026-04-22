@@ -9,7 +9,11 @@
 
 - Жёсткая спецификация первой волны: `gpt_doc/codex_wave1_spec_ru.docx`
 - PDF-экспорт той же спецификации для чтения без редактора: `gpt_doc/codex_wave1_spec_ru.pdf`
-- Других активных planning-doc в `gpt_doc/` сейчас нет; этот файл остаётся правдой по runtime и проверке, а плановую архитектуру нового контура нужно читать из указанной wave1-спецификации.
+- Расширенный продуктовый канон для текущего standalone-контура также включает:
+  - `gpt_doc/platform_documentation_pack_ru_v3.docx`
+  - `gpt_doc/platform_documentation_pack_ru_with_marketing.docx`
+  - `gpt_doc/project_marketing_research_vietnam_ru.docx`
+- Этот файл остаётся правдой по runtime и проверке, но продуктовый UX, IA, фронтовые формулировки и role-based экраны теперь нужно сверять со всем этим пакетом, а не читать wave1-спецификацию в отрыве от архитектурного и маркетингового слоя.
 
 ## Что является правдой рантайма
 

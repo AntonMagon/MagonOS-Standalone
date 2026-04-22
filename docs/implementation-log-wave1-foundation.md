@@ -89,6 +89,34 @@
 - Полный `./scripts/verify_workflow.sh --with-web` остаётся зелёным после удаления active legacy drift и добавления новых admin surfaces.
 - Web typecheck проходит с новым `/admin-config` и обновлёнными shell messages.
 
+## 2026-04-23 — Продуктовый канон для пересборки UI зафиксирован по полному пакету `gpt_doc`
+
+### Что было найдено
+- Ранее planning truth в runtime-docs была зафиксирована слишком узко: только через `codex_wave1_spec_ru.docx`.
+- После повторного чтения полного пакета `gpt_doc` стало ясно, что для product-facing UX этого недостаточно:
+  - `platform_documentation_pack_ru_v3` задаёт канонические объекты, роли, экраны и сценарии;
+  - marketing research задаёт фронтовый оффер, воронку и запрет на маркетплейс/AI-jargon.
+- Текущий web shell действительно дрейфует от этой базы: часть экранов говорит языком архитектуры, а не языком managed service для печати и упаковки.
+
+### Что изменено
+- `docs/current-project-state.md` и `docs/ru/current-project-state.md` обновлены: planning truth теперь читается как расширенный пакет `gpt_doc`, а не как одинокая wave1-спецификация.
+- Добавлен отдельный продуктовый execution-plan:
+  - `docs/ru/foundation-product-rebuild-plan.md`
+- В `.codex/project-memory.md` и `docs/implementation-notes.md` зафиксировано:
+  - следующий UI/product проход обязан опираться на managed-service оффер;
+  - публичные и operator/admin surfaces нельзя больше собирать вокруг внутреннего архитектурного жаргона.
+
+### Что подтверждено
+- DOCX-структура, таблицы ролей, статусов, экранов и маркетинговых ограничений реально считаны из полного пакета `gpt_doc`.
+- Живые ключевые web surfaces по-прежнему доступны и могут служить baseline для следующего product/UI прохода:
+  - `/`
+  - `/marketing`
+  - `/catalog`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+
 ## 2026-04-23 — Полный audit контекста, automation-layer и perf smoke cleanup
 
 ### Что было найдено

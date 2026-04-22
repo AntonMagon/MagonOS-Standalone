@@ -8,9 +8,15 @@ It exists so the project context survives across sessions instead of being re-ex
 - Historical source repo for evidence-only inspection: `/Users/anton/Desktop/MagonOS/MagonOS`
 - Standalone is the primary platform-of-record.
 - Historical source context is read-only evidence, not part of the active runtime.
-- Wave1 planning truth lives in `gpt_doc/codex_wave1_spec_ru.docx`.
-- Read-only export of the same planning spec lives in `gpt_doc/codex_wave1_spec_ru.pdf`.
-- There are no other active planning docs in `gpt_doc/`; `docs/current-project-state.md` is runtime truth, and the wave1 spec above is the planning truth for the new contour.
+- Wave1 planning truth starts from `gpt_doc/codex_wave1_spec_ru.docx`.
+- Canonical expanded product truth for current standalone shaping also includes:
+  - `gpt_doc/platform_documentation_pack_ru_v3.docx`
+  - `gpt_doc/platform_documentation_pack_ru_with_marketing.docx`
+  - `gpt_doc/project_marketing_research_vietnam_ru.docx`
+- Read-only exports of the planning package live in:
+  - `gpt_doc/codex_wave1_spec_ru.pdf`
+  - `gpt_doc/platform_documentation_pack_ru_v3.pdf`
+- `docs/current-project-state.md` stays runtime truth, but product-facing UI/copy must now be checked against the expanded `gpt_doc` package instead of treating the raw wave1 spec alone as the only planning source.
 - Wave1 default runtime is the active foundation stack only; old compatibility shells are no longer part of the runtime contract.
 - Default changes happen only in this repository.
 - Current verified contour:
@@ -72,15 +78,28 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-23 01:32 +07`
-- Branch: `codex/full-audit-runtime-alignment`
-- Current focus: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
+- Updated at: `2026-04-23 02:21 +07`
+- Branch: `codex/foundation-admin-config-cleanup`
+- Current focus: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup
+- Summary: Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.
+- Changed:
+  - .codex/project-memory.md
+  - docs/implementation-notes.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/foundation-product-rebuild-plan.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
 ### 2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment
 - Summary: Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.
 - Changed:

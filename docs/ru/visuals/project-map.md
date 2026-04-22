@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-23 01:32 +07``
+Обновлено: ``2026-04-23 02:21 +07``
 
 ## Контур движения
 
@@ -64,9 +64,9 @@ flowchart LR
 
 ## Активный контекст
 
-- Текущий фокус: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
-- Последний подтверждённый статус workflow: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
+- Текущий фокус: Use the full gpt_doc package as the planning canon so the next UI/product pass rebuilds the standalone web around a clear managed-service offer instead of architecture jargon.
+- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: The runtime is verified, but the actual web UX still drifts from the expanded product canon until the planned rebuild is implemented page by page.
 
 ## Автоматические контуры контроля
 
