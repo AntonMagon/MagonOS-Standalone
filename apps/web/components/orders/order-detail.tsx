@@ -9,7 +9,26 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
 import {downloadFoundationFile, fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {
+  displayDocumentState,
+  displayDocumentType,
+  displayFileCheckState,
+  displayFileType,
+  displayLogisticsState,
+  displayMaybe,
+  displayOrderStatus,
+  displayPaymentState,
+  displayReadinessState,
+  displayReasonCode,
+  displayVisibilityScope,
+  FILE_REVIEW_OPTIONS,
+  FILE_TYPE_OPTIONS,
+  formatFoundationDate,
+  ORDER_ACTION_LABELS,
+  VISIBILITY_SCOPE_OPTIONS,
+} from "@/lib/foundation-display";
 
+// RU: Деталь заказа остаётся execution-экраном после accepted offer и не смешивает order-state с offer/request DTO.
 type OrderDetail = {
   code: string;
   order_status: string;
@@ -121,7 +140,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
   const [fileNote, setFileNote] = useState("");
   const [fileUpload, setFileUpload] = useState<File | null>(null);
   const [selectedFileCode, setSelectedFileCode] = useState("");
-  const [fileReviewState, setFileReviewState] = useState<"approved" | "rejected">("approved");
+  const [fileReviewState, setFileReviewState] = useState<"passed" | "failed">("passed");
   const [documentTemplateKey, setDocumentTemplateKey] = useState("internal_job");
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentVisibilityScope, setDocumentVisibilityScope] = useState("internal");
@@ -342,20 +361,20 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
     return (
       <main className="container py-10">
         <Card className="glass-panel border-white/12 p-6">
-          <h1 className="text-3xl leading-tight">Order detail</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">Для operator/admin workbench нужен foundation session token.</p>
-          <div className="mt-6"><Link href="/login"><Button>Открыть login</Button></Link></div>
+          <h1 className="text-3xl leading-tight">Карточка заказа</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">Для этого экрана нужен вход с ролью оператора или администратора.</p>
+          <div className="mt-6"><Link href="/login"><Button>Открыть вход</Button></Link></div>
         </Card>
       </main>
     );
   }
 
   if (loading) {
-    return <main className="container py-10"><Card className="glass-panel border-white/12 p-6">Загрузка order...</Card></main>;
+    return <main className="container py-10"><Card className="glass-panel border-white/12 p-6">Загрузка заказа...</Card></main>;
   }
 
   if (!payload) {
-    return <main className="container py-10"><Card className="glass-panel border-red-400/30 bg-red-500/10 p-6 text-red-100">{error ?? "order_not_found"}</Card></main>;
+    return <main className="container py-10"><Card className="glass-panel border-red-400/30 bg-red-500/10 p-6 text-red-100">{error ?? "Заказ не найден"}</Card></main>;
   }
 
   return (
@@ -363,16 +382,16 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
       <Card className="glass-panel border-white/12 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Order workbench</div>
+            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Контур исполнения заказа</div>
             <h1 className="mt-2 text-3xl leading-tight">{payload.item.code}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-              RU: Order остаётся лёгким orchestration-слоем после подтверждённой версии Offer и хранит минимально нужные supplier/payment/stage refs вместе с files/documents контуром.
+              Заказ остаётся лёгким координационным слоем после подтверждённого предложения и хранит только нужные рабочие связи: поставщика, оплату, этапы и документы.
             </p>
           </div>
           <div className="space-y-1 text-right text-sm text-muted-foreground">
-            <div>{payload.item.order_status}</div>
-            <div>{payload.item.payment_state}</div>
-            <div>{payload.item.logistics_state}</div>
+            <div>{displayOrderStatus(payload.item.order_status)}</div>
+            <div>{displayPaymentState(payload.item.payment_state)}</div>
+            <div>{displayLogisticsState(payload.item.logistics_state)}</div>
           </div>
         </div>
       </Card>
@@ -381,69 +400,71 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Order actions</h2>
+          <h2 className="text-xl">Действия по заказу</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void submitAction(event)}>
             <div className="space-y-2">
-              <Label htmlFor="order-action">Action</Label>
+              <Label htmlFor="order-action">Операция</Label>
               <select id="order-action" className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={action} onChange={(event) => setAction(event.target.value as typeof ACTIONS[number])}>
-                {ACTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+                {ACTIONS.map((item) => <option key={item} value={item}>{ORDER_ACTION_LABELS[item]}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="order-reason-code">Reason code</Label>
-              <Input id="order-reason-code" value={reasonCode} onChange={(event) => setReasonCode(event.target.value)} />
+              <Label htmlFor="order-reason-code">Код причины</Label>
+              <Input id="order-reason-code" value={reasonCode} onChange={(event) => setReasonCode(event.target.value)} placeholder="order_supplier_assigned" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="order-supplier-ref">Supplier ref</Label>
-              <Input id="order-supplier-ref" value={supplierRef} onChange={(event) => setSupplierRef(event.target.value)} />
+              <Label htmlFor="order-supplier-ref">Ref поставщика</Label>
+              <Input id="order-supplier-ref" value={supplierRef} onChange={(event) => setSupplierRef(event.target.value)} placeholder="SUPC-..." />
             </div>
             <div className="space-y-2">
               <Label htmlFor="order-note">Комментарий</Label>
               <Textarea id="order-note" rows={3} value={note} onChange={(event) => setNote(event.target.value)} />
             </div>
-            <Button type="submit">Применить action</Button>
+            <Button type="submit">Применить операцию</Button>
           </form>
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Internal payment record</h2>
+          <h2 className="text-xl">Внутренний платёжный контур</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void createPayment(event)}>
             <div className="space-y-2">
-              <Label htmlFor="payment-amount">Amount</Label>
+              <Label htmlFor="payment-amount">Сумма</Label>
               <Input id="payment-amount" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="payment-reason">Reason code</Label>
-              <Input id="payment-reason" value={paymentReason} onChange={(event) => setPaymentReason(event.target.value)} />
+              <Label htmlFor="payment-reason">Код причины</Label>
+              <Input id="payment-reason" value={paymentReason} onChange={(event) => setPaymentReason(event.target.value)} placeholder="manual_payment_record_created" />
             </div>
-            <Button type="submit" variant="outline">Создать payment record</Button>
+            <Button type="submit" variant="outline">Создать запись оплаты</Button>
           </form>
           <div className="mt-6 space-y-2">
-            <Label htmlFor="payment-record-select">Payment transition</Label>
+            <Label htmlFor="payment-record-select">Изменение статуса оплаты</Label>
             <select id="payment-record-select" className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={selectedPaymentCode} onChange={(event) => setSelectedPaymentCode(event.target.value)}>
-              <option value="">Выбрать payment record</option>
-              {payload.payments.map((item) => <option key={item.code} value={item.code}>{item.code} · {item.payment_state}</option>)}
+              <option value="">Выбрать запись оплаты</option>
+              {payload.payments.map((item) => <option key={item.code} value={item.code}>{item.code} · {displayPaymentState(item.payment_state)}</option>)}
             </select>
             <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={paymentTargetState} onChange={(event) => setPaymentTargetState(event.target.value as typeof PAYMENT_STATES[number])}>
-              {PAYMENT_STATES.map((item) => <option key={item} value={item}>{item}</option>)}
+              {PAYMENT_STATES.map((item) => <option key={item} value={item}>{displayPaymentState(item)}</option>)}
             </select>
-            <Button type="button" onClick={() => void transitionPayment()}>Обновить payment state</Button>
+            <Button type="button" onClick={() => void transitionPayment()}>Обновить статус оплаты</Button>
           </div>
         </Card>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Order lines</h2>
+          <h2 className="text-xl">Строки заказа</h2>
           <div className="mt-4 space-y-3 text-sm">
             {payload.lines.map((line) => (
               <div key={line.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <div className="font-medium">{line.title}</div>
                 <div className="mt-2 grid gap-2 text-muted-foreground md:grid-cols-2">
-                  <div>{line.line_status}</div>
+                  <div>{displayMaybe(line.line_status)}</div>
                   <div>{line.quantity} {line.unit_label}</div>
-                  <div>Supplier: {line.planned_supplier_ref ?? "n/a"}</div>
-                  <div>Stages: {line.planned_stage_refs.join(", ") || "n/a"}</div>
+                  <div>Поставщик: {line.planned_supplier_ref ?? "Не назначен"}</div>
+                  <div>Этапы: {line.planned_stage_refs.join(", ") || "Не заданы"}</div>
+                  <div>Готовность: {displayReadinessState(line.readiness_state)}</div>
+                  <div>Доставка: {displayLogisticsState(line.delivery_state)}</div>
                 </div>
               </div>
             ))}
@@ -451,20 +472,21 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Payments / ledger</h2>
+          <h2 className="text-xl">Оплаты и ledger</h2>
           <div className="mt-4 space-y-3 text-sm">
             {payload.payments.map((payment) => (
               <div key={payment.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                 <div className="font-medium">{payment.code}</div>
-                <div className="mt-1 text-muted-foreground">{payment.payment_state} · {payment.amount ?? "n/a"} {payment.currency_code}</div>
+                <div className="mt-1 text-muted-foreground">{displayPaymentState(payment.payment_state)} · {payment.amount ?? "Не указана"} {payment.currency_code}</div>
               </div>
             ))}
-            {!payload.payments.length ? <div className="text-muted-foreground">Пока нет payment records.</div> : null}
+            {!payload.payments.length ? <div className="text-muted-foreground">Пока нет записей оплаты.</div> : null}
             <div className="pt-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">Ledger</div>
             {payload.ledger.map((entry) => (
               <div key={entry.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                <div className="font-medium">{entry.entry_kind}</div>
-                <div className="mt-1 text-muted-foreground">{entry.direction} · {entry.entry_state} · {entry.amount ?? "n/a"} {entry.currency_code}</div>
+                <div className="font-medium">{displayMaybe(entry.entry_kind)}</div>
+                <div className="mt-1 text-muted-foreground">{displayMaybe(entry.direction)} · {displayMaybe(entry.entry_state)} · {entry.amount ?? "Не указана"} {entry.currency_code}</div>
+                <div className="mt-1 text-muted-foreground">{displayReasonCode(entry.reason_code)}</div>
               </div>
             ))}
           </div>
@@ -473,16 +495,20 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Managed files</h2>
+          <h2 className="text-xl">Управляемые файлы</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void uploadManagedFile(event)}>
             <div className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="file_type" value={fileType} onChange={(event) => setFileType(event.target.value)} />
-              <Input placeholder="visibility_scope" value={fileVisibilityScope} onChange={(event) => setFileVisibilityScope(event.target.value)} />
-              <Input placeholder="reason_code" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
+              <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileType} onChange={(event) => setFileType(event.target.value)}>
+                {FILE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileVisibilityScope} onChange={(event) => setFileVisibilityScope(event.target.value)}>
+                {VISIBILITY_SCOPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <Input placeholder="order_file_uploaded" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
             </div>
             <Textarea placeholder="Комментарий к файлу" rows={2} value={fileNote} onChange={(event) => setFileNote(event.target.value)} />
             <Input type="file" onChange={(event) => setFileUpload(event.target.files?.[0] ?? null)} />
-            <Button type="submit" disabled={!fileUpload}>Загрузить file в order</Button>
+            <Button type="submit" disabled={!fileUpload}>Загрузить файл в заказ</Button>
           </form>
           <div className="mt-6 space-y-3 text-sm">
             {payload.files.map((file) => (
@@ -491,12 +517,12 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
                   <div>
                     <div className="font-medium">{file.title ?? file.latest_version?.original_name ?? file.code}</div>
                     <div className="mt-1 text-muted-foreground">
-                      {file.file_type} · {file.check_state} · {file.visibility_scope} · {file.final_flag ? "final" : "draft"}
+                      {displayFileType(file.file_type)} · {displayFileCheckState(file.check_state)} · {displayVisibilityScope(file.visibility_scope)} · {file.final_flag ? "Финальная версия" : "Рабочая версия"}
                     </div>
                   </div>
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     <input type="radio" name="selected-order-file" checked={selectedFileCode === file.code} onChange={() => setSelectedFileCode(file.code)} />
-                    selected
+                    выбран
                   </label>
                 </div>
                 {file.latest_version ? (
@@ -508,31 +534,32 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
                 ) : null}
               </div>
             ))}
-            {!payload.files.length ? <div className="text-muted-foreground">Пока нет managed files на уровне order.</div> : null}
+            {!payload.files.length ? <div className="text-muted-foreground">Пока нет файлов на уровне заказа.</div> : null}
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-            <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileReviewState} onChange={(event) => setFileReviewState(event.target.value as "approved" | "rejected")}>
-              <option value="approved">approved</option>
-              <option value="rejected">rejected</option>
+            <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileReviewState} onChange={(event) => setFileReviewState(event.target.value as "passed" | "failed")}>
+              {FILE_REVIEW_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
-            <Input placeholder="review/finalize reason_code" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
-            <Button type="button" variant="outline" disabled={!selectedFileCode} onClick={() => void reviewSelectedFile()}>Review</Button>
-            <Button type="button" disabled={!selectedFileCode} onClick={() => void finalizeSelectedFile()}>Finalize</Button>
+            <Input placeholder="file_manual_review_passed" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
+            <Button type="button" variant="outline" disabled={!selectedFileCode} onClick={() => void reviewSelectedFile()}>Провести проверку</Button>
+            <Button type="button" disabled={!selectedFileCode} onClick={() => void finalizeSelectedFile()}>Зафиксировать как финальный</Button>
           </div>
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Managed documents</h2>
+          <h2 className="text-xl">Управляемые документы</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void generateDocument(event)}>
             <div className="grid gap-3 md:grid-cols-2">
               <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentTemplateKey} onChange={(event) => setDocumentTemplateKey(event.target.value)}>
                 {documentTemplates.map((template) => (
-                  <option key={template.template_key} value={template.template_key}>{template.template_key}</option>
+                  <option key={template.template_key} value={template.template_key}>{displayDocumentType(template.document_type)}</option>
                 ))}
               </select>
-              <Input placeholder="Document title override" value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} />
-              <Input placeholder="visibility_scope" value={documentVisibilityScope} onChange={(event) => setDocumentVisibilityScope(event.target.value)} />
-              <Input placeholder="reason_code" value={documentReasonCode} onChange={(event) => setDocumentReasonCode(event.target.value)} />
+              <Input placeholder="Переопределение названия документа" value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} />
+              <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentVisibilityScope} onChange={(event) => setDocumentVisibilityScope(event.target.value)}>
+                {VISIBILITY_SCOPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <Input placeholder="order_document_generated" value={documentReasonCode} onChange={(event) => setDocumentReasonCode(event.target.value)} />
             </div>
             <Textarea placeholder="Комментарий к документу" rows={2} value={documentNote} onChange={(event) => setDocumentNote(event.target.value)} />
             <Button type="submit">Сгенерировать документ</Button>
@@ -544,12 +571,12 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
                   <div>
                     <div className="font-medium">{document.title}</div>
                     <div className="mt-1 text-muted-foreground">
-                      {document.document_type} · {document.sent_state} · {document.confirmation_state}
+                      {displayDocumentType(document.document_type)} · {displayDocumentState(document.sent_state)} · {displayDocumentState(document.confirmation_state)}
                     </div>
                   </div>
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     <input type="radio" name="selected-order-document" checked={selectedDocumentCode === document.code} onChange={() => setSelectedDocumentCode(document.code)} />
-                    selected
+                    выбран
                   </label>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -558,24 +585,24 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
                       Скачать v{document.current_version.version_no}
                     </Button>
                   ) : null}
-                  <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "send")}>Send</Button>
-                  <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "confirm")}>Confirm</Button>
-                  <Button size="sm" type="button" onClick={() => void runDocumentAction(document.code, "replace")}>Replace</Button>
+                  <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "send")}>Отправить</Button>
+                  <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "confirm")}>Подтвердить</Button>
+                  <Button size="sm" type="button" onClick={() => void runDocumentAction(document.code, "replace")}>Заменить</Button>
                 </div>
               </div>
             ))}
-            {!payload.documents.length ? <div className="text-muted-foreground">Пока нет managed documents на уровне order.</div> : null}
+            {!payload.documents.length ? <div className="text-muted-foreground">Пока нет документов на уровне заказа.</div> : null}
           </div>
         </Card>
       </section>
 
       <Card className="glass-panel border-white/12 p-5">
-        <h2 className="text-xl">Timeline</h2>
+        <h2 className="text-xl">Хронология</h2>
         <div className="mt-4 space-y-3 text-sm">
           {payload.timeline.map((event) => (
             <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-              <div className="font-medium">{event.action}</div>
-              <div className="mt-1 text-muted-foreground">{event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
+              <div className="font-medium">{displayMaybe(event.action)}</div>
+              <div className="mt-1 text-muted-foreground">{displayReasonCode(event.reason)} · {formatFoundationDate(event.created_at)}</div>
             </div>
           ))}
         </div>

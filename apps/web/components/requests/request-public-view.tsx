@@ -6,7 +6,22 @@ import {useCallback, useEffect, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {fetchFoundationJson} from "@/lib/foundation-client";
+import {
+  displayDocumentState,
+  displayDocumentType,
+  displayFileType,
+  displayLogisticsState,
+  displayMaybe,
+  displayOfferStatus,
+  displayOrderStatus,
+  displayPaymentState,
+  displayReasonCode,
+  displayRequestStatus,
+  displayVisibilityScope,
+  formatFoundationDate,
+} from "@/lib/foundation-display";
 
+// RU: Public request view ограничен customer-facing данными и не должен показывать internal-only operator поля.
 type RequestDetail = {
   code: string;
   customer_ref: string;
@@ -162,7 +177,7 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
   }
 
   if (loading) {
-    return <Card className="glass-panel border-white/12 p-6">Загрузка Request...</Card>;
+    return <Card className="glass-panel border-white/12 p-6">Загрузка клиентской заявки...</Card>;
   }
   if (!item) {
     return <Card className="glass-panel border-red-400/30 bg-red-500/10 p-6 text-red-100">{error ?? "request_not_found"}</Card>;
@@ -171,13 +186,13 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
   return (
     <div className="space-y-6">
       <Card className="glass-panel border-white/12 p-6">
-        <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Customer Request</div>
+        <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Клиентская заявка</div>
         <h1 className="mt-2 text-3xl leading-tight">{item.title ?? item.code}</h1>
         <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-          <div>Статус: {item.request_status}</div>
-          <div>Customer ref: {item.customer_ref}</div>
+          <div>Статус: {displayRequestStatus(item.request_status)}</div>
+          <div>Клиентская ссылка: {item.customer_ref}</div>
           <div>Город: {item.city ?? "не указан"}</div>
-          <div>Дедлайн: {item.requested_deadline_at ?? "не указан"}</div>
+          <div>Дедлайн: {formatFoundationDate(item.requested_deadline_at, "Не указан")}</div>
         </div>
         {item.summary ? <p className="mt-4 text-sm leading-7 text-foreground/84">{item.summary}</p> : null}
         {item.item_service_context ? (
@@ -187,21 +202,21 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
         ) : null}
         {item.order ? (
           <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-            Заказ {item.order.code}: {item.order.order_status} · payment {item.order.payment_state} · logistics {item.order.logistics_state}
+            Заказ {item.order.code}: {displayOrderStatus(item.order.order_status)} · {displayPaymentState(item.order.payment_state)} · {displayLogisticsState(item.order.logistics_state)}
           </div>
         ) : null}
         {dashboard ? (
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Pending offers</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Ожидают подтверждения</div>
               <div className="mt-2 text-3xl leading-none">{dashboard.offers_pending_confirmation}</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Documents waiting</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Ждут подтверждения документа</div>
               <div className="mt-2 text-3xl leading-none">{dashboard.documents_waiting_confirmation}</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Customer notifications</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Клиентские уведомления</div>
               <div className="mt-2 text-3xl leading-none">{dashboard.notifications.length}</div>
             </div>
           </div>
@@ -215,9 +230,9 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
         <div className="mt-4 space-y-3 text-sm">
           {dashboard?.notifications.map((notification) => (
             <div key={notification.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
-              <div className="font-medium">{notification.title ?? notification.reason_display?.title ?? notification.reason_code ?? notification.code}</div>
+              <div className="font-medium">{notification.title ?? displayReasonCode(notification.reason_code, notification.reason_display?.title) ?? notification.code}</div>
               {notification.body ? <div className="mt-2 text-foreground/80">{notification.body}</div> : null}
-              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">{notification.created_at ?? "unknown_time"}</div>
+              <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">{formatFoundationDate(notification.created_at)}</div>
             </div>
           ))}
           {!dashboard?.notifications.length ? <div className="text-muted-foreground">Пока нет customer-visible уведомлений.</div> : null}
@@ -236,16 +251,16 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
                 <div>
                   <div className="font-medium">{offerItem.comparison?.comparison_title ?? offerItem.offer.public_summary ?? offerItem.offer.code}</div>
                   <div className="mt-1 text-muted-foreground">
-                    v{offerItem.offer.current_version_no} · {offerItem.offer.offer_status} · {offerItem.offer.confirmation_state}
+                    v{offerItem.offer.current_version_no} · {displayOfferStatus(offerItem.offer.offer_status)} · {displayMaybe(offerItem.offer.confirmation_state)}
                   </div>
                 </div>
-                {offerItem.comparison?.recommended ? <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">recommended</div> : null}
+                {offerItem.comparison?.recommended ? <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">Рекомендуем</div> : null}
               </div>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
-                <div>Цена: {offerItem.offer.amount ?? "n/a"} {offerItem.offer.currency_code}</div>
-                <div>Lead time: {offerItem.offer.lead_time_days ?? "n/a"} дней</div>
-                <div>Scenario: {offerItem.offer.scenario_type}</div>
-                <div>Supplier ref: {offerItem.offer.supplier_ref ?? "n/a"}</div>
+                <div>Цена: {offerItem.offer.amount ?? "Не указана"} {offerItem.offer.currency_code}</div>
+                <div>Срок: {offerItem.offer.lead_time_days ?? "Не указан"} дней</div>
+                <div>Сценарий: {displayMaybe(offerItem.offer.scenario_type)}</div>
+                <div>Поставщик: {offerItem.offer.supplier_ref ?? "Назначится после подтверждения"}</div>
               </div>
               {offerItem.offer.public_summary ? <div className="mt-3 text-foreground/84">{offerItem.offer.public_summary}</div> : null}
               {offerItem.offer.terms_text ? <div className="mt-3 text-muted-foreground">{offerItem.offer.terms_text}</div> : null}
@@ -276,7 +291,7 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
           <div className="mt-4 space-y-3 text-sm">
             {item.reasons.map((reason) => (
               <div key={reason.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                <div className="font-medium">{reason.reason_code}</div>
+                <div className="font-medium">{displayReasonCode(reason.reason_code)}</div>
                 {reason.note ? <div className="mt-1 text-muted-foreground">{reason.note}</div> : null}
               </div>
             ))}
@@ -285,16 +300,16 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Follow-up items</h2>
+          <h2 className="text-xl">Следующие шаги</h2>
           <div className="mt-4 space-y-3 text-sm">
             {item.follow_up_items.map((followUp) => (
               <div key={followUp.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                 <div className="font-medium">{followUp.title}</div>
-                <div className="mt-1 text-muted-foreground">{followUp.follow_up_status}</div>
+                <div className="mt-1 text-muted-foreground">{displayMaybe(followUp.follow_up_status)}</div>
                 {followUp.detail ? <div className="mt-2 text-foreground/80">{followUp.detail}</div> : null}
               </div>
             ))}
-            {!item.follow_up_items.length ? <div className="text-muted-foreground">Пока нет открытых follow-up items.</div> : null}
+            {!item.follow_up_items.length ? <div className="text-muted-foreground">Пока нет открытых следующих шагов.</div> : null}
           </div>
         </Card>
       </section>
@@ -307,7 +322,7 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
               <div key={file.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                 <div className="font-medium">{file.title ?? file.latest_version?.original_name ?? file.code}</div>
                 <div className="mt-1 text-muted-foreground">
-                  {file.file_type} · {file.visibility_scope} · {file.final_flag ? "final" : "draft"}
+                  {displayFileType(file.file_type)} · {displayVisibilityScope(file.visibility_scope)} · {file.final_flag ? "Финальная версия" : "Рабочая версия"}
                 </div>
                 {file.download_url && file.latest_version ? (
                   <div className="mt-3">
@@ -329,7 +344,7 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
               <div key={document.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                 <div className="font-medium">{document.title}</div>
                 <div className="mt-1 text-muted-foreground">
-                  {document.document_type} · {document.sent_state} · {document.confirmation_state}
+                  {displayDocumentType(document.document_type)} · {displayDocumentState(document.sent_state)} · {displayDocumentState(document.confirmation_state)}
                 </div>
                 {document.download_url && document.current_version ? (
                   <div className="mt-3">
@@ -346,13 +361,15 @@ export function RequestPublicView({customerRef}: {customerRef: string}) {
       </section>
 
       <Card className="glass-panel border-white/12 p-5">
-        <h2 className="text-xl">Timeline</h2>
+        <h2 className="text-xl">Хронология</h2>
         <div className="mt-4 space-y-3 text-sm">
           {(dashboard?.timeline ?? item.timeline).map((event) => (
             <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-              <div className="font-medium">{event.title ?? event.action ?? event.reason_display?.title ?? event.reason_code ?? event.code}</div>
+              <div className="font-medium">{event.title ?? event.action ?? displayReasonCode(event.reason_code, event.reason_display?.title) ?? event.code}</div>
               {event.body ? <div className="mt-2 text-foreground/80">{event.body}</div> : null}
-              <div className="mt-1 text-muted-foreground">{event.reason_code ?? event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
+              <div className="mt-1 text-muted-foreground">
+                {displayReasonCode(event.reason_code ?? event.reason)} · {formatFoundationDate(event.created_at)}
+              </div>
             </div>
           ))}
         </div>

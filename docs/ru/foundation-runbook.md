@@ -23,9 +23,6 @@ python3 -m venv .venv
 
 Для локального web-shell базовая ветка Node должна быть `22.x`.
 
-RU: Канонические verification/migration/smoke scripts больше не завязаны жёстко на локальную `./.venv`.
-Локально они по-прежнему предпочитают `.venv`, но в CI могут штатно работать через job-level `python`, если зависимости уже установлены через `pip install -e .`.
-
 Если foundation/compose запускается через Docker на macOS с `colima`, по умолчанию поднимай компактный runtime:
 
 ```bash
@@ -398,9 +395,6 @@ Archive path для managed files/documents теперь отдельный ра
 ```bash
 ./scripts/verify_workflow.sh
 ```
-
-RU: Даже если GitHub runner не имеет локального `~/.codex/automations`, root operating docs должны проходить check-mode без drift.
-Синхронизатор теперь использует repo-backed fallback для блока `Active repo automations`, чтобы merge не зависел от home-level окружения.
 
 Сейчас он покрывает:
 

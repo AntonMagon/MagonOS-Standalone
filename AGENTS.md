@@ -28,8 +28,8 @@ Do not silently broaden into:
 - invoice / payment
 - full ERP order management
 - giant generic CRM
-- broad entity mirroring from Odoo
-- Odoo runtime reintroduction
+- broad entity mirroring from the legacy donor
+- legacy donor runtime reintroduction
 - source repo feature growth
 
 ## Work Discipline
@@ -57,7 +57,7 @@ When donor inspection is required:
    - adapt
    - drop
    - reconstruct from evidence
-4. Do not copy Odoo shapes mechanically.
+4. Do not copy donor model shapes mechanically.
 5. Do not modify the source repo unless the task explicitly says so.
 
 ## Verification Discipline
@@ -95,7 +95,7 @@ For substantial tasks, report:
 Treat these as drift/failure:
 - spending the run mainly on README/docs/startup wrappers
 - improving the source repo when the task belongs in standalone
-- calling Odoo refs “ownership” instead of traceability
+- calling donor refs “ownership” instead of traceability
 - widening feedback into generic sync
 - building ERP/accounting scope without an explicit task
 - hiding business gaps behind UI work
@@ -105,14 +105,14 @@ A task is done only when:
 - the result is implemented or the exact blocker is stated
 - the relevant path is verified with a real command
 - ownership boundaries remain explicit
-- no accidental Odoo runtime dependency was introduced
+- no accidental donor runtime dependency was introduced
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-17 22:34 +07`
-- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: no additional risk recorded
+- Auto-synced at: `2026-04-18 06:10 +07`
+- Current focus: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
 - Validated contour:
   - company
   - request draft / intake boundary

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db, require_roles
+from ..codes import reserve_code
 from ..models import (
     Company,
     CompanyAddress,
@@ -27,6 +28,9 @@ from ..models import (
 from ..security import ROLE_ADMIN, ROLE_OPERATOR, AuthContext
 from ..supplier_services import SupplierPipelineService, SupplierIngestSummary
 from ..celery_app import run_supplier_ingest
+from ...integrations.foundation.supplier_sources import get_supplier_source_adapter
+from ..db import utc_now
+from ..supplier_scheduler import build_supplier_source_schedule_state
 from .shared import (
     company_address_view,
     company_contact_view,
@@ -123,7 +127,32 @@ def _ingest_view(item: SupplierRawIngest, registry: SupplierSourceRegistry | Non
     }
 
 
-def _source_registry_view(item: SupplierSourceRegistry) -> dict[str, object]:
+def _compact_ingest_view(item: SupplierRawIngest | None) -> dict[str, object] | None:
+    if item is None:
+        return None
+    return {
+        "code": item.code,
+        "ingest_status": item.ingest_status,
+        "task_id": item.task_id,
+        "trigger_mode": item.trigger_mode,
+        "created_at": iso_or_none(item.created_at),
+        "started_at": iso_or_none(item.started_at),
+        "finished_at": iso_or_none(item.finished_at),
+        "failed_at": iso_or_none(item.failed_at),
+        "last_retry_at": iso_or_none(item.last_retry_at),
+        "retry_count": item.retry_count,
+        "failure_code": item.failure_code,
+        "failure_detail": item.failure_detail,
+        "raw_count": item.raw_count,
+        "normalized_count": item.normalized_count,
+        "merged_count": item.merged_count,
+        "candidate_count": item.candidate_count,
+    }
+
+
+def _source_registry_view(item: SupplierSourceRegistry, latest_ingest: SupplierRawIngest | None = None) -> dict[str, object]:
+    health = get_supplier_source_adapter(item.adapter_key).health()
+    schedule = build_supplier_source_schedule_state(item, latest_ingest)
     return {
         "id": item.id,
         "code": item.code,
@@ -133,6 +162,28 @@ def _source_registry_view(item: SupplierSourceRegistry) -> dict[str, object]:
         "enabled": item.enabled,
         "config_json": item.config_json or {},
         "last_success_at": iso_or_none(item.last_success_at),
+        "health": {
+            "ok": health.ok,
+            "adapter": health.adapter,
+            "detail": health.detail,
+            "payload": health.payload or {},
+        },
+        "schedule": {
+            "enabled": schedule.enabled,
+            "interval_minutes": schedule.interval_minutes,
+            "reason_code": schedule.reason_code,
+            "active": schedule.active,
+            "due_now": schedule.due_now,
+            "next_run_at": iso_or_none(schedule.next_run_at),
+            "last_event_at": iso_or_none(schedule.last_event_at),
+            "skip_reason": schedule.skip_reason,
+        },
+        "classification": {
+            # RU: Оператор должен видеть, что periodic source не просто тянет raw rows, а проходит через текущий parsing/classification contour.
+            "mode": schedule.classification_mode,
+            "llm_enabled": schedule.llm_enabled,
+        },
+        "latest_ingest": _compact_ingest_view(latest_ingest),
         "created_at": iso_or_none(item.created_at),
     }
 
@@ -295,7 +346,16 @@ def list_supplier_sources(
     session: Session = Depends(get_db),
 ) -> dict[str, object]:
     service = _service(session)
-    return {"items": [_source_registry_view(item) for item in service.list_source_registries()]}
+    registries = service.list_source_registries()
+    latest_by_registry = {
+        item.id: session.scalar(
+            select(SupplierRawIngest)
+            .where(SupplierRawIngest.source_registry_id == item.id)
+            .order_by(SupplierRawIngest.created_at.desc())
+        )
+        for item in registries
+    }
+    return {"items": [_source_registry_view(item, latest_by_registry.get(item.id)) for item in registries]}
 
 
 @router.post("/api/v1/admin/supplier-sources")
@@ -311,7 +371,7 @@ def create_supplier_source(
         auth=auth,
         reason_code=payload.reason_code,
     )
-    return {"item": _source_registry_view(item)}
+    return {"item": _source_registry_view(item, None)}
 
 
 @router.get("/api/v1/operator/supplier-ingests")
@@ -365,21 +425,51 @@ def enqueue_supplier_ingest(
         registry = _service(session).get_source_registry_by_code(payload.source_registry_code)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    ingest = session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.idempotency_key == payload.idempotency_key))
+    if ingest is None:
+        ingest = SupplierRawIngest(
+            code=reserve_code(session, "supplier_raw_ingests", "ING"),
+            source_registry_id=registry.id,
+            idempotency_key=payload.idempotency_key,
+            ingest_status="queued",
+            reason_code=payload.reason_code,
+            trigger_mode="job",
+            adapter_key=registry.adapter_key,
+            requested_by_user_id=auth.user_id,
+        )
+        session.add(ingest)
+        session.flush()
+    elif ingest.ingest_status == "failed":
+        ingest.ingest_status = "queued"
+        ingest.finished_at = None
+        ingest.failed_at = None
+        ingest.failure_code = None
+        ingest.failure_detail = None
+        ingest.last_retry_at = utc_now()
+        ingest.retry_count = int(ingest.retry_count or 0) + 1
+        ingest.trigger_mode = "job"
+    elif ingest.ingest_status in {"queued", "running"}:
+        return {
+            "task_id": ingest.task_id,
+            "source_registry": _source_registry_view(registry, ingest),
+            "idempotency_key": payload.idempotency_key,
+            "status": ingest.ingest_status,
+            "ingest": _ingest_view(ingest, registry),
+        }
     task = run_supplier_ingest.delay(
         payload.source_registry_code,
         payload.idempotency_key,
         payload.reason_code,
         "job",
     )
-    ingest = session.scalar(select(SupplierRawIngest).where(SupplierRawIngest.idempotency_key == payload.idempotency_key))
-    if ingest is not None:
-        ingest.task_id = task.id
-        ingest.trigger_mode = "job"
+    ingest.task_id = task.id
+    ingest.trigger_mode = "job"
     return {
         "task_id": task.id,
-        "source_registry": _source_registry_view(registry),
+        "source_registry": _source_registry_view(registry, ingest),
         "idempotency_key": payload.idempotency_key,
         "status": "queued",
+        "ingest": _ingest_view(ingest, registry),
     }
 
 
@@ -429,6 +519,14 @@ def retry_supplier_ingest(
         if registry is None:
             raise LookupError("supplier_source_not_found")
         if payload.mode == "job":
+            ingest.ingest_status = "queued"
+            ingest.finished_at = None
+            ingest.failed_at = None
+            ingest.failure_code = None
+            ingest.failure_detail = None
+            # RU: Повтор виден оператору сразу в queued state, поэтому счетчик растет уже на этапе постановки в очередь.
+            ingest.last_retry_at = utc_now()
+            ingest.retry_count = int(ingest.retry_count or 0) + 1
             task = run_supplier_ingest.delay(registry.code, ingest.idempotency_key, payload.reason_code, "job_retry")
             ingest.task_id = task.id
             ingest.trigger_mode = "job_retry"

@@ -4,28 +4,44 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
-DB_FILE="$TMPDIR/foundation.sqlite3"
 STORAGE_DIR="$TMPDIR/storage"
 FILE_V1="$TMPDIR/wave1-demo-v1.txt"
 FILE_V2="$TMPDIR/wave1-demo-v2.txt"
 PORT="${MAGON_FOUNDATION_PORT:-18198}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
-# RU: Demo smoke обязан быть исполним и на CI runner, иначе protected merge нельзя закрыть даже при зелёном локальном runtime.
-source "$REPO_ROOT/scripts/lib_repo_python.sh"
-PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
+PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  # RU: Единый demo-flow должен одинаково подниматься локально и в CI, иначе acceptance теряет смысл.
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
+
+run_alembic() {
+  "$PYTHON_BIN" -m alembic "$@"
+}
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then
     kill "$API_PID" >/dev/null 2>&1 || true
     wait "$API_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${DB_NAME:-}" ]]; then
+    "$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
+eval "$("$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_demo)"
+
 export MAGON_ENV=test
-export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_FILE"
+export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
@@ -34,11 +50,12 @@ export MAGON_FOUNDATION_STORAGE_BACKEND="local"
 export MAGON_FOUNDATION_STORAGE_LOCAL_ROOT="$STORAGE_DIR"
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
+# RU: Единый wave1 demo smoke проверяет весь сквозной поток на одной временной Postgres БД без разрыва между шагами.
 
 printf 'wave1-demo-v1' >"$FILE_V1"
 printf 'wave1-demo-v2' >"$FILE_V2"
 
-run_repo_alembic "$REPO_ROOT" upgrade head >/dev/null
+run_alembic upgrade head >/dev/null
 "$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-wave1-demo-seed.json
 "$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-wave1-demo-api.log 2>&1 &
 API_PID=$!
@@ -126,7 +143,7 @@ curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/versions" \
 curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/review" \
   -H "authorization: Bearer $OPERATOR_TOKEN" \
   -H 'content-type: application/json' \
-  -d '{"target_state":"approved","reason_code":"file_manual_review_approved"}' >/dev/null
+  -d '{"target_state":"passed","reason_code":"file_manual_review_approved"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/finalize" \
   -H "authorization: Bearer $OPERATOR_TOKEN" \
   -H 'content-type: application/json' \

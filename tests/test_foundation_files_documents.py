@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from magon_standalone.foundation.app import create_app
 
 
+# RU: Фиксируем миграции в тесте отдельно, чтобы file/document flow не зависел от ручного bootstrap.
 def _apply_migrations(database_url: str) -> None:
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     os.environ["MAGON_FOUNDATION_DATABASE_URL"] = database_url
@@ -173,7 +174,7 @@ class TestFoundationFilesDocuments(unittest.TestCase):
         self.assertEqual(upload.status_code, 200)
         asset = upload.json()["item"]
         asset_code = asset["code"]
-        self.assertEqual(asset["check_state"], "pending_review")
+        self.assertEqual(asset["check_state"], "needs_manual_review")
         self.assertEqual(asset["latest_version"]["version_no"], 1)
 
         v2 = self.client.post(
@@ -188,10 +189,10 @@ class TestFoundationFilesDocuments(unittest.TestCase):
         reviewed = self.client.post(
             f"/api/v1/operator/files/{asset_code}/review",
             headers=operator_headers,
-            json={"target_state": "approved", "reason_code": "file_manual_review_approved"},
+            json={"target_state": "passed", "reason_code": "file_manual_review_approved"},
         )
         self.assertEqual(reviewed.status_code, 200)
-        self.assertEqual(reviewed.json()["item"]["check_state"], "approved")
+        self.assertEqual(reviewed.json()["item"]["check_state"], "passed")
 
         finalized = self.client.post(
             f"/api/v1/operator/files/{asset_code}/finalize",

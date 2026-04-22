@@ -10,6 +10,17 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
 
 
+def _run_live_discovery(config: dict | None = None) -> list[dict]:
+    actual_config = config or {}
+    query = str(actual_config.get("query") or "printing packaging vietnam")
+    country = str(actual_config.get("country") or "VN")
+    from magon_standalone.supplier_intelligence.scenario_config import ScenarioConfig
+    from magon_standalone.supplier_intelligence.scenario_discovery_service import ScenarioDrivenDiscoveryService
+
+    discovery = ScenarioDrivenDiscoveryService(ScenarioConfig.load())
+    return list(discovery.discover(query=query, country_code=country))
+
+
 class FixtureSupplierSourceAdapter(SupplierSourceAdapter):
     adapter_name = "fixture_json"
 
@@ -35,8 +46,41 @@ class FixtureSupplierSourceAdapter(SupplierSourceAdapter):
         return SupplierSourcePullResult(adapter=self.adapter_name, source_label=source_label, records=list(payload))
 
 
+class LiveParsingSupplierSourceAdapter(SupplierSourceAdapter):
+    adapter_name = "scenario_live"
+
+    def health(self) -> IntegrationResult:
+        try:
+            from magon_standalone.supplier_intelligence.scenario_config import ScenarioConfig
+
+            config = ScenarioConfig.load()
+        except Exception as exc:
+            return IntegrationResult(
+                ok=False,
+                adapter=self.adapter_name,
+                detail="live_parsing_unavailable",
+                payload={"error": str(exc)[:500]},
+            )
+        return IntegrationResult(
+            ok=True,
+            adapter=self.adapter_name,
+            detail="live_parsing_ready",
+            payload={"low_confidence_threshold": config.settings().low_confidence_threshold},
+        )
+
+    def pull(self, config: dict | None = None) -> SupplierSourcePullResult:
+        actual_config = config or {}
+        query = str(actual_config.get("query") or "printing packaging vietnam")
+        country = str(actual_config.get("country") or "VN")
+        source_label = str(actual_config.get("source_label") or f"live_parsing_{country.lower()}")
+        records = _run_live_discovery(actual_config)
+        # RU: Live parsing adapter отдаёт уже извлечённые raw supplier rows из scenario-discovery, но не берёт на себя foundation-нормализацию.
+        return SupplierSourcePullResult(adapter=self.adapter_name, source_label=source_label, records=list(records))
+
+
 _ADAPTERS: dict[str, SupplierSourceAdapter] = {
     FixtureSupplierSourceAdapter.adapter_name: FixtureSupplierSourceAdapter(),
+    LiveParsingSupplierSourceAdapter.adapter_name: LiveParsingSupplierSourceAdapter(),
 }
 
 

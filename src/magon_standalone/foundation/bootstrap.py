@@ -14,6 +14,7 @@ from .supplier_services import SupplierPipelineService
 from .workflow_support import WorkflowSupportService
 
 
+# RU: Bootstrap первой волны поднимает роли, демо-компанию и базовые рабочие данные в том же standalone-контуре.
 ROLE_SPECS = {
     ROLE_GUEST: ("Гость", "Публичный неавторизованный пользователь."),
     ROLE_CUSTOMER: ("Клиент", "Клиентский ролевой доступ для своих заявок и документов."),
@@ -66,6 +67,7 @@ def _ensure_user(session: Session, *, code_prefix: str, email: str, full_name: s
 
 
 def seed_foundation(session: Session, settings: FoundationSettings) -> dict[str, str]:
+    # RU: Seed обязан быть повторяемым, потому что launcher и smoke многократно поднимают один и тот же wave1 контур.
     for role_code, (label, description) in ROLE_SPECS.items():
         _ensure_role(session, role_code, label, description)
 
@@ -90,7 +92,7 @@ def seed_foundation(session: Session, settings: FoundationSettings) -> dict[str,
             code=reserve_code(session, "suppliers", "SUP"),
             company_id=company.id,
             display_name="Wave1 Supplier",
-            supplier_status="approved",
+            supplier_status="trusted",
             public_summary="Минимальный поставщик для foundation skeleton.",
             internal_note="Seed supplier.",
         )
@@ -105,10 +107,49 @@ def seed_foundation(session: Session, settings: FoundationSettings) -> dict[str,
             adapter_key="fixture_json",
             source_layer="raw",
             enabled=True,
-            config_json={"source_label": "fixture_vn_suppliers"},
+            config_json={
+                "source_label": "fixture_vn_suppliers",
+                "schedule_enabled": False,
+                "classification_mode": "deterministic_only",
+            },
         )
         session.add(source_registry)
         session.flush()
+    else:
+        config = dict(source_registry.config_json or {})
+        config.setdefault("schedule_enabled", False)
+        config.setdefault("classification_mode", "deterministic_only")
+        source_registry.config_json = config
+    live_source_registry = session.scalar(select(SupplierSourceRegistry).where(SupplierSourceRegistry.adapter_key == "scenario_live"))
+    if live_source_registry is None:
+        live_source_registry = SupplierSourceRegistry(
+            code=reserve_code(session, "supplier_source_registries", "SRC"),
+            label="Live parsing VN suppliers",
+            adapter_key="scenario_live",
+            source_layer="raw",
+            enabled=True,
+            config_json={
+                "query": "printing packaging vietnam",
+                "country": "VN",
+                "source_label": "live_parsing_vn_suppliers",
+                "schedule_enabled": True,
+                "schedule_interval_minutes": 60,
+                "schedule_reason_code": "scheduled_supplier_ingest",
+                "classification_mode": "ai_assisted_fallback",
+            },
+        )
+        session.add(live_source_registry)
+        session.flush()
+    else:
+        config = dict(live_source_registry.config_json or {})
+        config.setdefault("query", "printing packaging vietnam")
+        config.setdefault("country", "VN")
+        config.setdefault("source_label", "live_parsing_vn_suppliers")
+        config.setdefault("schedule_enabled", True)
+        config.setdefault("schedule_interval_minutes", 60)
+        config.setdefault("schedule_reason_code", "scheduled_supplier_ingest")
+        config.setdefault("classification_mode", "ai_assisted_fallback")
+        live_source_registry.config_json = config
 
     admin = _ensure_user(
         session,

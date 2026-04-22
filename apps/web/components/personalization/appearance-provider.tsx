@@ -7,32 +7,33 @@ type Palette = {
   values: Record<string, string>;
 };
 
+// RU: Provider держит только палитру shell и не должен втягивать бизнес-состояние страниц или пользователя.
 const palettes: Palette[] = [
   {
     id: 'ember-signal',
     values: {
-      '--primary': '20 86% 54%',
-      '--accent': '171 41% 34%',
-      '--brand-glow': '20 86% 54%',
-      '--brand-warm': '171 41% 34%'
+      '--primary': '223 100% 57%',
+      '--accent': '190 86% 69%',
+      '--brand-glow': '223 100% 57%',
+      '--brand-warm': '8 65% 54%'
     }
   },
   {
     id: 'tidal-mint',
     values: {
-      '--primary': '188 72% 51%',
-      '--accent': '168 55% 42%',
-      '--brand-glow': '188 72% 51%',
-      '--brand-warm': '168 55% 42%'
+      '--primary': '190 86% 69%',
+      '--accent': '74 100% 65%',
+      '--brand-glow': '190 86% 69%',
+      '--brand-warm': '223 100% 57%'
     }
   },
   {
     id: 'violet-ink',
     values: {
-      '--primary': '255 82% 67%',
-      '--accent': '221 83% 58%',
-      '--brand-glow': '255 82% 67%',
-      '--brand-warm': '221 83% 58%'
+      '--primary': '8 65% 54%',
+      '--accent': '223 100% 57%',
+      '--brand-glow': '8 65% 54%',
+      '--brand-warm': '223 100% 57%'
     }
   }
 ];

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from magon_standalone.foundation.app import create_app
 
 
+# RU: Order-тесты доказывают, что forbidden transitions и платёжные статусы проверяются на чистой схеме.
 def _apply_migrations(database_url: str) -> None:
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     os.environ["MAGON_FOUNDATION_DATABASE_URL"] = database_url
@@ -156,8 +157,10 @@ class TestFoundationOrders(unittest.TestCase):
         self.assertEqual(created_order.status_code, 200)
         order_code = created_order.json()["item"]["code"]
         self.assertEqual(created_order.json()["item"]["payment_state"], "created")
+        self.assertEqual(created_order.json()["item"]["order_status"], "awaiting_payment")
         self.assertEqual(len(created_order.json()["lines"]), 1)
         payment_code = created_order.json()["payments"][0]["code"]
+        line_code = created_order.json()["lines"][0]["code"]
 
         assign_supplier = self.client.post(
             f"/api/v1/operator/orders/{order_code}/action",
@@ -167,23 +170,13 @@ class TestFoundationOrders(unittest.TestCase):
         self.assertEqual(assign_supplier.status_code, 200)
         self.assertIn("SUPC-ORDER", assign_supplier.json()["item"]["supplier_refs"])
 
-        self.client.post(
+        premature_start = self.client.post(
             f"/api/v1/operator/orders/{order_code}/action",
             headers=operator_headers,
             json={"action": "confirm_start", "reason_code": "order_start_confirmed"},
         )
-        self.client.post(
-            f"/api/v1/operator/orders/{order_code}/action",
-            headers=operator_headers,
-            json={"action": "mark_production", "reason_code": "order_production_marked"},
-        )
-        ready = self.client.post(
-            f"/api/v1/operator/orders/{order_code}/action",
-            headers=operator_headers,
-            json={"action": "ready", "reason_code": "order_ready_partial", "line_codes": [assign_supplier.json()["lines"][0]["code"]]},
-        )
-        self.assertEqual(ready.status_code, 200)
-        self.assertIn(ready.json()["item"]["readiness_state"], {"ready", "partial_ready"})
+        self.assertEqual(premature_start.status_code, 409)
+        self.assertEqual(premature_start.json()["detail"], "order_payment_confirmation_required")
 
         payment_pending = self.client.post(
             f"/api/v1/operator/payment-records/{payment_code}/transition",
@@ -200,6 +193,31 @@ class TestFoundationOrders(unittest.TestCase):
         )
         self.assertEqual(payment_confirmed.status_code, 200)
         self.assertEqual(payment_confirmed.json()["order"]["payment_state"], "confirmed")
+        self.assertEqual(payment_confirmed.json()["order"]["order_status"], "supplier_assigned")
+
+        confirmed_start = self.client.post(
+            f"/api/v1/operator/orders/{order_code}/action",
+            headers=operator_headers,
+            json={"action": "confirm_start", "reason_code": "order_start_confirmed"},
+        )
+        self.assertEqual(confirmed_start.status_code, 200)
+        self.assertEqual(confirmed_start.json()["item"]["order_status"], "in_production")
+
+        mark_production = self.client.post(
+            f"/api/v1/operator/orders/{order_code}/action",
+            headers=operator_headers,
+            json={"action": "mark_production", "reason_code": "order_production_marked"},
+        )
+        self.assertEqual(mark_production.status_code, 200)
+        self.assertEqual(mark_production.json()["item"]["order_status"], "in_production")
+
+        ready = self.client.post(
+            f"/api/v1/operator/orders/{order_code}/action",
+            headers=operator_headers,
+            json={"action": "ready", "reason_code": "order_ready_partial", "line_codes": [line_code]},
+        )
+        self.assertEqual(ready.status_code, 200)
+        self.assertIn(ready.json()["item"]["readiness_state"], {"ready", "partial_ready"})
 
         payment_refund = self.client.post(
             f"/api/v1/operator/payment-records/{payment_code}/transition",
@@ -209,11 +227,13 @@ class TestFoundationOrders(unittest.TestCase):
         self.assertEqual(payment_refund.status_code, 200)
         self.assertEqual(payment_refund.json()["order"]["payment_state"], "partially_refunded")
 
-        self.client.post(
+        delivery = self.client.post(
             f"/api/v1/operator/orders/{order_code}/action",
             headers=operator_headers,
             json={"action": "delivery", "reason_code": "order_delivery_marked"},
         )
+        self.assertEqual(delivery.status_code, 200)
+        self.assertEqual(delivery.json()["item"]["logistics_state"], "delivered")
         completed = self.client.post(
             f"/api/v1/operator/orders/{order_code}/action",
             headers=operator_headers,

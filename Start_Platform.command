@@ -6,7 +6,7 @@ BACKEND_HOST="${MAGON_BACKEND_HOST:-127.0.0.1}"
 BACKEND_PORT="${MAGON_BACKEND_PORT:-8091}"
 WEB_HOST="${MAGON_WEB_HOST:-127.0.0.1}"
 WEB_PORT="${MAGON_WEB_PORT:-3000}"
-DB_PATH="${MAGON_DB_PATH:-$REPO_ROOT/data/foundation.local.sqlite3}"
+FOUNDATION_DB_URL="${MAGON_FOUNDATION_DATABASE_URL:-postgresql+psycopg://magon:magon@127.0.0.1:5432/magon}"
 BACKEND_LOG="/tmp/magon-foundation-backend.log"
 WEB_LOG="/tmp/magon-foundation-web.log"
 UNIFIED_LOG="/tmp/magon-foundation-unified.log"
@@ -28,7 +28,7 @@ Hard-restarts the standalone platform:
 Options:
   --backend-port <port>  Backend port (default: $BACKEND_PORT)
   --web-port <port>      Web port (default: $WEB_PORT)
-  --keep-db              Keep the existing SQLite DB
+  --keep-db              Keep the existing foundation DB contents
   --no-seed              Do not seed fixture data on foundation start
   --no-open              Do not open browser automatically
   --detach               Start in background instead of foreground
@@ -77,13 +77,13 @@ kill_port() {
 start_detached() {
   local log_file="$1"
   local pid_file="$2"
-  shift 2
-  if command -v setsid >/dev/null 2>&1; then
-    setsid "$@" >"$log_file" 2>&1 < /dev/null &
-  else
-    nohup "$@" >"$log_file" 2>&1 < /dev/null &
-  fi
-  echo $! >"$pid_file"
+  local working_directory="$3"
+  shift 3
+  "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_detached_command.py" \
+    --cwd "$working_directory" \
+    --pid-file "$pid_file" \
+    --log-file "$log_file" \
+    -- "$@"
 }
 
 wait_for_url() {
@@ -125,15 +125,8 @@ kill_port "$WEB_PORT"
 kill_port "$BACKEND_PORT"
 
 rm -f "$BACKEND_LOG" "$WEB_LOG" "$UNIFIED_LOG"
-rm -f /tmp/magon-foundation-unified.pid
+rm -f /tmp/magon-foundation-unified.pid /tmp/magon-foundation-backend.pid /tmp/magon-foundation-web.pid
 rm -rf "$REPO_ROOT/apps/web/.next"
-
-if [[ "$KEEP_DB" == "0" ]]; then
-  echo "[magon-restart] clearing DB $DB_PATH"
-  rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
-fi
-
-mkdir -p "$(dirname "$DB_PATH")"
 
 unified_args=(
   --backend-port "$BACKEND_PORT"
@@ -146,10 +139,19 @@ if [[ "$KEEP_DB" == "0" ]]; then
   unified_args+=(--fresh)
 fi
 
-export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_PATH"
+export MAGON_FOUNDATION_DATABASE_URL="$FOUNDATION_DB_URL"
+export MAGON_FOUNDATION_REDIS_URL="${MAGON_FOUNDATION_REDIS_URL:-redis://127.0.0.1:6379/0}"
+export MAGON_FOUNDATION_CELERY_BROKER_URL="${MAGON_FOUNDATION_CELERY_BROKER_URL:-redis://127.0.0.1:6379/1}"
+export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="${MAGON_FOUNDATION_CELERY_RESULT_BACKEND:-redis://127.0.0.1:6379/2}"
 export MAGON_FOUNDATION_HOST="$BACKEND_HOST"
 export MAGON_FOUNDATION_PORT="$BACKEND_PORT"
 export MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT"
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh"
+
+if [[ "$KEEP_DB" == "0" ]]; then
+  echo "[magon-restart] resetting foundation database"
+  "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/reset_foundation_database.py" --database-url "$MAGON_FOUNDATION_DATABASE_URL"
+fi
 
 if [[ "$DETACH" == "1" ]]; then
   echo "[magon-restart] migrating foundation DB"
@@ -160,14 +162,14 @@ if [[ "$DETACH" == "1" ]]; then
   fi
 
   echo "[magon-restart] starting foundation backend on http://$BACKEND_HOST:$BACKEND_PORT"
-  start_detached "$BACKEND_LOG" /tmp/magon-foundation-backend.pid \
+  start_detached "$BACKEND_LOG" /tmp/magon-foundation-backend.pid "$REPO_ROOT" \
     "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$BACKEND_HOST" --port "$BACKEND_PORT"
   wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health/ready" "foundation backend"
 
   echo "[magon-restart] starting foundation web on http://$WEB_HOST:$WEB_PORT"
   # RU: Detach-ветка должна поднимать тот же foundation web runtime, но без foreground trap из run_foundation_unified.sh, иначе launcher сам убивает уже готовые процессы.
-  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid \
-    /bin/bash -lc "cd '$REPO_ROOT/apps/web' && MAGON_API_BASE_URL='http://$BACKEND_HOST:$BACKEND_PORT' MAGON_WEB_DIST_DIR='.next-dev' WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev -- --hostname '$WEB_HOST' --port '$WEB_PORT'"
+  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid "$REPO_ROOT/apps/web" \
+    /usr/bin/env "MAGON_API_BASE_URL=http://$BACKEND_HOST:$BACKEND_PORT" "MAGON_WEB_DIST_DIR=.next-dev" "WATCHPACK_POLLING=true" "WATCHPACK_POLLING_INTERVAL=1000" npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
   wait_for_url "http://$WEB_HOST:$WEB_PORT/login" "foundation web"
 
   echo

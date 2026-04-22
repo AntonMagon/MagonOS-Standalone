@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from magon_standalone.foundation.app import create_app
 
 
+# RU: Offer-тесты всегда поднимают схему с нуля, чтобы versioned flow не зависел от локальной БД разработчика.
 def _apply_migrations(database_url: str) -> None:
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     os.environ["MAGON_FOUNDATION_DATABASE_URL"] = database_url
@@ -147,7 +148,7 @@ class TestFoundationOffers(unittest.TestCase):
             json={"reason_code": "offer_sent_to_customer"},
         )
         self.assertEqual(sent_v1.status_code, 200)
-        self.assertEqual(sent_v1.json()["offer"]["offer_status"], "sent")
+        self.assertEqual(sent_v1.json()["offer"]["offer_status"], "awaiting_confirmation")
 
         accepted_v1 = self.client.post(
             f"/api/v1/public/requests/{customer_ref}/offers/{offer_code}/accept",

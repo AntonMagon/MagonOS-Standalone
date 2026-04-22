@@ -19,6 +19,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
+from ..integrations.foundation.llm import get_llm_adapter
 from .contracts import RawCompanyRecord, RawEvidencePayload, ScenarioRouteDecision
 from .scenario_config import ScenarioConfig
 
@@ -269,29 +270,40 @@ class ScenarioExtractionEngine:
         extraction_blob = markdown or _text(BeautifulSoup(html, "html.parser").get_text(" ", strip=True))
         if not extraction_blob:
             return []
+        llm_preview = None
+        llm_error = ""
+        try:
+            llm_adapter = get_llm_adapter()
+            if llm_adapter.configured:
+                llm_preview = llm_adapter.extract_supplier_preview(page_url=page_url, query=query, text_blob=extraction_blob)
+        except Exception as exc:
+            # RU: LLM-fallback не должен ронять parsing-контур; при ошибке остаёмся на explainable plaintext path.
+            llm_error = _text(str(exc))[:300]
         soup = BeautifulSoup(html, "html.parser")
         company_name = _text((soup.select_one("h1") or soup.select_one("title") or {}).get_text(" ", strip=True) if (soup.select_one("h1") or soup.select_one("title")) else "")  # type: ignore[union-attr]
-        categories = _capability_labels(extraction_blob)
+        llm_json = llm_preview.parsed_json if llm_preview else {}
+        categories = list(dict.fromkeys(llm_json.get("categories") or _capability_labels(extraction_blob)))
         record: RawCompanyRecord = {
             "source_type": "directory" if route["scenario_key"] != "COMPANY_SITE" else "company_site",
             "source_url": page_url,
             "source_page_type": "directory",
-            "company_name": company_name or query.title(),
-            "website": "",
-            "address_text": self._first_address_like(extraction_blob),
-            "city": self._guess_city(extraction_blob),
-            "country": "Vietnam",
+            "company_name": _text(llm_json.get("company_name")) or company_name or query.title(),
+            "website": _text(llm_json.get("website")),
+            "address_text": _text(llm_json.get("address_text")) or self._first_address_like(extraction_blob),
+            "city": _text(llm_json.get("city")) or self._guess_city(extraction_blob),
+            "country": _text(llm_json.get("country")) or "Vietnam",
             "country_code": "VN",
-            "phones": _phones_from_text(extraction_blob),
-            "emails": _emails_from_text(extraction_blob),
+            "phones": list(dict.fromkeys(llm_json.get("phones") or _phones_from_text(extraction_blob))),
+            "emails": list(dict.fromkeys(llm_json.get("emails") or _emails_from_text(extraction_blob))),
             "categories": categories,
             "labels": categories,
-            "services": categories,
-            "products": [],
-            "parser_confidence": 0.52,
+            "services": list(dict.fromkeys(llm_json.get("services") or categories)),
+            "products": list(dict.fromkeys(llm_json.get("products") or [])),
+            "contact_persons": list(dict.fromkeys(llm_json.get("contact_persons") or [])),
+            "parser_confidence": float(llm_json.get("confidence") or 0.52),
             "source_confidence": 0.55,
             "extraction_method": "ai_assisted",
-            "extraction_confidence": 0.52,
+            "extraction_confidence": float(llm_json.get("confidence") or 0.52),
             "scenario_key": "AI_ASSISTED_EXTRACTION",
             "execution_reasons": list(route.get("reasons") or []) + ["deterministic and heuristic extraction were weak"],
             "execution_flags": dict(route.get("execution_flags") or {}),
@@ -303,11 +315,20 @@ class ScenarioExtractionEngine:
                     "scenario_key": "AI_ASSISTED_EXTRACTION",
                     "evidence_type": "page_text",
                     "content": extraction_blob[: self._config.settings().evidence_char_limit],
-                    "metadata": {"fallback": "crawl4ai_markdown_or_plaintext"},
+                    "metadata": {
+                        "fallback": "openai_responses" if llm_preview else "crawl4ai_markdown_or_plaintext",
+                        "llm_model": llm_preview.model if llm_preview else "",
+                        "llm_error": llm_error,
+                    },
                 }
             ],
             "capabilities_text": "; ".join(categories),
-            "raw_payload": {"fallback_query": query},
+            "raw_payload": {
+                "fallback_query": query,
+                "llm_adapter": llm_preview.adapter if llm_preview else "",
+                "llm_explanation": _text(llm_json.get("explanation")),
+                "llm_error": llm_error,
+            },
         }
         return [SupplierSchemaValidator.ensure(record)]
 

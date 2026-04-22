@@ -22,11 +22,13 @@ probe() {
   return 1
 }
 
-# RU: Smoke-чек intentionally узкий: он должен быстро доказать, что backend/web/operator surfaces живы, а не заменить полный test suite.
-probe backend-health "$BACKEND_URL/health"
-probe backend-status "$BACKEND_URL/status"
+# RU: Launcher и standalone runtime больше не обязаны держать legacy `/status` и `/ui/*`,
+# поэтому smoke фиксируем на актуальном wave1 contour, который реально должен жить после старта.
+probe backend-health "$BACKEND_URL/health/ready"
+probe backend-system-mode "$BACKEND_URL/api/v1/meta/system-mode"
 probe web-home "$WEB_URL/" 3 20
-probe web-dashboard "$WEB_URL/dashboard" 3 20
-probe web-ops-workbench "$WEB_URL/ops-workbench" 3 20
-probe web-project-map "$WEB_URL/project-map" 3 20
-probe operator-companies "$WEB_URL/ui/companies" 3 20
+probe web-login "$WEB_URL/login" 3 20
+probe web-marketing "$WEB_URL/marketing" 3 20
+probe web-request-workbench "$WEB_URL/request-workbench" 3 20
+probe web-orders "$WEB_URL/orders" 3 20
+probe web-suppliers "$WEB_URL/suppliers" 3 20

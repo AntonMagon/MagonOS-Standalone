@@ -9,9 +9,8 @@ It exists so the project context survives across sessions instead of being re-ex
 - Standalone is the primary platform-of-record.
 - Odoo is donor/bridge context only, not the active runtime.
 - Wave1 planning truth lives in `gpt_doc/codex_wave1_spec_ru.docx`.
-- Global architecture truth for the new contour lives in `gpt_doc/platform_architecture_report_ru.docx`.
-- The broader roadmap/documentation sync pack lives in `gpt_doc/platform_documentation_pack_ru.docx`.
-- `docs/current-project-state.md` is runtime truth; `gpt_doc/*` is planning truth for the new contour.
+- Read-only export of the same planning spec lives in `gpt_doc/codex_wave1_spec_ru.pdf`.
+- There are no other active planning docs in `gpt_doc/`; `docs/current-project-state.md` is runtime truth, and the wave1 spec above is the planning truth for the new contour.
 - Wave1 default runtime is the foundation stack without the legacy WSGI bridge; legacy is opt-in only through `MAGON_FOUNDATION_LEGACY_ENABLED=true`.
 - Default changes happen only in this repository.
 - Current verified contour:
@@ -24,6 +23,7 @@ It exists so the project context survives across sessions instead of being re-ex
 - Already standalone-owned:
   - supplier intelligence pipeline
   - normalization / enrichment / dedup / scoring
+  - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
   - review queue
   - routing / qualification decisions
   - feedback ledger / projection
@@ -74,36 +74,432 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-17 22:34 +07`
-- Branch: `codex/wave1-acceptance-pr`
-- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: no additional risk recorded
+- Updated at: `2026-04-18 06:10 +07`
+- Branch: `codex/entity-help-reference`
+- Current focus: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
-### 2026-04-17 22:34 +07 | codex/wave1-acceptance-pr
-- Summary: Make operating-doc sync deterministic on CI runners without local Codex automations
+### 2026-04-18 06:10 +07 | codex/entity-help-reference
+- Summary: Close PostgreSQL-first bootstrap and smoke parity so launcher, seed, all foundation smoke checks, wave1 demo smoke, and the canonical verify path run end-to-end without the old SQLite drift or invalid order flow.
 - Changed:
-  - src/magon_standalone/operating_docs_sync.py,tests/test_operating_docs_sync.py,docs/implementation-log-wave1-foundation.md,docs/ru/foundation-runbook.md
+  - src/magon_standalone/foundation/codes.py
+  - tests/test_foundation_seed_repeatable.py
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
 - Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+  - PASS `bash ./scripts/foundation_order_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
+### 2026-04-18 05:56 +07 | codex/entity-help-reference
+- Summary: Fix repeatable PostgreSQL bootstrap so permanent supplier parsing/classification and the detached launcher both work end-to-end without seed aborts.
+- Changed:
+  - src/magon_standalone/foundation/codes.py
+  - tests/test_foundation_seed_repeatable.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+  - PASS `./Start_Platform.command --detach --no-open`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - No confirmed blocker remains in the verified local runtime; the main remaining risk is that part of the fast unit suite still uses isolated SQLite while the live runtime is PostgreSQL-first.
+### 2026-04-18 05:46 +07 | codex/entity-help-reference
+- Summary: Set up a permanent supplier parser/classifier through a repo-aware launchd scheduler that enqueues live source ingests hourly, exposes schedule/classification state in the operator UI, and verifies the contour end-to-end.
+- Changed:
+  - src/magon_standalone/foundation/supplier_scheduler.py
+  - src/magon_standalone/launchd_supplier_scheduler.py
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/codes.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - apps/web/app/suppliers/page.tsx
+  - scripts/run_supplier_scheduler.py
+  - scripts/render_launchd_supplier_scheduler.py
+  - scripts/install_launchd_supplier_scheduler.sh
+  - scripts/launchd_supplier_scheduler_status.sh
+  - scripts/verify_workflow.sh
+  - tests/test_supplier_scheduler.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_supplier_scheduler`
+  - PASS `./scripts/launchd_supplier_scheduler_status.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The permanent scheduler and operator-visible classification state are working, but the current PostgreSQL database still has a separate full-seed idempotency drift in seed_foundation.py; the new scheduler no longer depends on a full reseed to keep supplier parsing alive.
+### 2026-04-18 05:32 +07 | codex/entity-help-reference
+- Summary: Prepare a minimal env-gated LLM connection for explainable supplier parsing fallback and operator-visible status/test checks.
+- Changed:
+  - .env.example
+  - .env.local.example
+  - .env.prod.example
+  - .env.test.example
+  - pyproject.toml
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/modules/__init__.py
+  - src/magon_standalone/foundation/modules/llm.py
+  - src/magon_standalone/integrations/foundation/llm.py
+  - src/magon_standalone/supplier_intelligence/extraction_engine.py
+  - tests/test_foundation_llm.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_llm`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The LLM contour is now connected and operator-testable, but it remains intentionally limited to supplier parsing fallback; no autonomous workflow decisions or heavy AI contour were added.
+### 2026-04-18 05:22 +07 | codex/entity-help-reference
+- Summary: Recheck active policies, remove donor-runtime Odoo wording from the standalone repo, switch the local launcher and smoke contour to Postgres-first defaults with Redis infra, and fix the remaining wave1 demo smoke drift after status-language alignment.
+- Changed:
+  - AGENTS.md
+  - README.md
+  - Start_Platform.command
+  - alembic.ini
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/components/dashboard/queue-list.tsx
+  - apps/web/lib/standalone-api.ts
+  - apps/web/messages/en.json
+  - apps/web/messages/ru.json
+  - docker-compose.yml
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/current-project-state.md
+  - scripts/ensure_foundation_infra.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/manage_temp_foundation_db.py
+  - scripts/reset_foundation_database.py
+  - scripts/run_foundation_migrations.sh
+  - scripts/run_foundation_unified.sh
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The active local runtime is now Postgres-first, but much of the fast unit suite still uses isolated SQLite databases internally, so repo verification and local runtime are not yet full-parity.
+### 2026-04-18 04:55 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:54 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:47 +07 | codex/entity-help-reference
+- Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+### 2026-04-18 04:32 +07 | codex/entity-help-reference
+- Summary: Fix the Chrome-only Playwright wrapper regression, harden the detached launcher shell path, and document the verified tooling fault-pass results.
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - Start_Platform.command
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash scripts/run_playwright_cli.sh list`
+  - PASS `bash -lc "bash scripts/run_playwright_cli.sh --browser=firefox --help >/tmp/chrome-only.out 2>/tmp/chrome-only.err; test \$? -eq 2"`
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - no additional risk recorded
-### 2026-04-17 22:25 +07 | codex/wave1-acceptance-pr
-- Summary: fix CI verification to resolve python without local .venv
+### 2026-04-18 03:33 +07 | main
+- Summary: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
 - Changed:
-  - scripts/lib_repo_python.sh
-  - scripts/verify_workflow.sh
-  - scripts/foundation migration and smoke entrypoints
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/globals.css
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/app/suppliers/[supplierCode]/page.tsx
+  - apps/web/app/supplier-sites/[siteCode]/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/messages/ru.json
   - docs/implementation-log-wave1-foundation.md
-  - docs/ru/foundation-runbook.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
+### 2026-04-18 02:38 +07 | main
+- Summary: Complete the supplier source operator console, make parsing retries/queue states explainable, run browser-pass on supplier/workbench screens, and close the wave1 acceptance gate green.
+- Changed:
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/lib/foundation-display.ts
+  - tests/test_foundation_suppliers.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_acceptance.TestFoundationAcceptance.test_supplier_ingest_failure_is_visible_and_retryable`
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS browser pass for `/suppliers`, `/supplier-ingests/ING-00001`, `/request-workbench`
+- Risk:
+  - Detached launcher/web startup remains less reliable than direct canonical verification commands, so browser-heavy operator checks still prefer explicit runtime sessions.
+### 2026-04-18 03:18 +07 | main
+- Summary: Clean the standalone operator shell so the header stops collapsing into button clutter and the supplier screen reads like a real working console instead of a noisy demo card wall.
+- Changed:
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/globals.css
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS browser-open for `/login` and `/suppliers`
+- Risk:
+  - Browser verification for the fully authenticated suppliers screen still depends on an explicit runtime session because the current Playwright wrapper does not persist login across fresh browser opens by default.
+### 2026-04-18 02:17 +07 | main
+- Summary: Audit wave1 spec vs runtime, restore supplier parsing as a selectable ingest source, expose it in the supplier UI, and verify the standalone contour end-to-end.
+- Changed:
+  - src/magon_standalone/integrations/foundation/supplier_sources.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - apps/web/app/suppliers/page.tsx
+  - tests/test_foundation_suppliers.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Detached launcher/web startup remains less reliable than direct verification commands, so browser-heavy operator checks still prefer canonical verify commands or explicit runtime sessions.
+### 2026-04-18 02:09 +07 | main
+- Summary: Clean the standalone web shell: make dashboard cards actionable, simplify the header into primary nav plus a More panel, remove visible RU/EN UI drift, and verify the flow with browser and repo checks.
+- Changed:
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/login/page.tsx
+  - apps/web/components/auth/foundation-login-form.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - no additional risk recorded
+### 2026-04-18 00:56 +07 | main
+- Summary: Fix cached foundation session snapshots so useSyncExternalStore no longer loops in the web shell header
+- Changed:
+  - apps/web/lib/foundation-client.ts
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - The session loop is fixed at the store boundary, but I did not run a headed browser transcript in this turn, so final confirmation still depends on reopening /login or any page with the header in the current dev server.
+### 2026-04-18 00:52 +07 | main
+- Summary: Fix standalone web auth flow so foundation login completes with role-based redirect and visible session state
+- Changed:
+  - apps/web/lib/foundation-client.ts
+  - apps/web/components/auth/foundation-login-form.tsx
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - The foundation auth API is healthy and the web login flow now completes, but I was not able to extract structured output from the external Playwright CLI wrapper in this shell, so browser verification here is backed by code-path inspection plus build/typecheck and live auth API checks.
+### 2026-04-18 00:43 +07 | main
+- Summary: Align standalone web runtime with foundation health/public routes and harden the unified launcher port checks
+- Changed:
+  - apps/web/lib/standalone-api.ts
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - scripts/run_foundation_unified.sh
+  - docs/ru/current-project-state.md
 - Verified:
   - PASS `./scripts/verify_workflow.sh --with-web`
-  - PASS `MAGON_REPO_PYTHON_BIN="/Users/anton/Desktop/MagonOS-Standalone/.venv/bin/python" bash ./scripts/foundation_migration_check.sh`
 - Risk:
-  - GitHub PR merge is still blocked until the refreshed required checks complete on the new commit.
+  - Mixed-language public copy still remains in parts of the shell, but the runtime contract and operator entry points are now aligned with the real standalone foundation contour.
+### 2026-04-18 00:17 +07 | main
+- Summary: Add an hourly launchd watchdog that safely restarts the standalone launcher only when backend/web are down, wire it into verification, and document the new operator path.
+- Changed:
+  - scripts/run_launcher_watchdog.py
+  - scripts/render_launchd_launcher_watchdog.py
+  - scripts/install_launchd_launcher_watchdog.sh
+  - scripts/launchd_launcher_watchdog_status.sh
+  - src/magon_standalone/launchd_launcher_watchdog.py
+  - tests/test_launchd_launcher_watchdog.py
+  - scripts/platform_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - docs/ru/repo-workflow.md
+  - docs/ru/code-map.md
+  - docs/ru/current-project-state.md
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - The watchdog self-heals the local launcher, but it intentionally does not replace a full process supervisor, archive UI expansion, or broader post-wave-1 runtime scope.
+### 2026-04-18 00:10 +07 | main
+- Summary: Довёл публичный web-слой MagonOS: вычистил англицизмы и добавил paper-lab favicon
+- Changed:
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/app/icon.svg
+- Verified:
+  - PASS `cd apps/web && mkdir -p .next/types && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `test -f output/playwright/magonos-home-desktop-v2.png && test -f output/playwright/magonos-home-mobile-v2.png`
+- Risk:
+  - Repo-wide verify_workflow remains red outside this task because unrelated backend tests still expect old order/file states and Alembic head 20260417_0009 instead of 20260417_0010.
+### 2026-04-17 23:54 +07 | main
+- Summary: Align wave1 statuses, frontend wording, and marketing layer with the updated spec
+- Changed:
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - src/magon_standalone/foundation/models.py
+  - src/magon_standalone/foundation/offer_services.py
+  - src/magon_standalone/foundation/order_services.py
+  - src/magon_standalone/foundation/supplier_services.py
+  - src/magon_standalone/foundation/file_document_services.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/modules/offers.py
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - apps/web/lib/foundation-display.ts
+  - apps/web/app/marketing/page.tsx
+  - apps/web/app/icon.svg
+  - apps/web/components/requests/*
+  - apps/web/components/orders/*
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/app/suppliers*
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/{ru,en}.json
+  - tests/test_foundation_offers.py
+  - tests/test_foundation_orders.py
+  - tests/test_foundation_files_documents.py
+  - tests/test_foundation_migrations.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run build`
+- Risk:
+  - Wave1 remains intentionally bounded: no full archive UI, no full payment-core, and the main remaining web build warnings come from third-party Sentry/Prisma/OpenTelemetry instrumentation rather than product code.
+### 2026-04-17 23:40 +07 | main
+- Summary: Внедрил новый retro print lab веб-слой для главной MagonOS
+- Changed:
+  - apps/web/app/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/app/globals.css
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/components/ui/button.tsx
+  - apps/web/components/personalization/appearance-provider.tsx
+  - apps/web/design-system/tokens.ts
+  - apps/web/lib/fonts.ts
+  - apps/web/tailwind.config.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `test -f output/playwright/magonos-home-desktop.png && test -f output/playwright/magonos-home-mobile.png`
+- Risk:
+  - Repo-wide verify_workflow remains red because unrelated backend tests still expect old order/file states and Alembic head 20260417_0009 instead of 20260417_0010.
 ### 2026-04-17 20:27 +07 | codex/wave1-foundation
 - Summary: Closed the main wave1 acceptance gaps and hardened the demo-ready contour
 - Changed:
@@ -886,3 +1282,222 @@ It exists so the project context survives across sessions instead of being re-ex
 - Risk:
   - this file only helps if the repo workflow updates it on every substantial task
 <!-- WORKLOG:END -->
+### 2026-04-18 03:32 +07 | main
+- Summary: cleaned the operator shell and linked screens so the UI no longer leaks RU developer notes or mixed EN workflow terms into the Russian product surface
+- Changed:
+  - apps/web/components/navigation/site-header.tsx
+  - apps/web/app/globals.css
+  - apps/web/app/suppliers/page.tsx
+  - apps/web/app/supplier-ingests/[ingestCode]/page.tsx
+  - apps/web/components/requests/request-workbench.tsx
+  - apps/web/components/requests/request-workbench-detail.tsx
+  - apps/web/components/requests/draft-editor.tsx
+  - apps/web/components/orders/orders-list.tsx
+  - apps/web/components/orders/order-detail.tsx
+  - apps/web/app/suppliers/[supplierCode]/page.tsx
+  - apps/web/app/supplier-sites/[siteCode]/page.tsx
+  - apps/web/components/home/retro-print-landing.tsx
+  - apps/web/messages/ru.json
+  - docs/implementation-log-wave1-foundation.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS browser pass for `/`, `/request-workbench`, `/orders`, `/suppliers`, `/supplier-ingests/ING-00001`, and the `Ещё` panel
+- Risk:
+  - seeded demo company/order titles still contain legacy English fixture names, so the remaining visible English is now mostly test/demo data rather than shell copy or workflow labels
+### 2026-04-18 04:24 +07 | codex/entity-help-reference
+- Summary: added an embedded `/reference` surface and matching Russian repo doc so the standalone contour explains key entities, dependency boundaries, and role-owned routes directly inside the product shell
+- Changed:
+  - apps/web/app/reference/page.tsx
+  - apps/web/lib/platform-reference.ts
+  - apps/web/lib/site-nav.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - docs/ru/platform-entity-reference.md
+  - docs/ru/current-project-state.md
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `cd apps/web && npm run lint`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - the branch now has a clear reference surface, but the repo still contains unrelated dirty worktree state outside this task and it must be staged intentionally
+### 2026-04-18 04:38 +07 | main
+- Summary: locked browser automation to Google Chrome only, documented the rule, and marked old Playwright Firefox/WebKit caches as disposable instead of part of the project runtime
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/README.md
+  - docs/ru/code-map.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n scripts/run_playwright_cli.sh`
+  - PASS `bash scripts/run_playwright_cli.sh --help`
+- Risk:
+  - old Playwright caches can still exist on disk until they are explicitly removed, but they are no longer part of the supported repo workflow
+### 2026-04-18 04:31 +07 | codex/entity-help-reference
+- Summary: fixed the Chrome-only Playwright wrapper regression so browser meta-commands keep working, and hardened the detached launcher shell path without changing the verified foundation product contour
+- Changed:
+  - scripts/run_playwright_cli.sh
+  - Start_Platform.command
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash scripts/run_playwright_cli.sh list`
+  - PASS `bash scripts/run_playwright_cli.sh --help`
+  - PASS `bash scripts/run_playwright_cli.sh --browser=firefox --help`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - detached launcher reaping still cannot be proven from the Codex tool runner alone because this environment may reap child processes after the parent command exits; runtime truth should continue to be judged by canonical verification and a real user shell session
+### 2026-04-18 04:47 +07 | codex/entity-help-reference
+- Summary: fixed the detached launcher for real by moving `Start_Platform.command --detach` to a repo-local double-fork daemon helper so backend/web stay alive after the parent shell exits
+- Changed:
+  - Start_Platform.command
+  - scripts/run_detached_command.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `curl http://127.0.0.1:8091/health/ready` -> `200` after 6s and 18s
+  - PASS `curl http://127.0.0.1:3000/login` -> `200` after 6s and 18s
+  - PASS backend/web pid show `PPID 1` after launcher shell exit
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - detached runtime is now stable on the default local ports, but changing `8091/3000` still requires explicit launcher/watchdog reconfiguration
+### 2026-04-18 05:20 +07 | codex/entity-help-reference
+- Summary: rechecked active repo policies, removed legacy Odoo wording from active product copy/policy surfaces, switched the local standalone runtime to Postgres-first with Redis-backed defaults, and fixed the remaining wave1 demo smoke drift after status-language alignment
+- Changed:
+  - AGENTS.md
+  - README.md
+  - Start_Platform.command
+  - alembic.ini
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/components/dashboard/queue-list.tsx
+  - apps/web/lib/standalone-api.ts
+  - apps/web/messages/en.json
+  - apps/web/messages/ru.json
+  - docker-compose.yml
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/current-project-state.md
+  - scripts/ensure_foundation_infra.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/manage_temp_foundation_db.py
+  - scripts/reset_foundation_database.py
+  - scripts/run_foundation_migrations.sh
+  - scripts/run_foundation_unified.sh
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_foundation_unified.sh scripts/run_foundation_migrations.sh scripts/ensure_foundation_infra.sh scripts/foundation_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh scripts/verify_workflow.sh`
+  - PASS `psql postgresql://magon:magon@127.0.0.1:5432/postgres -c 'select 1'`
+  - PASS `./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - the active local runtime is now Postgres-first, but a large part of the unit suite still uses isolated SQLite databases internally; that is acceptable for fast repo verification, but it is not full parity with the new local runtime contour
+
+### 2026-04-22 17:14 +07 | codex/entity-help-reference
+- Summary: fixed GitHub Actions drift where `scripts/verify_workflow.sh` assumed `./.venv/bin/python`, while CI installs dependencies into the runner Python
+- Changed:
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+  - FAIL then root-caused GitHub Actions run `24772735495` at `Repo verify workflow` with `./.venv/bin/python: No such file or directory`
+- Risk:
+  - the CI fix still needs one more push after this memory/docs update; the currently running local verify is green but the remote workflow has not yet been retried with the fallback in place
+### 2026-04-22 17:18 +07 | codex/entity-help-reference
+- Summary: fixed operating docs sync so CI runners without ~/.codex/automations fall back to the repo-owned automation list instead of falsely marking AGENTS.md and README.md out of sync
+- Changed:
+  - src/magon_standalone/operating_docs_sync.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `HOME=/tmp/codex-empty-home ./.venv/bin/python scripts/sync_operating_docs.py --check`
+  - PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`
+- Risk:
+  - the GitHub workflow still needs one more push after this fix; until that run completes, the remote gate is not green yet
+### 2026-04-22 17:22 +07 | codex/entity-help-reference
+- Summary: fixed the Russian locale guard regression in `docs/ru/current-project-state.md` after documenting deterministic CI sync for operating docs
+- Changed:
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- Risk:
+  - the branch still needs another push after this tiny locale-only correction
+### 2026-04-22 23:30 +07 | codex/entity-help-reference
+- Summary: fixed CI readiness drift where blank Redis env vars in test/smoke were treated as missing and silently fell back to local Redis defaults, which made `/health/ready` return `degraded`
+- Changed:
+  - src/magon_standalone/foundation/settings.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api.TestFoundationApi.test_health_and_login_flow`
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - local runtime and repo verification are green after the blank-env fix, but GitHub Actions still need one more push to prove the same path remotely
+### 2026-04-22 23:50 +07 | codex/entity-help-reference
+- Summary: removed the remaining CI-only smoke failure by making all foundation smoke/migration scripts fall back from repo `.venv` to system Python on clean runners
+- Changed:
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n scripts/foundation_smoke_check.sh scripts/foundation_catalog_smoke_check.sh scripts/foundation_request_smoke_check.sh scripts/foundation_offer_smoke_check.sh scripts/foundation_order_smoke_check.sh scripts/foundation_supplier_smoke_check.sh scripts/foundation_files_documents_smoke_check.sh scripts/foundation_messages_dashboards_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - local proof is green; remote GitHub Actions still need the next push to confirm the same smoke path on a clean runner
+### 2026-04-23 00:05 +07 | codex/entity-help-reference
+- Summary: restored GitHub branch governance so the repo points to `main`, uses live workflow checks, and no longer relies on stale required-status names from the old `develop` setup
+- Changed:
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `gh repo view --json defaultBranchRef`
+  - PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/main/protection`
+  - PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/develop/protection`
+- Risk:
+  - branch topology is now logically aligned, but the working branch still needs its ancestry synced with `main` before the cleanup PR can be merged and the extra remote branches deleted

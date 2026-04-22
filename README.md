@@ -3,12 +3,12 @@
 Standalone MagonOS platform.
 
 This repository is now the primary platform-of-record.
-The legacy Odoo repo at `/Users/anton/Desktop/MagonOS/MagonOS` remains a donor / bridge / legacy-shell repository only.
+The legacy donor repo at `/Users/anton/Desktop/MagonOS/MagonOS` remains a donor / bridge / legacy-shell repository only.
 
 Included:
 - supplier discovery pipeline
 - fixture-backed standalone runtime
-- standalone SQLite persistence
+- standalone PostgreSQL persistence
 - standalone HTTP API
 - foundation FastAPI modular-monolith skeleton
 - operator console
@@ -22,10 +22,10 @@ Included:
 - production board
 
 Not included:
-- Odoo ORM/models/views
-- Odoo admin UI
+- donor ORM/models/views
+- donor admin UI
 - accounting / invoice / payment ERP ownership
-- full Odoo CRM / ERP replacement
+- full donor CRM / ERP replacement
 
 ## Wave1 foundation
 Foundation skeleton for the first Codex wave now lives in the same repo and adds:
@@ -57,6 +57,8 @@ Unified local path:
 ```bash
 ./scripts/run_foundation_unified.sh --fresh
 ```
+
+This path now auto-starts local `db + redis` through `docker compose`/`colima` and keeps the active local runtime on PostgreSQL instead of a separate SQLite fallback.
 
 Legacy bridge is opt-in only:
 
@@ -172,10 +174,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-17 22:34 +07`
-- Current focus: Make operating-doc sync deterministic on CI runners without local Codex automations
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: no additional risk recorded
+- Auto-synced at: `2026-04-18 06:10 +07`
+- Current focus: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -187,7 +189,12 @@ Detailed workflow: `docs/repo-workflow.md`
 - Standalone-owned capabilities:
   - company/supplier/site registry contour with raw -> normalized -> confirmed layering
   - supplier intelligence pipeline
+  - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
+  - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
+  - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
+  - repo-aware periodic supplier scheduler for live parsing/classification; fixture source stays manual-only while `scenario_live` can be enqueued continuously on a launchd cadence
   - normalization / enrichment / dedup / scoring
+  - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
   - limited catalog / showcase contour with guest draft + RFQ entry
   - draft autosave / abandoned / archive-ready intake layer
   - central request review queue with blocker/clarification flow
@@ -213,6 +220,8 @@ Detailed workflow: `docs/repo-workflow.md`
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
+  - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+  - public marketing layer: `http://127.0.0.1:3000/marketing`
   - public showcase: `http://127.0.0.1:3000/catalog`
   - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
   - public RFQ entry: `http://127.0.0.1:3000/rfq`
@@ -228,8 +237,12 @@ Detailed workflow: `docs/repo-workflow.md`
   - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
   - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
   - supplier workbench: `http://127.0.0.1:3000/suppliers`
+  - supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
   - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
   - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
+  - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
+  - supplier source API now also exposes schedule/classification state so operator tooling can tell which source runs continuously, when the next due window arrives, and whether LLM-assisted fallback is enabled
+  - operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
   - direct backend debug: `http://127.0.0.1:8091/`
   - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`
@@ -239,11 +252,11 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Deploy notes
 - This repo is the official product runtime.
-- The source Odoo repo is no longer the official startup path.
+- The donor repo is no longer the official startup path.
 - `scripts/run_platform.sh` is legacy compatibility-only.
 - `scripts/run_unified_platform.sh` is legacy compatibility-only.
 - `scripts/run_deploy.sh` is the deploy/runtime entrypoint.
 - `Procfile` points at the production entrypoint.
-- The app is independent from Odoo runtime.
+- The app is independent from the donor runtime.
 - Legacy standalone contour may still exist as a temporary compatibility surface, but it is opt-in.
 - Foundation wave1 skeleton is the forward runtime base and is already running on the target stack through PostgreSQL + Redis + Alembic + Docker Compose.

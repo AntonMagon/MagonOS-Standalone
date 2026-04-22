@@ -27,6 +27,7 @@ from .models import (
 from .security import AuthContext, ROLE_ADMIN, ROLE_OPERATOR
 from .settings import FoundationSettings, load_settings
 
+# RU: Допустимые owner/file-границы держим здесь явно, чтобы документы не утекали за контур первой волны.
 ALLOWED_OWNER_TYPES = {"request", "offer", "order"}
 ALLOWED_FILE_TYPES = {"attachment", "brief", "artwork", "document_generated", "invoice_like", "internal_job"}
 ALLOWED_VISIBILITY_SCOPES = {"internal", "operator", "customer", "public", "admin"}
@@ -213,7 +214,7 @@ class FileDocumentService:
         checks.append(
             {
                 "check_kind": "manual_review",
-                "check_state": "blocked" if auto_failed else "pending_review",
+                "check_state": "failed" if auto_failed else "needs_manual_review",
                 "reason_code": "file_manual_review_blocked" if auto_failed else "file_manual_review_required",
                 "message": "Automatic checks failed." if auto_failed else "Operator manual review is required.",
             }
@@ -290,7 +291,7 @@ class FileDocumentService:
             byte_size=len(content),
             checksum_sha256=hashlib.sha256(content).hexdigest(),
             file_type=file_type,
-            check_state=initial_check_state or "pending_review",
+            check_state=initial_check_state or "checking",
             visibility_scope=visibility_scope,
             final_flag=initial_final_flag,
             created_by_user_id=auth.user_id,
@@ -318,7 +319,7 @@ class FileDocumentService:
             if any(item.check_state == "failed" for item in checks):
                 version.check_state = "failed"
             else:
-                version.check_state = "pending_review"
+                version.check_state = "needs_manual_review"
         self._set_asset_snapshot(asset=asset, version=version)
         return version, checks
 
@@ -383,7 +384,7 @@ class FileDocumentService:
             file_extension=Path(filename).suffix.lower().lstrip(".") or None,
             byte_size=len(content),
             current_version_no=0,
-            check_state="pending_review",
+            check_state="checking",
             legacy_visibility=visibility_scope,
             visibility_scope=visibility_scope,
             final_flag=False,
@@ -464,7 +465,7 @@ class FileDocumentService:
         reason_code: str,
         note: str | None = None,
     ) -> tuple[FileAsset, FileVersion]:
-        if target_state not in {"approved", "rejected"}:
+        if target_state not in {"passed", "failed"}:
             raise HTTPException(status_code=422, detail="file_review_state_invalid")
         asset = self._file_asset_by_code(asset_code)
         version = self.session.scalar(select(FileVersion).where(FileVersion.id == asset.latest_version_id))
@@ -481,7 +482,7 @@ class FileDocumentService:
         manual_check.checked_by_user_id = auth.user_id
         version.check_state = target_state
         asset.check_state = target_state
-        if target_state == "rejected":
+        if target_state == "failed":
             version.final_flag = False
             asset.final_flag = False
         record_audit_event(
@@ -509,8 +510,10 @@ class FileDocumentService:
         version = self.session.scalar(select(FileVersion).where(FileVersion.id == asset.latest_version_id))
         if version is None:
             raise HTTPException(status_code=409, detail="file_version_missing")
-        if version.check_state != "approved":
+        if version.check_state != "passed":
             raise HTTPException(status_code=409, detail="file_not_ready_for_final")
+        version.check_state = "approved_final"
+        asset.check_state = "approved_final"
         version.final_flag = True
         asset.final_flag = True
         record_audit_event(
@@ -577,11 +580,11 @@ class FileDocumentService:
             body = (
                 f"# {template['title_prefix']}\n\n"
                 f"- Request: {request.code}\n"
-                f"- Customer ref: {request.customer_ref or 'n/a'}\n"
-                f"- Customer: {request.customer_name or request.customer_email or 'n/a'}\n"
-                f"- City: {request.city or 'n/a'}\n"
-                f"- Summary: {request.summary or request.item_service_context or 'n/a'}\n"
-                f"- Deadline: {request.requested_deadline_at.isoformat() if request.requested_deadline_at else 'n/a'}\n"
+                f"- Customer ref: {request.customer_ref or 'не указан'}\n"
+                f"- Customer: {request.customer_name or request.customer_email or 'не указан'}\n"
+                f"- City: {request.city or 'не указан'}\n"
+                f"- Summary: {request.summary or request.item_service_context or 'не указано'}\n"
+                f"- Deadline: {request.requested_deadline_at.isoformat() if request.requested_deadline_at else 'не указан'}\n"
             )
             title = f"{template['title_prefix']} {request.code}"
             return title, "text/markdown", body, {"request_code": request.code, "customer_ref": request.customer_ref}
@@ -593,9 +596,9 @@ class FileDocumentService:
                 f"- Request ref: {offer.request_ref}\n"
                 f"- Status: {offer.offer_status}\n"
                 f"- Confirmation: {offer.confirmation_state}\n"
-                f"- Amount: {offer.amount or 'n/a'} {offer.currency_code}\n"
-                f"- Lead time: {offer.lead_time_days or 'n/a'}\n"
-                f"- Terms: {offer.terms_text or 'n/a'}\n"
+                f"- Amount: {offer.amount or 'не указано'} {offer.currency_code}\n"
+                f"- Lead time: {offer.lead_time_days or 'не указан'}\n"
+                f"- Terms: {offer.terms_text or 'не указаны'}\n"
             )
             title = f"{template['title_prefix']} {offer.code}"
             return title, "text/markdown", body, {"offer_code": offer.code, "request_ref": offer.request_ref}
@@ -665,7 +668,7 @@ class FileDocumentService:
                 auth=auth,
                 file_type="document_generated",
                 visibility_scope=visibility_scope,
-                initial_check_state="approved",
+                initial_check_state="approved_final",
                 initial_final_flag=True,
             )
             doc_version_no = document.current_version_no + 1
@@ -721,7 +724,7 @@ class FileDocumentService:
             file_extension="md",
             byte_size=len(content),
             current_version_no=0,
-            check_state="approved",
+            check_state="approved_final",
             legacy_visibility=visibility_scope,
             visibility_scope=visibility_scope,
             final_flag=True,
@@ -738,7 +741,7 @@ class FileDocumentService:
             auth=auth,
             file_type="document_generated",
             visibility_scope=visibility_scope,
-            initial_check_state="approved",
+            initial_check_state="approved_final",
             initial_final_flag=True,
         )
         document = Document(

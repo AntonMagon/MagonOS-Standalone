@@ -58,6 +58,7 @@ async def _lifespan(app: FastAPI):
 
 
 def create_app(settings: FoundationSettings | None = None) -> FastAPI:
+    # RU: App собираем явно, чтобы optional-контуры вроде legacy mount и новых модулей включались только по понятным правилам.
     actual_settings = settings or load_settings()
     if actual_settings.system_mode not in {"normal", "test", "maintenance", "emergency"}:
         raise RuntimeError(f"foundation_system_mode_invalid:{actual_settings.system_mode}")
@@ -165,6 +166,7 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
                 "Orders",
                 "FilesMedia",
                 "Documents",
+                "LLM",
                 "Comms",
                 "RulesEngine",
                 "AuditDashboards",

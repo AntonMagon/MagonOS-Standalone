@@ -9,7 +9,26 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
 import {downloadFoundationFile, fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {
+  FILE_REVIEW_OPTIONS,
+  FILE_TYPE_OPTIONS,
+  VISIBILITY_SCOPE_OPTIONS,
+  displayDocumentState,
+  displayDocumentType,
+  displayFileCheckState,
+  displayFileType,
+  displayLogisticsState,
+  displayMaybe,
+  displayOfferStatus,
+  displayOrderStatus,
+  displayPaymentState,
+  displayReasonCode,
+  displayRequestStatus,
+  displayVisibilityScope,
+  formatFoundationDate,
+} from "@/lib/foundation-display";
 
+// RU: Деталь заявки — основной operator экран intake-цепочки, где blockers, offers, files и timeline собираются вокруг одного Request.
 type ManagedFile = {
   code: string;
   owner_type: string;
@@ -113,12 +132,12 @@ const TRANSITION_OPTIONS = [
 
 function ownerLabel(ownerType: string): string {
   if (ownerType === "offer") {
-    return "Offer";
+    return "Предложение";
   }
   if (ownerType === "order") {
-    return "Order";
+    return "Заказ";
   }
-  return "Request";
+  return "Заявка";
 }
 
 export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
@@ -156,7 +175,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
   const [fileNote, setFileNote] = useState("");
   const [fileUpload, setFileUpload] = useState<File | null>(null);
   const [selectedFileCode, setSelectedFileCode] = useState("");
-  const [fileReviewState, setFileReviewState] = useState<"approved" | "rejected">("approved");
+  const [fileReviewState, setFileReviewState] = useState<"passed" | "failed">("passed");
   const [documentOwnerScope, setDocumentOwnerScope] = useState<"request" | "offer">("request");
   const [documentTemplateKey, setDocumentTemplateKey] = useState("offer_proposal");
   const [documentTitle, setDocumentTitle] = useState("");
@@ -502,11 +521,11 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
     return (
       <main className="container py-10">
         <Card className="glass-panel border-white/12 p-6">
-          <h1 className="text-3xl leading-tight">Request workbench detail</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">Для operator/admin-экрана нужен foundation session token.</p>
+          <h1 className="text-3xl leading-tight">Карточка заявки</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">Для этого экрана нужен вход с ролью оператора или администратора.</p>
           <div className="mt-6">
             <Link href="/login">
-              <Button>Открыть login</Button>
+              <Button>Открыть вход</Button>
             </Link>
           </div>
         </Card>
@@ -515,7 +534,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
   }
 
   if (loading) {
-    return <main className="container py-10"><Card className="glass-panel border-white/12 p-6">Загрузка Request...</Card></main>;
+    return <main className="container py-10"><Card className="glass-panel border-white/12 p-6">Загрузка карточки заявки...</Card></main>;
   }
 
   if (!item) {
@@ -527,25 +546,25 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
       <Card className="glass-panel border-white/12 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Operator Request</div>
+            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Рабочая карточка заявки</div>
             <h1 className="mt-2 text-3xl leading-tight">{item.title ?? item.code}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-              RU: Request остаётся центральной сущностью review-flow, а Offer, Documents и Files живут отдельными управляемыми слоями вокруг него.
+              Заявка остаётся центральной рабочей сущностью: вокруг неё живут предложения, документы, файлы и причины решений, но они не смешиваются в одну запись.
             </p>
           </div>
           <div className="space-y-1 text-right text-sm text-muted-foreground">
-            <div>Request code: {item.code}</div>
-            <div>Customer ref: {item.customer_ref ?? "n/a"}</div>
-            <div>Статус: {item.request_status}</div>
+            <div>Код заявки: {item.code}</div>
+            <div>Клиентская ссылка: {item.customer_ref ?? "Не указана"}</div>
+            <div>Статус: {displayRequestStatus(item.request_status)}</div>
           </div>
         </div>
         {item.summary ? <p className="mt-4 text-sm leading-7 text-foreground/84">{item.summary}</p> : null}
         {item.order ? (
           <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-            Order {item.order.code} · {item.order.order_status} · {item.order.payment_state} · {item.order.logistics_state}
+            Заказ {item.order.code} · {displayOrderStatus(item.order.order_status)} · {displayPaymentState(item.order.payment_state)} · {displayLogisticsState(item.order.logistics_state)}
             <div className="mt-3">
               <Link href={`/orders/${item.order.code}`}>
-                <Button variant="outline">Открыть order layer</Button>
+                <Button variant="outline">Открыть заказ</Button>
               </Link>
             </div>
           </div>
@@ -557,28 +576,28 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)]">
         <div className="space-y-4">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Transition guard</h2>
+            <h2 className="text-xl">Переход статуса</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void submitTransition(event)}>
               <div className="space-y-2">
-                <Label htmlFor="target-status">Target status</Label>
+                <Label htmlFor="target-status">Целевой статус</Label>
                 <select id="target-status" className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={targetStatus} onChange={(event) => setTargetStatus(event.target.value)}>
-                  {TRANSITION_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+                  {TRANSITION_OPTIONS.map((status) => <option key={status} value={status}>{displayRequestStatus(status)}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="reason-code">Reason code</Label>
-                <Input id="reason-code" value={reasonCode} onChange={(event) => setReasonCode(event.target.value)} />
+                <Label htmlFor="reason-code">Код причины</Label>
+                <Input id="reason-code" placeholder="например: operator_review_started" value={reasonCode} onChange={(event) => setReasonCode(event.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reason-note">Комментарий</Label>
                 <Textarea id="reason-note" rows={3} value={reasonNote} onChange={(event) => setReasonNote(event.target.value)} />
               </div>
-              <Button type="submit">Применить transition</Button>
+              <Button type="submit">Применить переход</Button>
             </form>
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Offer compare / versions</h2>
+            <h2 className="text-xl">Предложения и версии</h2>
             <div className="mt-4 space-y-3 text-sm">
               {offers.map((offerItem) => (
                 <div key={offerItem.offer.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -586,19 +605,19 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                     <div>
                       <div className="font-medium">{offerItem.comparison?.comparison_title ?? offerItem.offer.public_summary ?? offerItem.offer.code}</div>
                       <div className="mt-1 text-muted-foreground">
-                        {offerItem.offer.offer_status} · {offerItem.offer.confirmation_state} · v{offerItem.offer.current_version_no}
+                        {displayOfferStatus(offerItem.offer.offer_status)} · {displayOfferStatus(offerItem.offer.confirmation_state)} · v{offerItem.offer.current_version_no}
                       </div>
                     </div>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input type="radio" name="selected-offer" checked={selectedOfferCode === offerItem.offer.code} onChange={() => setSelectedOfferCode(offerItem.offer.code)} />
-                      selected
+                      выбран
                     </label>
                   </div>
                   <div className="mt-3 grid gap-2 md:grid-cols-2">
-                    <div>Цена: {offerItem.offer.amount ?? "n/a"} {offerItem.offer.currency_code}</div>
-                    <div>Lead time: {offerItem.offer.lead_time_days ?? "n/a"} дней</div>
-                    <div>Scenario: {offerItem.offer.scenario_type}</div>
-                    <div>Supplier ref: {offerItem.offer.supplier_ref ?? "n/a"}</div>
+                    <div>Цена: {offerItem.offer.amount ?? "Не указана"} {offerItem.offer.currency_code}</div>
+                    <div>Срок: {offerItem.offer.lead_time_days ?? "Не указан"} дней</div>
+                    <div>Сценарий: {displayMaybe(offerItem.offer.scenario_type)}</div>
+                    <div>Поставщик: {offerItem.offer.supplier_ref ?? "Не назначен"}</div>
                   </div>
                   {offerItem.offer.terms_text ? <div className="mt-3 text-muted-foreground">{offerItem.offer.terms_text}</div> : null}
                   {offerItem.comparison?.highlights?.length ? (
@@ -609,11 +628,11 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                     </div>
                   ) : null}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "send")}>Send</Button>
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "accept")}>Accept</Button>
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "decline")}>Decline</Button>
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "expire")}>Expire</Button>
-                    <Button size="sm" type="button" onClick={() => void runOfferAction(offerItem.offer.code, "convert")}>Convert to order</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "send")}>Отправить</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "accept")}>Подтвердить</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "decline")}>Отклонить</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runOfferAction(offerItem.offer.code, "expire")}>Закрыть по сроку</Button>
+                    <Button size="sm" type="button" onClick={() => void runOfferAction(offerItem.offer.code, "convert")}>Создать заказ</Button>
                   </div>
                 </div>
               ))}
@@ -622,22 +641,22 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Create / revise commercial offer</h2>
+            <h2 className="text-xl">Создать или пересмотреть предложение</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void createOffer(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <Input placeholder="Цена" value={offerForm.amount} onChange={(event) => setOfferForm((current) => ({...current, amount: event.target.value}))} />
-                <Input placeholder="Lead time (days)" value={offerForm.lead_time_days} onChange={(event) => setOfferForm((current) => ({...current, lead_time_days: event.target.value}))} />
-                <Input placeholder="Scenario type" value={offerForm.scenario_type} onChange={(event) => setOfferForm((current) => ({...current, scenario_type: event.target.value}))} />
-                <Input placeholder="Supplier ref" value={offerForm.supplier_ref} onChange={(event) => setOfferForm((current) => ({...current, supplier_ref: event.target.value}))} />
-                <Input placeholder="Comparison title" value={offerForm.comparison_title} onChange={(event) => setOfferForm((current) => ({...current, comparison_title: event.target.value}))} />
-                <Input placeholder="Comparison rank" value={offerForm.comparison_rank} onChange={(event) => setOfferForm((current) => ({...current, comparison_rank: event.target.value}))} />
+                <Input placeholder="Срок (в днях)" value={offerForm.lead_time_days} onChange={(event) => setOfferForm((current) => ({...current, lead_time_days: event.target.value}))} />
+                <Input placeholder="Сценарий" value={offerForm.scenario_type} onChange={(event) => setOfferForm((current) => ({...current, scenario_type: event.target.value}))} />
+                <Input placeholder="Код поставщика" value={offerForm.supplier_ref} onChange={(event) => setOfferForm((current) => ({...current, supplier_ref: event.target.value}))} />
+                <Input placeholder="Название для сравнения" value={offerForm.comparison_title} onChange={(event) => setOfferForm((current) => ({...current, comparison_title: event.target.value}))} />
+                <Input placeholder="Позиция в сравнении" value={offerForm.comparison_rank} onChange={(event) => setOfferForm((current) => ({...current, comparison_rank: event.target.value}))} />
               </div>
-              <Textarea placeholder="Public summary" rows={3} value={offerForm.public_summary} onChange={(event) => setOfferForm((current) => ({...current, public_summary: event.target.value}))} />
-              <Textarea placeholder="Terms" rows={3} value={offerForm.terms_text} onChange={(event) => setOfferForm((current) => ({...current, terms_text: event.target.value}))} />
-              <Input placeholder="Highlights comma-separated" value={offerForm.highlights_text} onChange={(event) => setOfferForm((current) => ({...current, highlights_text: event.target.value}))} />
+              <Textarea placeholder="Публичное описание версии" rows={3} value={offerForm.public_summary} onChange={(event) => setOfferForm((current) => ({...current, public_summary: event.target.value}))} />
+              <Textarea placeholder="Коммерческие условия" rows={3} value={offerForm.terms_text} onChange={(event) => setOfferForm((current) => ({...current, terms_text: event.target.value}))} />
+              <Input placeholder="Акценты через запятую" value={offerForm.highlights_text} onChange={(event) => setOfferForm((current) => ({...current, highlights_text: event.target.value}))} />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input type="checkbox" checked={offerForm.recommended} onChange={(event) => setOfferForm((current) => ({...current, recommended: event.target.checked}))} />
-                recommended variant
+                рекомендованный вариант
               </label>
               <div className="flex flex-wrap gap-2">
                 <Button type="submit">Создать вариант</Button>
@@ -649,20 +668,24 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Managed files</h2>
+            <h2 className="text-xl">Управляемые файлы</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void uploadManagedFile(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileOwnerScope} onChange={(event) => setFileOwnerScope(event.target.value as "request" | "offer")}>
-                  <option value="request">Request</option>
-                  <option value="offer" disabled={!selectedOffer}>Selected offer</option>
+                  <option value="request">Заявка</option>
+                  <option value="offer" disabled={!selectedOffer}>Выбранное предложение</option>
                 </select>
-                <Input placeholder="file_type" value={fileType} onChange={(event) => setFileType(event.target.value)} />
-                <Input placeholder="visibility_scope" value={fileVisibilityScope} onChange={(event) => setFileVisibilityScope(event.target.value)} />
-                <Input placeholder="reason_code" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
+                <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileType} onChange={(event) => setFileType(event.target.value)}>
+                  {FILE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileVisibilityScope} onChange={(event) => setFileVisibilityScope(event.target.value)}>
+                  {VISIBILITY_SCOPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <Input placeholder="например: request_file_uploaded" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
               </div>
               <Textarea placeholder="Комментарий к файлу" rows={2} value={fileNote} onChange={(event) => setFileNote(event.target.value)} />
               <Input type="file" onChange={(event) => setFileUpload(event.target.files?.[0] ?? null)} />
-              <Button type="submit" disabled={!fileUpload}>Загрузить managed file</Button>
+              <Button type="submit" disabled={!fileUpload}>Загрузить файл</Button>
             </form>
             <div className="mt-6 space-y-3 text-sm">
               {item.managed_files.map((file) => (
@@ -671,12 +694,12 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                     <div>
                       <div className="font-medium">{file.title ?? file.latest_version?.original_name ?? file.code}</div>
                       <div className="mt-1 text-muted-foreground">
-                        {ownerLabel(file.owner_type)} · {file.file_type} · {file.check_state} · {file.visibility_scope} · {file.final_flag ? "final" : "draft"}
+                        {ownerLabel(file.owner_type)} · {displayFileType(file.file_type)} · {displayFileCheckState(file.check_state)} · {displayVisibilityScope(file.visibility_scope)} · {file.final_flag ? "Финальная версия" : "Рабочая версия"}
                       </div>
                     </div>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input type="radio" name="selected-file" checked={selectedFileCode === file.code} onChange={() => setSelectedFileCode(file.code)} />
-                      selected
+                      выбран
                     </label>
                   </div>
                   {file.latest_version ? (
@@ -691,27 +714,26 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
               {!item.managed_files.length ? <div className="text-muted-foreground">Пока нет managed files для request/offer/order слоя.</div> : null}
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-              <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileReviewState} onChange={(event) => setFileReviewState(event.target.value as "approved" | "rejected")}>
-                <option value="approved">approved</option>
-                <option value="rejected">rejected</option>
+              <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileReviewState} onChange={(event) => setFileReviewState(event.target.value as "passed" | "failed")}>
+                {FILE_REVIEW_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
-              <Input placeholder="review/finalize reason_code" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
-              <Button type="button" variant="outline" disabled={!selectedFileCode} onClick={() => void reviewSelectedFile()}>Review</Button>
-              <Button type="button" disabled={!selectedFileCode} onClick={() => void finalizeSelectedFile()}>Finalize</Button>
+              <Input placeholder="например: file_manual_review_approved" value={fileReasonCode} onChange={(event) => setFileReasonCode(event.target.value)} />
+              <Button type="button" variant="outline" disabled={!selectedFileCode} onClick={() => void reviewSelectedFile()}>Зафиксировать проверку</Button>
+              <Button type="button" disabled={!selectedFileCode} onClick={() => void finalizeSelectedFile()}>Сделать финальной</Button>
             </div>
           </Card>
         </div>
 
         <div className="space-y-4">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Clarification / follow-up</h2>
+            <h2 className="text-xl">Уточнения и follow-up</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void addFollowUp(event)}>
-              <Input placeholder="Follow-up title" value={followUpTitle} onChange={(event) => setFollowUpTitle(event.target.value)} />
-              <Textarea placeholder="Detail" rows={3} value={followUpDetail} onChange={(event) => setFollowUpDetail(event.target.value)} />
+              <Input placeholder="Название шага" value={followUpTitle} onChange={(event) => setFollowUpTitle(event.target.value)} />
+              <Textarea placeholder="Что именно нужно сделать" rows={3} value={followUpDetail} onChange={(event) => setFollowUpDetail(event.target.value)} />
               <Input type="datetime-local" value={followUpDueAt} onChange={(event) => setFollowUpDueAt(event.target.value)} />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input type="checkbox" checked={followUpCustomerVisible} onChange={(event) => setFollowUpCustomerVisible(event.target.checked)} />
-                customer_visible
+                Видно клиенту
               </label>
               <Button type="submit">Создать follow-up</Button>
             </form>
@@ -719,7 +741,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
               {item.follow_up_items.map((followUp) => (
                 <div key={followUp.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                   <div className="font-medium">{followUp.title}</div>
-                  <div className="mt-1 text-muted-foreground">{followUp.follow_up_status} · {followUp.customer_visible ? "customer" : "internal"}</div>
+                  <div className="mt-1 text-muted-foreground">{displayMaybe(followUp.follow_up_status)} · {followUp.customer_visible ? "Клиент видит" : "Внутренний контур"}</div>
                   {followUp.detail ? <div className="mt-2 text-foreground/80">{followUp.detail}</div> : null}
                 </div>
               ))}
@@ -727,8 +749,8 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
             <div className="mt-4 space-y-3 text-sm">
               {item.clarification_cycles.map((cycle) => (
                 <div key={cycle.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <div className="font-medium">Cycle #{cycle.cycle_index}</div>
-                  <div className="mt-1 text-muted-foreground">{cycle.cycle_status} · {cycle.opened_reason_code}</div>
+                  <div className="font-medium">Цикл #{cycle.cycle_index}</div>
+                  <div className="mt-1 text-muted-foreground">{displayMaybe(cycle.cycle_status)} · {displayReasonCode(cycle.opened_reason_code)}</div>
                   {cycle.opened_note ? <div className="mt-2 text-foreground/80">{cycle.opened_note}</div> : null}
                 </div>
               ))}
@@ -736,21 +758,21 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Managed documents</h2>
+            <h2 className="text-xl">Управляемые документы</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void generateDocument(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentOwnerScope} onChange={(event) => setDocumentOwnerScope(event.target.value as "request" | "offer")}>
-                  <option value="request">Request</option>
-                  <option value="offer" disabled={!selectedOffer}>Selected offer</option>
+                  <option value="request">Заявка</option>
+                  <option value="offer" disabled={!selectedOffer}>Выбранное предложение</option>
                 </select>
                 <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentTemplateKey} onChange={(event) => setDocumentTemplateKey(event.target.value)}>
-                  {documentTemplates.map((template) => (
-                    <option key={template.template_key} value={template.template_key}>{template.template_key}</option>
-                  ))}
+                  {documentTemplates.map((template) => <option key={template.template_key} value={template.template_key}>{displayDocumentType(template.document_type)}</option>)}
                 </select>
-                <Input placeholder="Document title override" value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} />
-                <Input placeholder="visibility_scope" value={documentVisibilityScope} onChange={(event) => setDocumentVisibilityScope(event.target.value)} />
-                <Input placeholder="reason_code" value={documentReasonCode} onChange={(event) => setDocumentReasonCode(event.target.value)} />
+                <Input placeholder="Переопределение заголовка документа" value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} />
+                <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentVisibilityScope} onChange={(event) => setDocumentVisibilityScope(event.target.value)}>
+                  {VISIBILITY_SCOPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <Input placeholder="например: document_generated_from_request" value={documentReasonCode} onChange={(event) => setDocumentReasonCode(event.target.value)} />
               </div>
               <Textarea placeholder="Комментарий к документу" rows={2} value={documentNote} onChange={(event) => setDocumentNote(event.target.value)} />
               <Button type="submit">Сгенерировать документ</Button>
@@ -762,12 +784,12 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                     <div>
                       <div className="font-medium">{document.title}</div>
                       <div className="mt-1 text-muted-foreground">
-                        {ownerLabel(document.owner_type)} · {document.document_type} · {document.sent_state} · {document.confirmation_state}
+                        {ownerLabel(document.owner_type)} · {displayDocumentType(document.document_type)} · {displayDocumentState(document.sent_state)} · {displayDocumentState(document.confirmation_state)}
                       </div>
                     </div>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input type="radio" name="selected-document" checked={selectedDocumentCode === document.code} onChange={() => setSelectedDocumentCode(document.code)} />
-                      selected
+                      выбран
                     </label>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -776,32 +798,32 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                         Скачать v{document.current_version.version_no}
                       </Button>
                     ) : null}
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "send")}>Send</Button>
-                    <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "confirm")}>Confirm</Button>
-                    <Button size="sm" type="button" onClick={() => void runDocumentAction(document.code, "replace")}>Replace</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "send")}>Отправить</Button>
+                    <Button size="sm" type="button" variant="outline" onClick={() => void runDocumentAction(document.code, "confirm")}>Подтвердить</Button>
+                    <Button size="sm" type="button" onClick={() => void runDocumentAction(document.code, "replace")}>Заменить версией</Button>
                   </div>
                 </div>
               ))}
-              {!item.documents.length ? <div className="text-muted-foreground">Пока нет generated documents для request/offer/order слоя.</div> : null}
+              {!item.documents.length ? <div className="text-muted-foreground">Пока нет документов для этого контура.</div> : null}
             </div>
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Reasons / blockers</h2>
+            <h2 className="text-xl">Причины и блокеры</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void addReason(event)}>
               <div className="space-y-2">
-                <Label htmlFor="reason-kind">Reason kind</Label>
+                <Label htmlFor="reason-kind">Тип записи</Label>
                 <select id="reason-kind" className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={reasonKind} onChange={(event) => setReasonKind(event.target.value)}>
-                  <option value="reason">reason</option>
-                  <option value="blocker">blocker</option>
+                  <option value="reason">Причина</option>
+                  <option value="blocker">Блокер</option>
                 </select>
               </div>
-              <Button type="submit">Добавить reason / blocker</Button>
+              <Button type="submit">Добавить запись</Button>
             </form>
             <div className="mt-4 space-y-3 text-sm">
               {item.reasons.map((reason) => (
                 <div key={reason.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <div className="font-medium">{reason.reason_kind} · {reason.reason_code}</div>
+                  <div className="font-medium">{displayMaybe(reason.reason_kind)} · {displayReasonCode(reason.reason_code)}</div>
                   {reason.note ? <div className="mt-1 text-muted-foreground">{reason.note}</div> : null}
                 </div>
               ))}
@@ -809,12 +831,12 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Timeline</h2>
+            <h2 className="text-xl">Хронология</h2>
             <div className="mt-4 space-y-3 text-sm">
               {item.timeline.map((event) => (
                 <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <div className="font-medium">{event.action}</div>
-                  <div className="mt-1 text-muted-foreground">{event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
+                  <div className="font-medium">{displayMaybe(event.action)}</div>
+                  <div className="mt-1 text-muted-foreground">{displayReasonCode(event.reason)} · {formatFoundationDate(event.created_at)}</div>
                 </div>
               ))}
             </div>

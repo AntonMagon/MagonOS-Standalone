@@ -17,6 +17,7 @@ from .shared import (
     request_operator_view,
 )
 
+# RU: Offer API держит versioned-предложение отдельно от заявки и заказа, как требует wave1-спецификация.
 router = APIRouter(tags=["Offers"])
 
 
@@ -72,7 +73,7 @@ def _compare_payload(service: OfferService, request_code: str, *, public: bool) 
     for offer in service.list_request_offers(request.id):
         current_version = service.get_current_version(offer)
         comparison = service.get_comparison_metadata(current_version.id)
-        if public and offer.offer_status not in {"sent", "accepted", "declined", "expired"}:
+        if public and offer.offer_status not in {"awaiting_confirmation", "accepted", "declined", "expired"}:
             continue
         offers.append(
             {

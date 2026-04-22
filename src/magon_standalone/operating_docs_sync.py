@@ -66,17 +66,21 @@ def _section_bullets(text: str, heading: str) -> list[str]:
 def _label_bullets(text: str, label: str) -> list[str]:
     bullets: list[str] = []
     armed = False
-    active_label_variants = {f"{label}:", f"- {label}:"}
     for raw in text.splitlines():
         line = raw.strip()
-        if line in active_label_variants:
+        if line in {f"{label}:", f"- {label}:"}:
             armed = True
             continue
         if not armed:
             continue
-        if line.startswith("- ") and line.endswith(":") and line not in active_label_variants:
-            break
-        if line.startswith("- "):
+        if raw.startswith("  - "):
+            bullets.append(raw.strip()[2:].strip())
+            continue
+        if raw.startswith("- "):
+            if line.endswith(":"):
+                if bullets:
+                    break
+                continue
             bullets.append(line[2:].strip())
             continue
         if bullets:
@@ -112,11 +116,18 @@ def _repo_skill_names(repo_root: Path) -> list[str]:
     return names
 
 
-def _active_automation_names(codex_home: Path) -> list[str]:
+def _active_automation_names_from_repo_docs(repo_root: Path) -> list[str]:
+    agents_path = repo_root / "AGENTS.md"
+    if not agents_path.exists():
+        return []
+    return _label_bullets(_read(agents_path), "Active repo automations")
+
+
+def _active_automation_names(codex_home: Path, repo_root: Path) -> list[str]:
     names: list[str] = []
     automation_root = codex_home / "automations"
     if not automation_root.is_dir():
-        return names
+        return _active_automation_names_from_repo_docs(repo_root)
     for toml_path in sorted(automation_root.glob("*/automation.toml")):
         text = _read(toml_path)
         if 'status = "ACTIVE"' not in text:
@@ -124,17 +135,8 @@ def _active_automation_names(codex_home: Path) -> list[str]:
         match = re.search(r'^name = "(.+)"$', text, re.M)
         if match:
             names.append(match.group(1).strip())
-    return names
-
-
-def _fallback_active_automations(repo_root: Path) -> list[str]:
-    for path in (repo_root / "AGENTS.md", repo_root / "README.md"):
-        if not path.is_file():
-            continue
-        bullets = _label_bullets(_read(path), "Active repo automations")
-        if bullets:
-            return bullets
-    return []
+    # RU: Если локальный Codex automation-root пуст или недоступен, корневые docs должны стабильно собираться из repo truth, а не дрейфовать в CI.
+    return names or _active_automation_names_from_repo_docs(repo_root)
 
 
 def build_payload(repo_root: Path) -> OperatingDocsPayload:
@@ -142,9 +144,7 @@ def build_payload(repo_root: Path) -> OperatingDocsPayload:
     memory_text = _read(repo_root / ".codex/project-memory.md")
     active = _active_context(memory_text)
     codex_home = Path.home() / ".codex"
-    active_automations = _active_automation_names(codex_home) or _fallback_active_automations(repo_root)
     # RU: Корневые docs собираются из канонической repo truth, а не из ручных правок в AGENTS/README.
-    # RU: В CI у runner обычно нет локального ~/.codex/automations, поэтому для стабильного check-mode держим repo-backed fallback.
     return OperatingDocsPayload(
         updated_at=_strip_wrapping_backticks(active.get("updated_at", "unknown")),
         focus=active.get("current_focus", "unknown"),
@@ -154,7 +154,7 @@ def build_payload(repo_root: Path) -> OperatingDocsPayload:
         owned_capabilities=_label_bullets(current_state, "Also already standalone-owned"),
         runtime_surfaces=_section_bullets(current_state, "Runtime surfaces"),
         repo_skills=_repo_skill_names(repo_root),
-        active_automations=active_automations,
+        active_automations=_active_automation_names(codex_home, repo_root),
     )
 
 

@@ -7,10 +7,11 @@ import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 const queueMap = [
   {key: 'standalone', icon: Layers2},
   {key: 'bridge', icon: ShieldCheck},
-  {key: 'odoo', icon: CircleDashed}
+  {key: 'legacy', icon: CircleDashed}
 ] as const;
 
 export async function QueueList() {
+  // RU: Карточки очередей остаются обзором слоёв и не подменяют полноценный операторский workbench.
   const t = await getTranslations({locale: defaultLocale, namespace: 'dashboard.queues'});
 
   return (

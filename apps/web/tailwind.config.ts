@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 
+// RU: Tailwind config держит только общие shell-токены и не должен превращаться в свалку page-specific хаков.
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -90,11 +91,11 @@ const config: Config = {
         floaty: "floaty 8s ease-in-out infinite"
       },
       boxShadow: {
-        panel: "0 24px 80px -28px rgba(15, 23, 42, 0.28)",
-        glow: "0 0 0 1px rgba(255,255,255,0.05), 0 18px 50px -26px rgba(236, 116, 40, 0.4)"
+        panel: "0 28px 70px -38px rgba(43, 46, 52, 0.34)",
+        glow: "0 0 0 1px rgba(34, 91, 255, 0.08), 0 18px 42px -28px rgba(34, 91, 255, 0.26)"
       },
       backgroundImage: {
-        grid: "linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px)"
+        grid: "linear-gradient(to right, rgba(43,46,52,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(43,46,52,0.08) 1px, transparent 1px)"
       }
     }
   },

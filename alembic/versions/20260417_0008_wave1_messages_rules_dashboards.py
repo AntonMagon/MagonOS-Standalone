@@ -7,6 +7,7 @@ Create Date: 2026-04-17 23:55:00
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -201,6 +202,7 @@ def upgrade() -> None:
     for index, row in enumerate(audit_rows, start=1):
         owner_type = {"supplier_company": "supplier", "file_asset": "file"}.get(row["entity_type"], row["entity_type"])
         visibility_scope = "customer" if row["visibility"] == "customer" else "internal"
+        # RU: Postgres/psycopg не адаптирует Python dict в raw SQL text bind автоматически, поэтому JSON явно сериализуем ещё в миграции.
         bind.execute(
             sa.text(
                 "INSERT INTO message_events "
@@ -221,7 +223,7 @@ def upgrade() -> None:
                 "reason_code": row["reason"],
                 "title": row["action"],
                 "body": row["reason"],
-                "payload_json": row["payload_json"],
+                "payload_json": json.dumps(row["payload_json"]) if row["payload_json"] is not None else None,
                 "occurred_at": row["created_at"] or now,
                 "source_audit_event_id": row["id"],
                 "created_at": row["created_at"] or now,

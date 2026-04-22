@@ -10,7 +10,9 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
 import {fetchFoundationJson} from "@/lib/foundation-client";
+import {displayDraftStatus, displayReasonCode, formatFoundationDate} from "@/lib/foundation-display";
 
+// RU: Draft editor обслуживает только intake-слой до submit и не должен сам исполнять operator-only workflow.
 type DraftDetail = {
   id: string;
   code: string;
@@ -179,7 +181,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
         headers: {"content-type": "application/json"},
         body: JSON.stringify({
           reason_code: "customer_submit_ready_draft",
-          note: "Customer submitted ready draft into central intake.",
+          note: "Клиент отправил готовый черновик в центральный контур приёма.",
         }),
       });
       startTransition(() => {
@@ -212,7 +214,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
   if (loading) {
     return (
       <main className="container py-10">
-        <Card className="glass-panel border-white/12 p-6">Загрузка Draft...</Card>
+        <Card className="glass-panel border-white/12 p-6">Загрузка черновика...</Card>
       </main>
     );
   }
@@ -230,14 +232,14 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
       <Card className="glass-panel border-white/12 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Wave1 Draft</div>
+            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Черновик первой волны</div>
             <h1 className="mt-2 text-3xl leading-tight">Черновик {item.code}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-              RU: Draft остаётся отдельным входным слоем. Пока обязательные поля не закрыты, система не создаёт Request.
+              Черновик остаётся отдельным входным слоем. Пока обязательные поля не заполнены, система не создаёт рабочую заявку.
             </p>
           </div>
           <div className="space-y-2 text-right text-sm text-muted-foreground">
-            <div>Статус: {item.draft_status}</div>
+            <div>Статус: {displayDraftStatus(item.draft_status)}</div>
             <div>{saving ? "Автосохранение..." : "Автосохранение активно"}</div>
           </div>
         </div>
@@ -287,14 +289,14 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => void handleSubmit()} disabled={submitting || item.draft_status !== "ready_to_submit"}>
-              {submitting ? "Отправка..." : "Перевести в Request"}
+              {submitting ? "Отправка..." : "Перевести в заявку"}
             </Button>
             <Button variant="secondary" onClick={() => void handleAbandon()} disabled={item.draft_status === "archived"}>
-              Пометить abandoned
+              Пометить как брошенный
             </Button>
             {item.submitted_request_customer_ref ? (
               <Link href={`/requests/${item.submitted_request_customer_ref}`}>
-                <Button variant="secondary">Открыть связанный Request</Button>
+                <Button variant="secondary">Открыть связанную заявку</Button>
               </Link>
             ) : null}
           </div>
@@ -307,7 +309,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
               {item.required_fields_state.map((field) => (
                 <div key={field.field_name} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                   <div className="font-medium">{field.field_name}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">{field.field_status}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{field.field_status === "complete" ? "Заполнено" : "Нужно заполнить"}</div>
                   {field.message ? <div className="mt-1 text-sm text-foreground/80">{field.message}</div> : null}
                 </div>
               ))}
@@ -327,17 +329,17 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
                   {link.label}
                 </a>
               ))}
-              {!item.file_links.length ? <div className="text-muted-foreground">Пока нет file links.</div> : null}
+              {!item.file_links.length ? <div className="text-muted-foreground">Пока нет ссылок на файлы.</div> : null}
             </div>
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Timeline</h2>
+            <h2 className="text-xl">Хронология</h2>
             <div className="mt-4 space-y-3 text-sm">
               {item.timeline.map((event) => (
                 <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <div className="font-medium">{event.action}</div>
-                  <div className="mt-1 text-muted-foreground">{event.reason ?? "no_reason_code"} · {event.created_at ?? "unknown_time"}</div>
+                  <div className="font-medium">{displayReasonCode(event.action)}</div>
+                  <div className="mt-1 text-muted-foreground">{displayReasonCode(event.reason)} · {formatFoundationDate(event.created_at)}</div>
                 </div>
               ))}
             </div>

@@ -235,7 +235,7 @@ class SupplierPipelineService:
             company_id=company.id,
             display_name=display_name,
             canonical_name=display_name,
-            supplier_status="reviewing",
+            supplier_status="discovered",
             trust_level="discovered",
             dedup_status="clear",
             website=website,
@@ -298,7 +298,7 @@ class SupplierPipelineService:
             select(SupplierRawIngest).where(SupplierRawIngest.idempotency_key == idempotency_key)
         )
         if existing is not None:
-            if existing.ingest_status != "failed":
+            if existing.ingest_status == "completed":
                 return SupplierIngestSummary(
                     ingest_code=existing.code,
                     ingest_status=existing.ingest_status,
@@ -309,20 +309,33 @@ class SupplierPipelineService:
                     candidate_count=existing.candidate_count,
                     replayed=True,
                 )
+            if existing.ingest_status == "running":
+                return SupplierIngestSummary(
+                    ingest_code=existing.code,
+                    ingest_status=existing.ingest_status,
+                    source_registry_code=registry.code,
+                    raw_count=existing.raw_count,
+                    normalized_count=existing.normalized_count,
+                    merged_count=existing.merged_count,
+                    candidate_count=existing.candidate_count,
+                    replayed=True,
+                )
+            previous_status = existing.ingest_status
             ingest = existing
             ingest.ingest_status = "running"
             ingest.started_at = utc_now()
             ingest.finished_at = None
             ingest.failed_at = None
-            ingest.last_retry_at = utc_now()
-            ingest.retry_count = int(ingest.retry_count or 0) + 1
             ingest.failure_code = None
             ingest.failure_detail = None
             ingest.raw_count = 0
             ingest.normalized_count = 0
             ingest.merged_count = 0
             ingest.candidate_count = 0
-            # RU: При retry переиспользуем ingest row и idempotency key, чтобы история падения и повторного запуска не терялась.
+            if previous_status == "failed":
+                ingest.last_retry_at = utc_now()
+                ingest.retry_count = int(ingest.retry_count or 0) + 1
+            # RU: И queued job, и retry используют тот же ingest row, чтобы async/operator история оставалась связной и explainable.
             self._cleanup_ingest_rows(ingest=ingest)
             self.session.flush()
         else:
@@ -361,6 +374,7 @@ class SupplierPipelineService:
             ingest.normalized_count = len(normalization_results)
             ingest.merged_count = merged_count
             ingest.candidate_count = candidate_count
+            registry.last_success_at = ingest.finished_at
 
             record_audit_event(
                 self.session,
@@ -885,7 +899,7 @@ class SupplierPipelineService:
             source_registry_id=registry.id if registry else None,
             display_name=normalization.canonical_name,
             canonical_name=normalization.canonical_name,
-            supplier_status="reviewing",
+            supplier_status="normalized",
             trust_level="normalized",
             dedup_status="clear",
             website=normalization.website,

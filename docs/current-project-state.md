@@ -6,13 +6,12 @@
 
 ## Planning truth
 - Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
-- Global architecture source-of-truth: `gpt_doc/platform_architecture_report_ru.docx`
-- Broader planning/roadmap sync pack: `gpt_doc/platform_documentation_pack_ru.docx`
-- This file remains the runtime/verification truth, but product planning for the new contour must follow `gpt_doc/*`.
+- Read-only export of the same planning spec: `gpt_doc/codex_wave1_spec_ru.pdf`
+- There are no additional active planning documents in `gpt_doc/`; this file remains the runtime/verification truth, but product planning for the new contour must follow the wave1 spec above.
 
 ## Runtime truth
 - Standalone is the primary platform-of-record.
-- Odoo is donor/bridge only, not the future runtime.
+- The legacy donor/back-office repo is donor/bridge only, not the future runtime.
 - Default work happens only in the standalone repo.
 - Source repo is read-only unless the task explicitly requires donor inspection or boundary work.
 - Foundation wave1 target runtime is the new FastAPI modular-monolith stack on PostgreSQL/Redis/Celery/Caddy/Compose.
@@ -50,7 +49,12 @@
 Also already standalone-owned:
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
+- operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
+- env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
+- repo-aware periodic supplier scheduler for live parsing/classification; fixture source stays manual-only while `scenario_live` can be enqueued continuously on a launchd cadence
 - normalization / enrichment / dedup / scoring
+- lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
 - draft autosave / abandoned / archive-ready intake layer
 - central request review queue with blocker/clarification flow
@@ -76,7 +80,7 @@ Do not pretend full CRM/quote parity exists.
 - invoice / payment
 - full ERP order management
 - giant generic CRM
-- broad Odoo entity mirroring
+- broad legacy donor entity mirroring
 - source repo feature growth
 
 ## Canonical commands
@@ -84,11 +88,25 @@ Do not pretend full CRM/quote parity exists.
   - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
 - unified foundation local-up:
   - `./scripts/run_foundation_unified.sh --fresh`
+  - local launcher/unified path now auto-starts `db + redis` through `docker compose`/`colima` before migrations and backend/web boot
 - desktop launcher for the same local contour:
   - `./Start_Platform.command`
+  - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - detached mode now uses the repo-local double-fork helper `scripts/run_detached_command.py`, so backend/web must remain alive after the launcher shell exits instead of depending on the parent terminal session
+- hourly self-heal watchdog for the launcher:
+  - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+  - `./scripts/launchd_launcher_watchdog_status.sh`
+- hourly supplier parser/classifier scheduler:
+  - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
+  - `./scripts/launchd_supplier_scheduler_status.sh`
+  - `./.venv/bin/python scripts/run_supplier_scheduler.py`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
+  - migrations now assume the same local PostgreSQL contour as launcher/unified instead of a separate SQLite dev truth
+  - repeatable `seed_foundation.py` on the local PostgreSQL runtime is now part of the verified path; rerunning migrate + seed must not abort on special scopes like `users:USR` or `request_customer_refs`
+  - all foundation smoke scripts now also run on isolated temporary PostgreSQL databases instead of temporary SQLite files
+  - blank `MAGON_FOUNDATION_REDIS_URL` in test/smoke and CI is now treated as an explicit Redis disable signal instead of silently falling back to `redis://127.0.0.1:6379/0`
 - supplier demo pipeline:
   - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - fixture pipeline:
@@ -96,6 +114,7 @@ Do not pretend full CRM/quote parity exists.
 - backend verification:
   - `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
 - foundation verification:
+  - `./scripts/verify_workflow.sh` now falls back to `python3`/`python` when the repo venv is absent, so GitHub Actions can execute the same verification contract
   - `./.venv/bin/python -m unittest tests.test_foundation_api`
   - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
   - `./.venv/bin/python -m unittest tests.test_foundation_catalog`
@@ -110,6 +129,8 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/foundation_offer_smoke_check.sh`
   - `./scripts/foundation_order_smoke_check.sh`
   - `./scripts/foundation_files_documents_smoke_check.sh`
+  - `./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - the canonical `./scripts/verify_workflow.sh` path now executes the foundation smoke scripts above on temporary PostgreSQL databases instead of treating them as optional manual-only checks
 - compatibility-only startup when the old shell is explicitly needed:
   - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
   - `./scripts/run_unified_platform.sh --fresh`
@@ -117,8 +138,17 @@ Do not pretend full CRM/quote parity exists.
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
+## Browser automation rule
+- Project browser automation is Chrome-only.
+- Use `./scripts/run_playwright_cli.sh` only with Google Chrome.
+- Chrome pinning applies only to browser-driven commands; meta-commands like `list`, `close-all`, and `kill-all` must stay usable without an injected `--browser` flag.
+- Do not start Firefox, WebKit, or alternate Playwright browser runtimes for this repo.
+- If old Playwright browser caches exist, they should be removed instead of reused.
+
 ## Runtime surfaces
 - public shell: `http://127.0.0.1:3000/`
+- embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+- public marketing layer: `http://127.0.0.1:3000/marketing`
 - public showcase: `http://127.0.0.1:3000/catalog`
 - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`
 - public RFQ entry: `http://127.0.0.1:3000/rfq`
@@ -134,13 +164,25 @@ Do not pretend full CRM/quote parity exists.
 - operator order detail: `http://127.0.0.1:3000/orders/{orderCode}`
 - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
 - supplier workbench: `http://127.0.0.1:3000/suppliers`
+- supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
+- supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
+- supplier source API now also exposes schedule/classification state so operator tooling can tell which source runs continuously, when the next due window arrives, and whether LLM-assisted fallback is enabled
+- operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
 - direct backend debug: `http://127.0.0.1:8091/`
 - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`
   - `http://127.0.0.1:3000/ops`
   - `http://127.0.0.1:3000/ui/*`
+
+## Reference surface
+- Fast shell entry: `/reference`
+- Russian repo doc: `docs/ru/platform-entity-reference.md`
+- Use this when you need a quick answer to:
+  - which entity owns a given stage;
+  - which screen should be used for it;
+  - which dependency boundary must remain explicit.
 
 ## Working rules
 - Trust code, tests, and runtime over stale docs.
@@ -148,3 +190,15 @@ Do not pretend full CRM/quote parity exists.
 - Do not widen feedback into generic sync.
 - Do not spend runs on README/wrapper cleanup unless explicitly asked.
 - Verify with the smallest command that proves the result.
+
+## CI parity note
+- Foundation smoke and migration scripts must work both with repo `.venv` and with a clean CI runner Python.
+- If a smoke script requires `./.venv/bin/python` unconditionally, treat it as repo drift because GitHub Actions may only have `python3`.
+
+## GitHub branch truth
+- Default GitHub branch is `main`.
+- Protected checks for the primary branches must use the live workflow names:
+  - `foundation-quality`
+  - `foundation-smoke`
+  - `web-quality`
+- Stale branch protection names like `python-tests`, `smoke-runtime`, and `web-build` are invalid drift and must be removed.

@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-magon}
       POSTGRES_USER: ${POSTGRES_USER:-magon}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-magon}
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-magon} -d ${POSTGRES_DB:-magon}"]
       interval: 5s
@@ -16,6 +18,8 @@ services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

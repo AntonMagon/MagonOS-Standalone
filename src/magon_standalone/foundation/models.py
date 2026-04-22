@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .db import ArchiveMixin, Base, TimestampMixin, new_uuid, utc_now
 
 # RU: Foundation schema первой волны держит Draft/Request/Offer/Order раздельно и не схлопывает их в один универсальный record.
+# RU: Модельный слой также хранит role-scoped и audit-ready сущности, на которые опираются timeline, причины и уведомления.
 
 class RoleDefinition(Base, TimestampMixin):
     __tablename__ = "users_access_roles"
@@ -108,7 +109,7 @@ class Supplier(Base, TimestampMixin, ArchiveMixin):
     code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"))
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    supplier_status: Mapped[str] = mapped_column(String(32), default="candidate", nullable=False)
+    supplier_status: Mapped[str] = mapped_column(String(32), default="discovered", nullable=False)
     integration_key: Mapped[str | None] = mapped_column(String(255))
     public_summary: Mapped[str | None] = mapped_column(Text())
     internal_note: Mapped[str | None] = mapped_column(Text())
@@ -185,7 +186,7 @@ class SupplierCompany(Base, TimestampMixin, ArchiveMixin):
     source_registry_id: Mapped[str | None] = mapped_column(ForeignKey("supplier_source_registries.id"))
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    supplier_status: Mapped[str] = mapped_column(String(32), default="candidate", nullable=False)
+    supplier_status: Mapped[str] = mapped_column(String(32), default="discovered", nullable=False)
     trust_level: Mapped[str] = mapped_column(String(32), default="discovered", nullable=False)
     dedup_status: Mapped[str] = mapped_column(String(32), default="clear", nullable=False)
     website: Mapped[str | None] = mapped_column(String(255))
@@ -484,7 +485,7 @@ class OfferRecord(Base, TimestampMixin, ArchiveMixin):
     request_id: Mapped[str] = mapped_column(ForeignKey("requests.id"), nullable=False)
     request_ref: Mapped[str] = mapped_column(String(32), nullable=False)
     current_version_no: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    offer_status: Mapped[str] = mapped_column(String(32), default="prepared", nullable=False)
+    offer_status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     confirmation_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
     amount: Mapped[float | None] = mapped_column(Numeric(14, 2))
     currency_code: Mapped[str] = mapped_column(String(8), default="VND", nullable=False)
@@ -504,7 +505,7 @@ class OfferVersion(Base, TimestampMixin, ArchiveMixin):
     code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     offer_id: Mapped[str] = mapped_column(ForeignKey("offers.id"), nullable=False)
     version_no: Mapped[int] = mapped_column(Integer, nullable=False)
-    version_status: Mapped[str] = mapped_column(String(32), default="prepared", nullable=False)
+    version_status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     confirmation_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
     amount: Mapped[float | None] = mapped_column(Numeric(14, 2))
     currency_code: Mapped[str] = mapped_column(String(8), default="VND", nullable=False)
@@ -573,7 +574,7 @@ class OrderRecord(Base, TimestampMixin, ArchiveMixin):
     customer_refs_json: Mapped[dict | None] = mapped_column(JSON)
     supplier_refs_json: Mapped[list | None] = mapped_column(JSON)
     internal_owner_user_id: Mapped[str | None] = mapped_column(ForeignKey("users_access_users.id"))
-    order_status: Mapped[str] = mapped_column(String(32), default="created", nullable=False)
+    order_status: Mapped[str] = mapped_column(String(32), default="awaiting_payment", nullable=False)
     payment_state: Mapped[str] = mapped_column(String(32), default="created", nullable=False)
     logistics_state: Mapped[str] = mapped_column(String(32), default="planning", nullable=False)
     readiness_state: Mapped[str] = mapped_column(String(32), default="not_ready", nullable=False)
@@ -661,7 +662,7 @@ class FileAsset(Base, TimestampMixin, ArchiveMixin):
     file_extension: Mapped[str | None] = mapped_column(String(16))
     byte_size: Mapped[int | None] = mapped_column(Integer)
     current_version_no: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    check_state: Mapped[str] = mapped_column(String(32), default="pending_review", nullable=False)
+    check_state: Mapped[str] = mapped_column(String(32), default="checking", nullable=False)
     # RU: legacy-колонка visibility сохранена ради совместимости старой схемы, но source-of-truth для нового контура — visibility_scope.
     legacy_visibility: Mapped[str] = mapped_column("visibility", String(32), default="internal", nullable=False)
     visibility_scope: Mapped[str] = mapped_column(String(32), default="internal", nullable=False)
@@ -687,7 +688,7 @@ class FileVersion(Base, TimestampMixin, ArchiveMixin):
     byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
     checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     file_type: Mapped[str] = mapped_column(String(32), default="attachment", nullable=False)
-    check_state: Mapped[str] = mapped_column(String(32), default="pending_review", nullable=False)
+    check_state: Mapped[str] = mapped_column(String(32), default="checking", nullable=False)
     visibility_scope: Mapped[str] = mapped_column(String(32), default="internal", nullable=False)
     final_flag: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users_access_users.id"))

@@ -4,33 +4,50 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
-DB_FILE="$TMPDIR/foundation.sqlite3"
 PORT="${MAGON_FOUNDATION_PORT:-18194}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
-# RU: Request smoke держим переносимым, чтобы CI проверял сам flow, а не локальную форму запуска python.
-source "$REPO_ROOT/scripts/lib_repo_python.sh"
-PYTHON_BIN="$(resolve_repo_python "$REPO_ROOT")"
+PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  # RU: Smoke заявок должен одинаково работать локально и в GitHub Actions, даже без repo-venv.
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
+
+run_alembic() {
+  "$PYTHON_BIN" -m alembic "$@"
+}
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then
     kill "$API_PID" >/dev/null 2>&1 || true
     wait "$API_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${DB_NAME:-}" ]]; then
+    "$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
+eval "$("$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_request)"
+
 export MAGON_ENV=test
-export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_FILE"
+export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
 export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
+# RU: Request smoke фиксирует intake и review flow на Postgres, чтобы заявка шла тем же путём, что и в UI.
 
-run_repo_alembic "$REPO_ROOT" upgrade head >/dev/null
+run_alembic upgrade head >/dev/null
 "$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-request-seed.json
 "$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-request-api.log 2>&1 &
 API_PID=$!
