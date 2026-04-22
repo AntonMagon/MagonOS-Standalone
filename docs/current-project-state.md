@@ -194,3 +194,11 @@ Do not pretend full CRM/quote parity exists.
 ## CI parity note
 - Foundation smoke and migration scripts must work both with repo `.venv` and with a clean CI runner Python.
 - If a smoke script requires `./.venv/bin/python` unconditionally, treat it as repo drift because GitHub Actions may only have `python3`.
+
+## GitHub branch truth
+- Default GitHub branch is `main`.
+- Protected checks for the primary branches must use the live workflow names:
+  - `foundation-quality`
+  - `foundation-smoke`
+  - `web-quality`
+- Stale branch protection names like `python-tests`, `smoke-runtime`, and `web-build` are invalid drift and must be removed.

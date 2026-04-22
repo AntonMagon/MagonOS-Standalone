@@ -211,3 +211,12 @@
 
 - Foundation smoke и migration scripts обязаны работать и с repo `.venv`, и на чистом CI runner через системный `python3`.
 - Если smoke-скрипт безусловно требует `./.venv/bin/python`, это считается repo drift, потому что GitHub Actions может запускать проверки без локального repo-venv.
+
+## Истина по GitHub-веткам
+
+- Основная GitHub-ветка проекта — `main`.
+- Для защищённых веток должны использоваться только живые имена проверок:
+  - `foundation-quality`
+  - `foundation-smoke`
+  - `web-quality`
+- Старые protection contexts вроде `python-tests`, `smoke-runtime` и `web-build` считаются drift и не должны больше висеть в настройках репозитория.

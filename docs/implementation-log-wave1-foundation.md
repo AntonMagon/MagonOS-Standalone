@@ -1347,3 +1347,29 @@
 
 - PASS `bash -n scripts/foundation_smoke_check.sh scripts/foundation_catalog_smoke_check.sh scripts/foundation_request_smoke_check.sh scripts/foundation_offer_smoke_check.sh scripts/foundation_order_smoke_check.sh scripts/foundation_supplier_smoke_check.sh scripts/foundation_files_documents_smoke_check.sh scripts/foundation_messages_dashboards_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh`
 - PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-22 — GitHub default branch and branch protections realigned
+
+### Что было найдено
+
+- GitHub UI показывал красный верхний контур не потому, что `main` сломан, а потому что default branch оставался `develop`.
+- У `develop` висели устаревшие required checks:
+  - `python-tests`
+  - `smoke-runtime`
+  - `web-build`
+- Эти имена уже не публиковались текущим workflow, поэтому GitHub рисовал постоянный ложный красный статус.
+
+### Что было доведено
+
+- Default branch возвращён на `main`.
+- Branch protection для `main` и `develop` выровнена на живые checks:
+  - `foundation-quality`
+  - `foundation-smoke`
+  - `web-quality`
+- Старый конфликтный PR `main -> develop` закрыт как неактуальный после возврата `main` в роль основной ветки.
+
+### Что проверено
+
+- PASS `gh repo view --json defaultBranchRef`
+- PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/main/protection`
+- PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/develop/protection`

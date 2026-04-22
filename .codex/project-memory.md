@@ -1488,3 +1488,16 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - local proof is green; remote GitHub Actions still need the next push to confirm the same smoke path on a clean runner
+### 2026-04-23 00:05 +07 | codex/entity-help-reference
+- Summary: restored GitHub branch governance so the repo points to `main`, uses live workflow checks, and no longer relies on stale required-status names from the old `develop` setup
+- Changed:
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `gh repo view --json defaultBranchRef`
+  - PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/main/protection`
+  - PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/develop/protection`
+- Risk:
+  - branch topology is now logically aligned, but the working branch still needs its ancestry synced with `main` before the cleanup PR can be merged and the extra remote branches deleted
