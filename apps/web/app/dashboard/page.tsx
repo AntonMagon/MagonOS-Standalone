@@ -27,6 +27,7 @@ const linkedSurfaces = [
 ] as const;
 
 export default async function DashboardPage() {
+  // RU: Данные берём напрямую из API, чтобы главный экран не жил своей отдельной тестовой правдой.
   const t = await getTranslations('dashboard');
   const status = await getPlatformStatus();
   const recentCompanies = await getRecentCompanies(4);
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <div className="break-words rounded-[1.2rem] border border-white/8 bg-black/12 p-4 text-sm leading-6 text-muted-foreground">
-                {status ? t('runtimeDb', {path: status.db_path}) : t('runtimeUnavailable')}
+                {status ? t('runtimeDb', {label: status.db_label}) : t('runtimeUnavailable')}
               </div>
               <div className="flex flex-wrap gap-3">
                 <Link href="/ops-workbench">

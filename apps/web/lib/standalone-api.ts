@@ -5,7 +5,7 @@ type StorageCounts = Record<string, number>;
 export type PlatformStatus = {
   status: string;
   service: string;
-  db_path: string;
+  db_label: string;
   storage_counts: StorageCounts;
 };
 
@@ -41,12 +41,22 @@ function apiBaseUrl(): string {
   return (process.env.MAGON_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
 }
 
-function databasePathFromUrl(databaseUrl?: string): string {
+function databaseLabelFromUrl(databaseUrl?: string): string {
   if (!databaseUrl) {
     return 'Не указано';
   }
+  if (databaseUrl.startsWith('postgresql')) {
+    try {
+      const normalized = databaseUrl.replace('+psycopg', '');
+      const parsed = new URL(normalized);
+      const dbName = parsed.pathname.replace(/^\//, '') || 'magon';
+      return `PostgreSQL ${parsed.hostname}:${parsed.port || '5432'}/${dbName}`;
+    } catch {
+      return 'PostgreSQL';
+    }
+  }
   if (databaseUrl.startsWith('sqlite+pysqlite:///')) {
-    return databaseUrl.slice('sqlite+pysqlite:///'.length);
+    return `SQLite ${databaseUrl.slice('sqlite+pysqlite:///'.length)}`;
   }
   return databaseUrl;
 }
@@ -66,6 +76,7 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 export async function getPlatformStatus(): Promise<PlatformStatus | null> {
+  // RU: Сначала пробуем старый /status, затем foundation health, чтобы shell переживал переходный период без скрытого дрейфа.
   const legacyStatus = await fetchJson<PlatformStatus>('/status');
   if (legacyStatus) {
     return legacyStatus;
@@ -82,7 +93,7 @@ export async function getPlatformStatus(): Promise<PlatformStatus | null> {
   return {
     status: health.status,
     service: health.service || 'magon-foundation',
-    db_path: databasePathFromUrl(health.database_url),
+    db_label: databaseLabelFromUrl(health.database_url),
     storage_counts: {
       canonical_companies: companies?.items.length ?? 0,
       review_queue: 0,

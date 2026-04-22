@@ -74,15 +74,144 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-18 04:55 +07`
+- Updated at: `2026-04-18 06:10 +07`
 - Branch: `codex/entity-help-reference`
-- Current focus: Keep the standalone launcher operationally reliable so detached starts survive the parent shell exit.
-- Last verified workflow status: PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Detached runtime is now stable on the default ports, but changing 8091/3000 still requires explicit launcher/watchdog reconfiguration.
+- Current focus: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
+- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-18 06:10 +07 | codex/entity-help-reference
+- Summary: Close PostgreSQL-first bootstrap and smoke parity so launcher, seed, all foundation smoke checks, wave1 demo smoke, and the canonical verify path run end-to-end without the old SQLite drift or invalid order flow.
+- Changed:
+  - src/magon_standalone/foundation/codes.py
+  - tests/test_foundation_seed_repeatable.py
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+  - PASS `bash ./scripts/foundation_order_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
+### 2026-04-18 05:56 +07 | codex/entity-help-reference
+- Summary: Fix repeatable PostgreSQL bootstrap so permanent supplier parsing/classification and the detached launcher both work end-to-end without seed aborts.
+- Changed:
+  - src/magon_standalone/foundation/codes.py
+  - tests/test_foundation_seed_repeatable.py
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`
+  - PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+  - PASS `./Start_Platform.command --detach --no-open`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - No confirmed blocker remains in the verified local runtime; the main remaining risk is that part of the fast unit suite still uses isolated SQLite while the live runtime is PostgreSQL-first.
+### 2026-04-18 05:46 +07 | codex/entity-help-reference
+- Summary: Set up a permanent supplier parser/classifier through a repo-aware launchd scheduler that enqueues live source ingests hourly, exposes schedule/classification state in the operator UI, and verifies the contour end-to-end.
+- Changed:
+  - src/magon_standalone/foundation/supplier_scheduler.py
+  - src/magon_standalone/launchd_supplier_scheduler.py
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - src/magon_standalone/foundation/bootstrap.py
+  - src/magon_standalone/foundation/codes.py
+  - src/magon_standalone/foundation/workflow_support.py
+  - apps/web/app/suppliers/page.tsx
+  - scripts/run_supplier_scheduler.py
+  - scripts/render_launchd_supplier_scheduler.py
+  - scripts/install_launchd_supplier_scheduler.sh
+  - scripts/launchd_supplier_scheduler_status.sh
+  - scripts/verify_workflow.sh
+  - tests/test_supplier_scheduler.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_supplier_scheduler`
+  - PASS `./scripts/launchd_supplier_scheduler_status.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The permanent scheduler and operator-visible classification state are working, but the current PostgreSQL database still has a separate full-seed idempotency drift in seed_foundation.py; the new scheduler no longer depends on a full reseed to keep supplier parsing alive.
+### 2026-04-18 05:32 +07 | codex/entity-help-reference
+- Summary: Prepare a minimal env-gated LLM connection for explainable supplier parsing fallback and operator-visible status/test checks.
+- Changed:
+  - .env.example
+  - .env.local.example
+  - .env.prod.example
+  - .env.test.example
+  - pyproject.toml
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/modules/__init__.py
+  - src/magon_standalone/foundation/modules/llm.py
+  - src/magon_standalone/integrations/foundation/llm.py
+  - src/magon_standalone/supplier_intelligence/extraction_engine.py
+  - tests/test_foundation_llm.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-notes.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m unittest tests.test_foundation_llm`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The LLM contour is now connected and operator-testable, but it remains intentionally limited to supplier parsing fallback; no autonomous workflow decisions or heavy AI contour were added.
+### 2026-04-18 05:22 +07 | codex/entity-help-reference
+- Summary: Recheck active policies, remove donor-runtime Odoo wording from the standalone repo, switch the local launcher and smoke contour to Postgres-first defaults with Redis infra, and fix the remaining wave1 demo smoke drift after status-language alignment.
+- Changed:
+  - AGENTS.md
+  - README.md
+  - Start_Platform.command
+  - alembic.ini
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/components/dashboard/queue-list.tsx
+  - apps/web/lib/standalone-api.ts
+  - apps/web/messages/en.json
+  - apps/web/messages/ru.json
+  - docker-compose.yml
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/current-project-state.md
+  - scripts/ensure_foundation_infra.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/manage_temp_foundation_db.py
+  - scripts/reset_foundation_database.py
+  - scripts/run_foundation_migrations.sh
+  - scripts/run_foundation_unified.sh
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The active local runtime is now Postgres-first, but much of the fast unit suite still uses isolated SQLite databases internally, so repo verification and local runtime are not yet full-parity.
 ### 2026-04-18 04:55 +07 | codex/entity-help-reference
 - Summary: Fix detached launcher so Start_Platform.command --detach keeps backend and web alive after the parent shell exits by using a repo-local double-fork helper and verifying the live ports stay up.
 - Changed:
@@ -1249,3 +1378,43 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - detached runtime is now stable on the default local ports, but changing `8091/3000` still requires explicit launcher/watchdog reconfiguration
+### 2026-04-18 05:20 +07 | codex/entity-help-reference
+- Summary: rechecked active repo policies, removed legacy Odoo wording from active product copy/policy surfaces, switched the local standalone runtime to Postgres-first with Redis-backed defaults, and fixed the remaining wave1 demo smoke drift after status-language alignment
+- Changed:
+  - AGENTS.md
+  - README.md
+  - Start_Platform.command
+  - alembic.ini
+  - alembic/versions/20260417_0008_wave1_messages_rules_dashboards.py
+  - alembic/versions/20260417_0010_wave1_status_language_alignment.py
+  - apps/web/app/dashboard/page.tsx
+  - apps/web/components/dashboard/queue-list.tsx
+  - apps/web/lib/standalone-api.ts
+  - apps/web/messages/en.json
+  - apps/web/messages/ru.json
+  - docker-compose.yml
+  - docs/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - docs/implementation-notes.md
+  - docs/ru/current-project-state.md
+  - scripts/ensure_foundation_infra.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/manage_temp_foundation_db.py
+  - scripts/reset_foundation_database.py
+  - scripts/run_foundation_migrations.sh
+  - scripts/run_foundation_unified.sh
+  - scripts/verify_workflow.sh
+  - src/magon_standalone/foundation/settings.py
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_foundation_unified.sh scripts/run_foundation_migrations.sh scripts/ensure_foundation_infra.sh scripts/foundation_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh scripts/verify_workflow.sh`
+  - PASS `psql postgresql://magon:magon@127.0.0.1:5432/postgres -c 'select 1'`
+  - PASS `./scripts/foundation_migration_check.sh`
+  - PASS `bash ./scripts/foundation_smoke_check.sh`
+  - PASS `./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `cd apps/web && npm run build`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - the active local runtime is now Postgres-first, but a large part of the unit suite still uses isolated SQLite databases internally; that is acceptable for fast repo verification, but it is not full parity with the new local runtime contour

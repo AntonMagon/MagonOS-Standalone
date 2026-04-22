@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-18 03:33 +07``
+Updated: ``2026-04-18 06:10 +07``
 
 ## Flow contour
 
@@ -19,6 +19,8 @@ flowchart LR
 - supplier intelligence pipeline
 - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
 - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
+- env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
+- repo-aware periodic supplier scheduler for live parsing/classification; fixture source stays manual-only while `scenario_live` can be enqueued continuously on a launchd cadence
 - normalization / enrichment / dedup / scoring
 - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
@@ -55,5 +57,5 @@ flowchart LR
 - invoice / payment
 - full ERP order management
 - giant generic CRM
-- broad Odoo entity mirroring
+- broad legacy donor entity mirroring
 - source repo feature growth

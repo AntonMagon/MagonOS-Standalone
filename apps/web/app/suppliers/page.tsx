@@ -36,6 +36,19 @@ type SourcePayload = {
       detail: string;
       payload?: Record<string, unknown>;
     };
+    schedule?: {
+      enabled: boolean;
+      interval_minutes: number;
+      active: boolean;
+      due_now: boolean;
+      next_run_at?: string | null;
+      last_event_at?: string | null;
+      skip_reason?: string | null;
+    };
+    classification?: {
+      mode?: string | null;
+      llm_enabled?: boolean;
+    };
     latest_ingest?: {
       code: string;
       ingest_status: string;
@@ -82,6 +95,7 @@ type CandidatePayload = {
 };
 
 export default function SuppliersPage() {
+  // RU: Экран поставщиков одновременно показывает список, статус адаптеров и ручки управления расписанием/ингестом.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sources, setSources] = useState<SourcePayload["items"]>([]);
@@ -313,6 +327,15 @@ export default function SuppliersPage() {
                 <div className="mt-3 rounded-[1.1rem] border border-border/70 bg-background/55 px-3 py-3 text-xs leading-6 text-muted-foreground">
                   <div>Состояние: {displaySourceHealth(item.health.detail, item.health.payload)}</div>
                   <div>Последний успешный запуск: {formatFoundationDate(item.last_success_at, "Ещё не было")}</div>
+                  <div>
+                    Постоянный режим: {item.schedule?.enabled ? `включён, каждые ${item.schedule.interval_minutes} мин.` : "выключен"}
+                  </div>
+                  <div>
+                    Следующее окно: {formatFoundationDate(item.schedule?.next_run_at, item.schedule?.enabled ? "Запустится при первом свободном окне" : "Не планируется")}
+                  </div>
+                  <div>
+                    Классификация: {displayClassificationMode(item.classification?.mode)}{item.classification?.llm_enabled ? " · LLM fallback активен" : " · LLM fallback выключен"}
+                  </div>
                 </div>
                 {item.latest_ingest ? (
                   <div className="mt-3 rounded-[1.1rem] border border-border/70 bg-background/55 px-3 py-3 text-xs leading-6 text-muted-foreground">
@@ -468,4 +491,14 @@ function displaySourceHealth(detail?: string | null, payload?: Record<string, un
     return `Живой парсинг недоступен: ${String(payload?.error || "без detail")}`;
   }
   return displayReasonCode(detail);
+}
+
+function displayClassificationMode(value?: string | null): string {
+  if (value === "ai_assisted_fallback") {
+    return "парсинг + ai-assisted fallback";
+  }
+  if (value === "deterministic_only") {
+    return "только детерминированный разбор";
+  }
+  return displayReasonCode(value);
 }

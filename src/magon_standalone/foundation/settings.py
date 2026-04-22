@@ -39,6 +39,13 @@ class FoundationSettings:
     storage_public_base_url: str
     max_upload_bytes: int
     sentry_dsn: str
+    llm_enabled: bool
+    llm_provider: str
+    llm_api_key: str
+    llm_model: str
+    llm_base_url: str
+    llm_timeout_seconds: float
+    llm_max_input_chars: int
     legacy_enabled: bool
     legacy_db_path: str
     legacy_default_query: str
@@ -68,11 +75,11 @@ class FoundationSettings:
 
 def load_settings() -> FoundationSettings:
     repo_root = _repo_root()
-    local_sqlite = f"sqlite+pysqlite:///{repo_root / 'data' / 'foundation.sqlite3'}"
+    local_postgres = "postgresql+psycopg://magon:magon@127.0.0.1:5432/magon"
     env_name = _env("MAGON_ENV", "local")
-    redis_url = _env("MAGON_FOUNDATION_REDIS_URL", "")
-    broker_url = _env("MAGON_FOUNDATION_CELERY_BROKER_URL", redis_url or "memory://")
-    result_backend = _env("MAGON_FOUNDATION_CELERY_RESULT_BACKEND", redis_url or "cache+memory://")
+    redis_url = _env("MAGON_FOUNDATION_REDIS_URL", "redis://127.0.0.1:6379/0")
+    broker_url = _env("MAGON_FOUNDATION_CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
+    result_backend = _env("MAGON_FOUNDATION_CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/2")
 
     return FoundationSettings(
         app_name=_env("MAGON_FOUNDATION_APP_NAME", "magon-foundation"),
@@ -81,7 +88,8 @@ def load_settings() -> FoundationSettings:
         system_mode=_env("MAGON_FOUNDATION_SYSTEM_MODE", "test" if env_name == "test" else "normal").strip().lower(),
         host=_env("MAGON_FOUNDATION_HOST", "0.0.0.0"),
         port=int(_env("MAGON_FOUNDATION_PORT", "8091")),
-        database_url=_env("MAGON_FOUNDATION_DATABASE_URL", local_sqlite),
+        # RU: Активный local runtime больше не должен беззвучно уходить в SQLite; default-path первой волны теперь всегда PostgreSQL.
+        database_url=_env("MAGON_FOUNDATION_DATABASE_URL", local_postgres),
         redis_url=redis_url,
         celery_broker_url=broker_url,
         celery_result_backend=result_backend,
@@ -90,6 +98,14 @@ def load_settings() -> FoundationSettings:
         storage_public_base_url=_env("MAGON_FOUNDATION_STORAGE_PUBLIC_BASE_URL", ""),
         max_upload_bytes=int(_env("MAGON_FOUNDATION_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024))),
         sentry_dsn=_env("MAGON_SENTRY_DSN", ""),
+        # RU: LLM-подключение первой волны только opt-in; без явного env оно не участвует в runtime и не ломает manual-first контур.
+        llm_enabled=_env_bool("MAGON_FOUNDATION_LLM_ENABLED", False),
+        llm_provider=_env("MAGON_FOUNDATION_LLM_PROVIDER", "openai"),
+        llm_api_key=_env("OPENAI_API_KEY", ""),
+        llm_model=_env("MAGON_FOUNDATION_LLM_MODEL", "gpt-5.2"),
+        llm_base_url=_env("MAGON_FOUNDATION_LLM_BASE_URL", ""),
+        llm_timeout_seconds=float(_env("MAGON_FOUNDATION_LLM_TIMEOUT_SECONDS", "20")),
+        llm_max_input_chars=int(_env("MAGON_FOUNDATION_LLM_MAX_INPUT_CHARS", "12000")),
         # RU: Wave1 foundation по умолчанию стартует без legacy WSGI-моста; старый контур включается только явным opt-in через env.
         legacy_enabled=_env_bool("MAGON_FOUNDATION_LEGACY_ENABLED", False),
         legacy_db_path=_env("MAGON_STANDALONE_DB_PATH", str(repo_root / "data" / "platform.sqlite3")),

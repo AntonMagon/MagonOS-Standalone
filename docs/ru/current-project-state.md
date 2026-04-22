@@ -14,7 +14,7 @@
 ## Что является правдой рантайма
 
 - `Standalone` — основной platform-of-record.
-- Odoo — только donor / bridge, но не целевой runtime.
+- Legacy donor/back-office — только donor / bridge, но не целевой runtime.
 - По умолчанию работа и изменения идут только в standalone-репозитории.
 - Целевой runtime первой волны — новый стек `FastAPI + PostgreSQL + Redis + Celery + Caddy + Docker Compose`.
 - По умолчанию runtime первой волны стартует без legacy standalone WSGI bridge.
@@ -57,6 +57,8 @@
 - конвейер проверки и обогащения поставщиков
 - реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
 - операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
+- env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии
+- repo-aware периодический scheduler для live parsing/classification: fixture-источник остаётся manual-only, а `scenario_live` может работать постоянно через launchd cadence
 - header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу
 - нормализация / обогащение / дедупликация / скоринг
 - лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
@@ -87,7 +89,7 @@
 - счета / оплаты
 - полное ERP-управление заказами
 - огромная универсальная CRM
-- широкое зеркалирование сущностей Odoo
+- широкое зеркалирование legacy donor-сущностей
 - рост функциональности donor-репозитория
 
 ## Канонические команды
@@ -96,6 +98,7 @@
   - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
 - поднять unified foundation локально:
   - `./scripts/run_foundation_unified.sh --fresh`
+  - local launcher/unified path теперь сам поднимает `db + redis` через `docker compose`/`colima` ещё до миграций и старта backend/web
 - desktop launcher для того же локального контура:
   - `./Start_Platform.command`
   - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
@@ -104,9 +107,16 @@
 - hourly self-heal watchdog для launcher:
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
+- hourly scheduler для постоянного parser/classifier:
+  - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
+  - `./scripts/launchd_supplier_scheduler_status.sh`
+  - `./.venv/bin/python scripts/run_supplier_scheduler.py`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
+  - миграции теперь опираются на тот же local PostgreSQL contour, что и launcher/unified, а не на отдельную SQLite-правду для dev-path
+  - repeatable `seed_foundation.py` на локальном PostgreSQL теперь тоже входит в проверенный contract: повторный migrate + seed не должен больше абортироваться на специальных scope вроде `users:USR` или `request_customer_refs`
+  - все foundation smoke-скрипты теперь тоже работают на отдельных временных PostgreSQL базах, а не на временных SQLite-файлах
 - прогнать supplier demo pipeline:
   - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
 - прогнать fixture pipeline:
@@ -128,6 +138,8 @@
   - `./scripts/foundation_offer_smoke_check.sh`
   - `./scripts/foundation_order_smoke_check.sh`
   - `./scripts/foundation_files_documents_smoke_check.sh`
+  - `./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - канонический `./scripts/verify_workflow.sh` теперь реально исполняет эти foundation smoke-скрипты на временных PostgreSQL БД, а не держит их как manual-only хвост
 - compatibility-only запуск старого контура, если он реально нужен:
   - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
   - `./scripts/run_unified_platform.sh --fresh`
@@ -175,6 +187,8 @@
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - страница `supplier raw ingest` теперь показывает explainable async-state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) и даёт оператору retry / повторный запуск источника
+- API источников поставщиков теперь также отдаёт schedule/classification state: какой source идёт постоянно, когда следующее due-window и включён ли LLM-assisted fallback
+- operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
 - direct backend debug: `http://127.0.0.1:8091/`
 - legacy-поверхности только при явном `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
   - `http://127.0.0.1:3000/ops-workbench`

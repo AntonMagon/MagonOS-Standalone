@@ -18,6 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
+    dialect = bind.dialect.name
+    # RU: Postgres хранит final_flag как boolean и не принимает sqlite-style `= 1`, поэтому литерал берём по dialect.
+    final_flag_true = "1" if dialect == "sqlite" else "TRUE"
     # RU: Эта миграция не расширяет модель, а выравнивает живые статусы по обновлённой wave1-терминологии из gpt_doc.
     bind.exec_driver_sql("UPDATE suppliers SET supplier_status = 'discovered' WHERE supplier_status = 'candidate'")
     bind.exec_driver_sql("UPDATE suppliers SET supplier_status = 'trusted' WHERE supplier_status = 'approved'")
@@ -48,10 +51,10 @@ def upgrade() -> None:
     bind.exec_driver_sql("UPDATE orders SET order_status = 'in_delivery' WHERE order_status = 'partially_delivered'")
 
     bind.exec_driver_sql(
-        """
+        f"""
         UPDATE files_media
         SET check_state = CASE
-            WHEN final_flag = 1 AND check_state IN ('approved', 'passed') THEN 'approved_final'
+            WHEN final_flag = {final_flag_true} AND check_state IN ('approved', 'passed') THEN 'approved_final'
             WHEN check_state IN ('pending_review') THEN 'needs_manual_review'
             WHEN check_state IN ('approved') THEN 'passed'
             WHEN check_state IN ('rejected', 'blocked') THEN 'failed'
@@ -60,10 +63,10 @@ def upgrade() -> None:
         """
     )
     bind.exec_driver_sql(
-        """
+        f"""
         UPDATE file_versions
         SET check_state = CASE
-            WHEN final_flag = 1 AND check_state IN ('approved', 'passed') THEN 'approved_final'
+            WHEN final_flag = {final_flag_true} AND check_state IN ('approved', 'passed') THEN 'approved_final'
             WHEN check_state IN ('pending_review') THEN 'needs_manual_review'
             WHEN check_state IN ('approved') THEN 'passed'
             WHEN check_state IN ('rejected', 'blocked') THEN 'failed'

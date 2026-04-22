@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-18 03:33 +07``
+Обновлено: ``2026-04-18 06:10 +07``
 
 ## Контур движения
 
@@ -19,6 +19,8 @@ flowchart LR
 - конвейер проверки и обогащения поставщиков
 - реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
 - операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
+- env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии
+- repo-aware периодический scheduler для live parsing/classification: fixture-источник остаётся manual-only, а `scenario_live` может работать постоянно через launchd cadence
 - header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу
 - нормализация / обогащение / дедупликация / скоринг
 - лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа
@@ -56,14 +58,14 @@ flowchart LR
 - счета / оплаты
 - полное ERP-управление заказами
 - огромная универсальная CRM
-- широкое зеркалирование сущностей Odoo
+- широкое зеркалирование legacy donor-сущностей
 - рост функциональности donor-репозитория
 
 ## Активный контекст
 
-- Текущий фокус: Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.
-- Последний подтверждённый статус workflow: PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording.
+- Текущий фокус: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
+- Последний подтверждённый статус workflow: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
 
 ## Автоматические контуры контроля
 

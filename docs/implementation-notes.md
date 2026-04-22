@@ -2,8 +2,8 @@
 
 ## Зафиксированные допущения
 
-1. Первая волна собирается по `gpt_doc/codex_wave1_spec_ru.docx` как новый модульный монолит на FastAPI + SQLAlchemy + Alembic. Default runtime первой волны идёт без legacy WSGI/SQLite-моста; если старый контур временно монтируется рядом, это допустимо только как явный transitional compatibility bridge через `MAGON_FOUNDATION_LEGACY_ENABLED=true`, а не как целевая модель wave1.
-2. Для `local` и `test` окружений foundation по умолчанию использует SQLite и in-memory Celery broker/result backend как быстрый dev-path. При этом compose contour на `Docker/Colima + PostgreSQL + Redis` уже отдельно подтверждён и остаётся основным `prod-ready` контуром.
+1. Первая волна собирается по `gpt_doc/codex_wave1_spec_ru.docx` как новый модульный монолит на FastAPI + SQLAlchemy + Alembic. Default runtime первой волны идёт без legacy WSGI-моста; если старый контур временно монтируется рядом, это допустимо только как явный transitional compatibility bridge через `MAGON_FOUNDATION_LEGACY_ENABLED=true`, а не как целевая модель wave1.
+2. Для `local` и `test` окружений foundation по умолчанию использует PostgreSQL + Redis. Встроенный local path обязан совпадать с подтверждённым compose contour на `Docker/Colima + PostgreSQL + Redis`, а не уходить в SQLite fallback как в отдельную правду рантайма.
 3. Auth реализован через DB-backed opaque sessions, а не через JWT, чтобы сохранить минимальный foundation-контур без лишних внешних зависимостей и не усложнять revoke/audit.
 4. `FilesMedia` и `Documents` в первой волне хранят только метаданные и ownership boundary. Бинарное хранилище и полнофункциональный document pipeline остаются отдельным следующим слоем.
 5. `Comms` и `RulesEngine` реализованы как минимальные управляемые сущности и API-контракты. Полный event bus, message delivery orchestration и rules execution engine в первую волну сознательно не входят.
@@ -52,6 +52,8 @@
 42. Под "parsing option" в wave1-контуре понимается именно supplier-source parsing внутри модуля поставщиков, потому что спецификация включает `источники, парсинг, сырой слой, нормализация` в этот блок. Продвинутый file OCR/prepress parsing в первую волну не входит.
 43. Чтобы не плодить второй контур парсинга, foundation supplier ingest использует уже существующий `supplier_intelligence` discovery layer как selectable source adapter `scenario_live`, а fixture source остаётся рядом как повторяемый demo/test baseline.
 44. Async parsing contour первой волны intentionally operator-managed: `enqueue` создаёт/обновляет явный `SupplierRawIngest(queued)` row ещё до worker execution, а UI показывает именно этот explainable state вместо неявного фонового "что-то ушло в очередь".
+45. LLM-подключение в первой волне остаётся строго opt-in и используется только как explainable fallback внутри `supplier_intelligence` для `ai_assisted` extraction. Оно не принимает самостоятельных бизнес-решений, не меняет status/transition логику и должно жить через отдельный integrations-layer с operator health/test path.
+46. Постоянный parser/classifier в первой волне означает только scheduled ingest для `scenario_live` через repo-aware launchd/Celery contour с дефолтным окном `60` минут; fixture source intentionally остаётся ручным и не участвует в постоянном расписании.
 
 ## Явно исключено из этого шага
 

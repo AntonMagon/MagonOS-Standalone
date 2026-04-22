@@ -4,7 +4,6 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
-DB_FILE="$TMPDIR/foundation.sqlite3"
 STORAGE_DIR="$TMPDIR/storage"
 FILE_V1="$TMPDIR/wave1-demo-v1.txt"
 FILE_V2="$TMPDIR/wave1-demo-v2.txt"
@@ -17,12 +16,18 @@ cleanup() {
     kill "$API_PID" >/dev/null 2>&1 || true
     wait "$API_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${DB_NAME:-}" ]]; then
+    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
+eval "$("$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_demo)"
+
 export MAGON_ENV=test
-export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_FILE"
+export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
@@ -31,6 +36,7 @@ export MAGON_FOUNDATION_STORAGE_BACKEND="local"
 export MAGON_FOUNDATION_STORAGE_LOCAL_ROOT="$STORAGE_DIR"
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
+# RU: Единый wave1 demo smoke проверяет весь сквозной поток на одной временной Postgres БД без разрыва между шагами.
 
 printf 'wave1-demo-v1' >"$FILE_V1"
 printf 'wave1-demo-v2' >"$FILE_V2"
@@ -123,7 +129,7 @@ curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/versions" \
 curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/review" \
   -H "authorization: Bearer $OPERATOR_TOKEN" \
   -H 'content-type: application/json' \
-  -d '{"target_state":"approved","reason_code":"file_manual_review_approved"}' >/dev/null
+  -d '{"target_state":"passed","reason_code":"file_manual_review_approved"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/files/$FILE_CODE/finalize" \
   -H "authorization: Bearer $OPERATOR_TOKEN" \
   -H 'content-type: application/json' \

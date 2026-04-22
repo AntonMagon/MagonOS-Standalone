@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-18 03:33 +07`",
+  "generated_at": "`2026-04-18 06:10 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -27,6 +27,8 @@
     "supplier intelligence pipeline",
     "supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer",
     "operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI",
+    "env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime",
+    "repo-aware periodic supplier scheduler for live parsing/classification; fixture source stays manual-only while `scenario_live` can be enqueued continuously on a launchd cadence",
     "normalization / enrichment / dedup / scoring",
     "lightweight marketing/conversion layer over showcase + RFQ + guest draft entry",
     "limited catalog / showcase contour with guest draft + RFQ entry",
@@ -46,6 +48,8 @@
     "конвейер проверки и обогащения поставщиков",
     "реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery",
     "операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура",
+    "env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии",
+    "repo-aware периодический scheduler для live parsing/classification: fixture-источник остаётся manual-only, а `scenario_live` может работать постоянно через launchd cadence",
     "header и operator shell очищены до компактной рабочей навигации; вторичные разделы вынесены в панель `Ещё`, а supplier-экран локализован и визуально уплотнён под реальную операторскую работу",
     "нормализация / обогащение / дедупликация / скоринг",
     "лёгкий marketing/conversion-layer поверх витрины, RFQ и гостевого draft-входа",
@@ -76,7 +80,7 @@
     "invoice / payment",
     "full ERP order management",
     "giant generic CRM",
-    "broad Odoo entity mirroring",
+    "broad legacy donor entity mirroring",
     "source repo feature growth"
   ],
   "out_of_scope_ru": [
@@ -84,30 +88,30 @@
     "счета / оплаты",
     "полное ERP-управление заказами",
     "огромная универсальная CRM",
-    "широкое зеркалирование сущностей Odoo",
+    "широкое зеркалирование legacy donor-сущностей",
     "рост функциональности donor-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-18 03:33 +07`",
-    "branch": "`main`",
-    "current_focus": "Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.",
-    "last_verified_workflow_status": "PASS `cd apps/web && npm run lint`, PASS `cd apps/web && npm run typecheck`, PASS `cd apps/web && npm run build`, PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "Remaining visible English is now mostly seeded demo data labels rather than shell copy or workflow wording."
+    "updated_at": "`2026-04-18 06:10 +07`",
+    "branch": "`codex/entity-help-reference`",
+    "current_focus": "Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.",
+    "last_verified_workflow_status": "PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite."
   },
   "recent_worklog": [
     {
-      "heading": "2026-04-18 03:33 +07 | main",
-      "summary": "Clean the standalone UI shell, remove mixed EN/RU workflow wording from operator screens, and verify the main browser surfaces after the layout cleanup.",
+      "heading": "2026-04-18 06:10 +07 | codex/entity-help-reference",
+      "summary": "Close PostgreSQL-first bootstrap and smoke parity so launcher, seed, all foundation smoke checks, wave1 demo smoke, and the canonical verify path run end-to-end without the old SQLite drift or invalid order flow.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-18 02:38 +07 | main",
-      "summary": "Complete the supplier source operator console, make parsing retries/queue states explainable, run browser-pass on supplier/workbench screens, and close the wave1 acceptance gate green.",
+      "heading": "2026-04-18 05:56 +07 | codex/entity-help-reference",
+      "summary": "Fix repeatable PostgreSQL bootstrap so permanent supplier parsing/classification and the detached launcher both work end-to-end without seed aborts.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-18 03:18 +07 | main",
-      "summary": "Clean the standalone operator shell so the header stops collapsing into button clutter and the supplier screen reads like a real working console instead of a noisy demo card wall.",
+      "heading": "2026-04-18 05:46 +07 | codex/entity-help-reference",
+      "summary": "Set up a permanent supplier parser/classifier through a repo-aware launchd scheduler that enqueues live source ingests hourly, exposes schedule/classification state in the operator UI, and verifies the contour end-to-end.",
       "risk": "See worklog entry"
     }
   ],

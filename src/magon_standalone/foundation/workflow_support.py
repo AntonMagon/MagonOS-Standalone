@@ -489,6 +489,8 @@ class WorkflowSupportService:
                     version_no=payload["version"]["version_no"],
                 )
                 self.session.add(version)
+                # RU: RuleVersion code резервируем в цикле baseline seed, поэтому сразу flush-им insert и не даём следующей итерации повторно взять тот же `RLV-*`.
+                self.session.flush()
             version.version_status = payload["version"]["version_status"]
             version.checksum = _checksum(checksum_payload)
             version.metadata_json = payload["version"]["metadata_json"]

@@ -63,6 +63,17 @@ forget_session() {
 
 COMMAND="${1:-}"
 CURRENT_SESSION="$(session_name)"
+browser_arg_supported="false"
+
+case "${COMMAND}" in
+  ""|--help|-h|list|close|close-all|kill-all|attach|install|install-browser)
+    browser_arg_supported="false"
+    ;;
+  *)
+    # RU: Meta-команды playwright-cli не принимают --browser, поэтому chrome-фиксацию добавляем только в реальные browser-driven действия.
+    browser_arg_supported="true"
+    ;;
+esac
 
 if [[ "${has_browser_flag}" == "true" ]]; then
   for arg in "$@"; do
@@ -111,7 +122,7 @@ case "${COMMAND}" in
 esac
 
 # RU: Все browser-driven проверки и ручные walkthrough в этом репозитории идут только через Google Chrome.
-if [[ "${has_browser_flag}" != "true" ]]; then
+if [[ "${browser_arg_supported}" == "true" && "${has_browser_flag}" != "true" ]]; then
   exec bash "${PWCLI}" "$@" --browser="${DEFAULT_BROWSER}"
 fi
 

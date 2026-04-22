@@ -4,7 +4,6 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
-DB_FILE="$TMPDIR/foundation.sqlite3"
 PORT="${MAGON_FOUNDATION_PORT:-18196}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
@@ -14,18 +13,25 @@ cleanup() {
     kill "$API_PID" >/dev/null 2>&1 || true
     wait "$API_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${DB_NAME:-}" ]]; then
+    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
+eval "$("$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_order)"
+
 export MAGON_ENV=test
-export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$DB_FILE"
+export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
 export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
+# RU: Порядок действий в order smoke повторяет реальные guard-условия оплаты и запуска производства, а не тестовый shortcut.
 
 "$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
 "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-order-seed.json
@@ -68,11 +74,11 @@ LINE_CODE="$(printf '%s' "$ORDER_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'impor
 PAYMENT_CODE="$(printf '%s' "$ORDER_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; print(json.load(sys.stdin)["payments"][0]["code"])')"
 
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"action":"assign_supplier","supplier_ref":"SUPC-ORDER","reason_code":"order_supplier_assigned"}' >/dev/null
+curl -fsS -X POST "$BASE_URL/api/v1/operator/payment-records/$PAYMENT_CODE/transition" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"target_state":"pending","reason_code":"payment_pending_bank_transfer"}' >/dev/null
+curl -fsS -X POST "$BASE_URL/api/v1/operator/payment-records/$PAYMENT_CODE/transition" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"target_state":"confirmed","reason_code":"payment_confirmed_internal"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"action":"confirm_start","reason_code":"order_start_confirmed"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"action":"mark_production","reason_code":"order_production_marked"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d "{\"action\":\"ready\",\"reason_code\":\"order_ready_partial\",\"line_codes\":[\"$LINE_CODE\"]}" >/dev/null
-curl -fsS -X POST "$BASE_URL/api/v1/operator/payment-records/$PAYMENT_CODE/transition" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"target_state":"pending","reason_code":"payment_pending_bank_transfer"}' >/dev/null
-curl -fsS -X POST "$BASE_URL/api/v1/operator/payment-records/$PAYMENT_CODE/transition" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"target_state":"confirmed","reason_code":"payment_confirmed_internal"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/payment-records/$PAYMENT_CODE/transition" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"target_state":"partially_refunded","reason_code":"payment_partial_refund_manual"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"action":"delivery","reason_code":"order_delivery_marked"}' >/dev/null
 curl -fsS -X POST "$BASE_URL/api/v1/operator/orders/$ORDER_CODE/action" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"action":"complete","reason_code":"order_completed_internal"}' >/dev/null

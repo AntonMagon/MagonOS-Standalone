@@ -48,7 +48,7 @@ Starts the wave1 foundation local stack:
 Options:
   --backend-port <port>   Backend port (default: $BACKEND_PORT)
   --web-port <port>       Web port (default: $WEB_PORT)
-  --fresh                 Delete local sqlite foundation DB before migrate+seed
+  --fresh                 Reset foundation DB before migrate+seed
   --no-seed               Skip fixture seeding after migrations
   --help                  Show this help
 USAGE
@@ -99,19 +99,18 @@ export MAGON_FOUNDATION_HOST="$BACKEND_HOST"
 export MAGON_FOUNDATION_PORT="$BACKEND_PORT"
 export MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT"
 export MAGON_FOUNDATION_LEGACY_ENABLED="${MAGON_FOUNDATION_LEGACY_ENABLED:-false}"
+export MAGON_FOUNDATION_DATABASE_URL="${MAGON_FOUNDATION_DATABASE_URL:-postgresql+psycopg://magon:magon@127.0.0.1:5432/magon}"
+export MAGON_FOUNDATION_REDIS_URL="${MAGON_FOUNDATION_REDIS_URL:-redis://127.0.0.1:6379/0}"
+# RU: Unified startup остаётся каноническим локальным входом и сам доводит infra/runtime до рабочего состояния.
+export MAGON_FOUNDATION_CELERY_BROKER_URL="${MAGON_FOUNDATION_CELERY_BROKER_URL:-redis://127.0.0.1:6379/1}"
+export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="${MAGON_FOUNDATION_CELERY_RESULT_BACKEND:-redis://127.0.0.1:6379/2}"
 
 ensure_port_free "$BACKEND_HOST" "$BACKEND_PORT" "Backend"
 ensure_port_free "$WEB_HOST" "$WEB_PORT" "Web"
+"$REPO_ROOT/scripts/ensure_foundation_infra.sh"
 
-if [[ -z "${MAGON_FOUNDATION_DATABASE_URL:-}" ]]; then
-  export MAGON_FOUNDATION_DATABASE_URL="sqlite+pysqlite:///$REPO_ROOT/data/foundation.local.sqlite3"
-fi
-
-if [[ "$FRESH" == "1" && "${MAGON_FOUNDATION_DATABASE_URL}" == sqlite+pysqlite:///* ]]; then
-  SQLITE_PATH="${MAGON_FOUNDATION_DATABASE_URL#sqlite+pysqlite:///}"
-  if [[ -f "$SQLITE_PATH" ]]; then
-    rm -f "$SQLITE_PATH"
-  fi
+if [[ "$FRESH" == "1" ]]; then
+  "$PYTHON_BIN" "$REPO_ROOT/scripts/reset_foundation_database.py" --database-url "$MAGON_FOUNDATION_DATABASE_URL"
 fi
 
 echo "[magon-foundation] running migrations"

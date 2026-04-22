@@ -117,6 +117,26 @@
 - `bash -n scripts/run_playwright_cli.sh`
 - `bash scripts/run_playwright_cli.sh --help`
 
+## 2026-04-18 — Postgres-first local runtime and policy cleanup
+
+### Что было найдено
+- Active docs уже называли PostgreSQL целевым runtime, но `settings.py`, launcher, unified path и smoke/migration checks всё ещё по умолчанию уходили в SQLite.
+- `docker-compose.yml` не публиковал `5432/6379` на host, поэтому локальный FastAPI runtime физически не мог стабильно жить на `127.0.0.1` с Postgres/Redis.
+- В active policy/UI слое ещё оставались прямые Odoo- и SQLite-формулировки, хотя текущий product contract уже donor/bridge-first и Postgres-first.
+
+### Что изменено
+- Local foundation runtime переведён в Postgres-first:
+  - `settings.py` по умолчанию использует `postgresql+psycopg://magon:magon@127.0.0.1:5432/magon`
+  - Redis/Celery defaults теперь тоже локальные host URLs
+- Добавлены helper scripts:
+  - `scripts/ensure_foundation_infra.sh`
+  - `scripts/reset_foundation_database.py`
+  - `scripts/manage_temp_foundation_db.py`
+- `Start_Platform.command`, `run_foundation_unified.sh` и `run_foundation_migrations.sh` теперь сами поднимают local infra и больше не держат SQLite как default-path.
+- `docker-compose.yml` публикует `127.0.0.1:5432` и `127.0.0.1:6379` для host runtime.
+- Канонические `foundation_smoke_check.sh`, `foundation_migration_check.sh` и `foundation_wave1_demo_smoke_check.sh` переведены на временные PostgreSQL БД.
+- Active docs, README, AGENTS и web copy очищены от Odoo/Odu как от текущей продуктовой правды; в active contract остался только `legacy donor / bridge`.
+
 ### Что проверено
 - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
 - `cd apps/web && npm run lint`
@@ -126,6 +146,44 @@
   - `/suppliers`
   - `/supplier-ingests/ING-00001`
   - `/request-workbench`
+- `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — Foundation smoke parity moved to PostgreSQL
+
+### Что было найдено
+- После перевода launcher и полного bootstrap на PostgreSQL большинство foundation smoke-скриптов всё ещё поднимали временные SQLite БД.
+- Из-за этого канонический verify path и реальный runtime продолжали жить в разных persistence-контурах.
+
+### Что изменено
+- `foundation_catalog_smoke_check.sh`
+- `foundation_supplier_smoke_check.sh`
+- `foundation_request_smoke_check.sh`
+- `foundation_offer_smoke_check.sh`
+- `foundation_order_smoke_check.sh`
+- `foundation_files_documents_smoke_check.sh`
+- `foundation_messages_dashboards_smoke_check.sh`
+
+Все эти smoke-скрипты теперь:
+- поднимают infra через `ensure_foundation_infra.sh`;
+- создают отдельную временную PostgreSQL БД через `manage_temp_foundation_db.py`;
+- чисто удаляют эту БД после завершения;
+- больше не используют временные SQLite-файлы.
+
+Дополнительно:
+- `verify_workflow.sh` теперь реально выполняет foundation smoke scripts и migration/demo smoke в рамках канонического verify path;
+- `foundation_files_documents_smoke_check.sh` выровнен под текущий file review state `passed` вместо старого `approved`.
+
+### Что проверено
+- `./scripts/foundation_smoke_check.sh`
+- `./scripts/foundation_supplier_smoke_check.sh`
+- `./scripts/foundation_catalog_smoke_check.sh`
+- `./scripts/foundation_request_smoke_check.sh`
+- `./scripts/foundation_offer_smoke_check.sh`
+- `./scripts/foundation_order_smoke_check.sh`
+- `./scripts/foundation_files_documents_smoke_check.sh`
+- `./scripts/foundation_messages_dashboards_smoke_check.sh`
+- `./scripts/foundation_migration_check.sh`
+- `./scripts/foundation_wave1_demo_smoke_check.sh`
 - `./scripts/verify_workflow.sh --with-web`
 
 ### Persistence / миграции
@@ -1113,4 +1171,133 @@
   - `http://127.0.0.1:8091/health/ready` -> `200` через 6 и 18 секунд
   - `http://127.0.0.1:3000/login` -> `200` через 6 и 18 секунд
 - PASS `ps` по backend/web pid показал `PPID 1`, то есть detached-процессы переживают завершение launcher shell
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — active runtime switched to Postgres-first and donor wording cleaned up
+
+### Что было найдено
+
+- Активные docs уже декларировали контур `PostgreSQL + Redis + Celery`, но локальные defaults всё ещё молча падали назад в SQLite.
+- В пользовательском copy и policy-слое оставались явные упоминания Odoo/legacy-Odoo, хотя текущий standalone repo должен говорить только про donor/back-office boundary.
+- После status-language alignment финальный wave1 demo smoke продолжал слать старое состояние `approved` в ручную проверку файла, тогда как сервис уже принимал `passed`.
+
+### Что было доведено
+
+- Local-up контур переведён на Postgres-first defaults:
+  - `Start_Platform.command`
+  - `scripts/run_foundation_unified.sh`
+  - `scripts/run_foundation_migrations.sh`
+  - `src/magon_standalone/foundation/settings.py`
+  - `alembic.ini`
+- Добавлены infra/helpers:
+  - `scripts/ensure_foundation_infra.sh`
+  - `scripts/reset_foundation_database.py`
+  - `scripts/manage_temp_foundation_db.py`
+- `docker-compose.yml` теперь публикует локальные host ports `5432` и `6379`, чтобы host-run backend не зависел от внутриконтейнерных адресов.
+- Smoke/migration/demo checks переведены на временные PostgreSQL базы вместо ad-hoc SQLite файлов.
+- Policy/docs/UI copy очищены от Odoo wording в пользу donor / legacy back-office boundary.
+- Исправлены Postgres-specific миграционные drift’ы:
+  - boolean backfill в `20260417_0010`
+  - JSON payload backfill в `20260417_0008`
+- Исправлен final demo-path: file review теперь использует `target_state=passed`, а не устаревшее `approved`.
+
+### Что проверено
+
+- PASS `bash -n Start_Platform.command scripts/run_foundation_unified.sh scripts/run_foundation_migrations.sh scripts/ensure_foundation_infra.sh scripts/foundation_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh scripts/verify_workflow.sh`
+- PASS `psql postgresql://magon:magon@127.0.0.1:5432/postgres -c 'select 1'`
+- PASS `./scripts/foundation_migration_check.sh`
+- PASS `bash ./scripts/foundation_smoke_check.sh`
+- PASS `./scripts/foundation_wave1_demo_smoke_check.sh`
+- PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+- PASS `cd apps/web && npm run build`
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — minimal LLM connection prepared for explainable supplier parsing fallback
+
+### Что было найдено
+
+- В `supplier_intelligence` уже существовал `ai_assisted` fallback, но он фактически опирался только на Crawl4AI/plaintext и не имел реального LLM transport.
+- В репозитории не было operator-visible status/test surface для LLM, поэтому даже корректно заданный API key было бы трудно проверить без ручного дебага кода.
+
+### Что было доведено
+
+- Добавлен env-gated OpenAI adapter в integrations-layer.
+- Foundation settings и `.env*.example` получили явные LLM env keys.
+- `ai_assisted` extraction теперь сначала пытается использовать LLM preview, но при любом сбое остаётся на explainable fallback path и не роняет supplier parsing contour.
+- Добавлен операторский API:
+  - `GET /api/v1/operator/llm/status`
+  - `POST /api/v1/operator/llm/extract-preview`
+- LLM wiring включён в канонический verify path через отдельный unit/API тест.
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_llm`
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — permanent supplier parser/classifier wired into repo-aware scheduler
+
+### Что было найдено
+
+- В foundation уже существовали `scenario_live` source registry, queued ingest state и Celery task `magon.foundation.suppliers.run_ingest`, но не было постоянного repo-owned scheduler слоя, который бы ставил live parsing/classification в очередь без ручного клика.
+- Operator API показывал health/latest ingest, но не отдавал schedule/classification state: было не видно, какой source идёт постоянно, когда следующее окно и включён ли LLM-assisted fallback.
+
+### Что было доведено
+
+- Добавлен foundation scheduler layer:
+  - `src/magon_standalone/foundation/supplier_scheduler.py`
+  - считает due-window по source config
+  - держит fixture source manual-only
+  - по умолчанию ставит `scenario_live` в очередь каждые `60` минут
+- Добавлен repo-aware runner:
+  - `scripts/run_supplier_scheduler.py`
+- Добавлен macOS launchd operating-layer:
+  - `src/magon_standalone/launchd_supplier_scheduler.py`
+  - `scripts/render_launchd_supplier_scheduler.py`
+  - `scripts/install_launchd_supplier_scheduler.sh`
+  - `scripts/launchd_supplier_scheduler_status.sh`
+- `SupplierSourceRegistry` API теперь отдаёт:
+  - `schedule.enabled`
+  - `schedule.interval_minutes`
+  - `schedule.next_run_at`
+  - `schedule.skip_reason`
+  - `classification.mode`
+  - `classification.llm_enabled`
+- Bootstrap/seed now enforce schedule defaults:
+  - `fixture_json`: `schedule_enabled=false`
+  - `scenario_live`: `schedule_enabled=true`, `schedule_interval_minutes=60`, `classification_mode=ai_assisted_fallback`
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_supplier_scheduler`
+- PASS `./.venv/bin/python scripts/run_supplier_scheduler.py`
+- PASS `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
+- PASS `./scripts/launchd_supplier_scheduler_status.sh`
+- PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-18 — repeatable foundation seed fixed on PostgreSQL
+
+### Что было найдено
+
+- После включения постоянного scheduler-а оставался operational drift в полном bootstrap path:
+  - `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+  - `./Start_Platform.command --detach --no-open`
+- `reserve_code()` ошибочно принимал специальные scope вроде `users:USR` и `request_customer_refs` за имена SQL-таблиц.
+- На PostgreSQL это абортировало транзакцию ещё до корректного insert/update `FoundationSequence`, поэтому repeatable seed ломался даже при уже рабочем runtime.
+
+### Что было доведено
+
+- В `src/magon_standalone/foundation/codes.py` добавлен явный `scope -> table/column` mapping:
+  - `users:* -> users_access_users.code`
+  - `request_customer_refs -> requests.customer_ref`
+  - обычные table-bound scope продолжают идти через `table.code`
+- Legacy lookup теперь выполняется только для валидного table-bound scope и обёрнут в nested transaction/savepoint, чтобы Postgres не ронял весь outer transaction.
+- Добавлен regression-test:
+  - `tests/test_foundation_seed_repeatable.py`
+- Канонический `verify_workflow.sh` теперь включает этот repeatable-seed test в общий repo gate.
+
+### Что проверено
+
+- PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`
+- PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`
+- PASS `./Start_Platform.command --detach --no-open`
 - PASS `./scripts/verify_workflow.sh --with-web`

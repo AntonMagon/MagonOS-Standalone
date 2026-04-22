@@ -30,6 +30,7 @@ from ..supplier_services import SupplierPipelineService, SupplierIngestSummary
 from ..celery_app import run_supplier_ingest
 from ...integrations.foundation.supplier_sources import get_supplier_source_adapter
 from ..db import utc_now
+from ..supplier_scheduler import build_supplier_source_schedule_state
 from .shared import (
     company_address_view,
     company_contact_view,
@@ -151,6 +152,7 @@ def _compact_ingest_view(item: SupplierRawIngest | None) -> dict[str, object] | 
 
 def _source_registry_view(item: SupplierSourceRegistry, latest_ingest: SupplierRawIngest | None = None) -> dict[str, object]:
     health = get_supplier_source_adapter(item.adapter_key).health()
+    schedule = build_supplier_source_schedule_state(item, latest_ingest)
     return {
         "id": item.id,
         "code": item.code,
@@ -165,6 +167,21 @@ def _source_registry_view(item: SupplierSourceRegistry, latest_ingest: SupplierR
             "adapter": health.adapter,
             "detail": health.detail,
             "payload": health.payload or {},
+        },
+        "schedule": {
+            "enabled": schedule.enabled,
+            "interval_minutes": schedule.interval_minutes,
+            "reason_code": schedule.reason_code,
+            "active": schedule.active,
+            "due_now": schedule.due_now,
+            "next_run_at": iso_or_none(schedule.next_run_at),
+            "last_event_at": iso_or_none(schedule.last_event_at),
+            "skip_reason": schedule.skip_reason,
+        },
+        "classification": {
+            # RU: Оператор должен видеть, что periodic source не просто тянет raw rows, а проходит через текущий parsing/classification contour.
+            "mode": schedule.classification_mode,
+            "llm_enabled": schedule.llm_enabled,
         },
         "latest_ingest": _compact_ingest_view(latest_ingest),
         "created_at": iso_or_none(item.created_at),
