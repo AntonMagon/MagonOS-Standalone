@@ -1418,3 +1418,16 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - the active local runtime is now Postgres-first, but a large part of the unit suite still uses isolated SQLite databases internally; that is acceptable for fast repo verification, but it is not full parity with the new local runtime contour
+
+### 2026-04-22 17:14 +07 | codex/entity-help-reference
+- Summary: fixed GitHub Actions drift where `scripts/verify_workflow.sh` assumed `./.venv/bin/python`, while CI installs dependencies into the runner Python
+- Changed:
+  - scripts/verify_workflow.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+  - FAIL then root-caused GitHub Actions run `24772735495` at `Repo verify workflow` with `./.venv/bin/python: No such file or directory`
+- Risk:
+  - the CI fix still needs one more push after this memory/docs update; the currently running local verify is green but the remote workflow has not yet been retried with the fallback in place

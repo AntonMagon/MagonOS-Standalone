@@ -113,6 +113,7 @@ Do not pretend full CRM/quote parity exists.
 - backend verification:
   - `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
 - foundation verification:
+  - `./scripts/verify_workflow.sh` now falls back to `python3`/`python` when the repo venv is absent, so GitHub Actions can execute the same verification contract
   - `./.venv/bin/python -m unittest tests.test_foundation_api`
   - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
   - `./.venv/bin/python -m unittest tests.test_foundation_catalog`

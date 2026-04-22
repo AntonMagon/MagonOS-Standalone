@@ -4,6 +4,7 @@ set -euo pipefail
 # RU: Это канонический verification path репозитория; перед push/commit он должен ловить drift раньше ручной проверки.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WITH_WEB="0"
+PYTHON_BIN="./.venv/bin/python"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -16,6 +17,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "$REPO_ROOT"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  # RU: В CI и на чистых runner'ах repo-venv может отсутствовать, поэтому verification обязан уметь работать через системный Python.
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
 
 # RU: Проверяем не только shell/python синтаксис, но и то, что repo-level guard scripts вообще запускаемы.
 # RU: В verification теперь включён installer project skills, чтобы repo не держал "мертвые" skills без активации в CODEX_HOME.
@@ -62,7 +72,7 @@ bash -n \
 
 # RU: Detached daemon-helper проверяем как Python entrypoint отдельно от bash syntax-check, иначе launcher drift снова пройдёт мимо канонического verify.
 # RU: Postgres-first local helpers тоже держим под compile-check, чтобы launcher/unified/smoke не расходились по DB contract.
-./.venv/bin/python -m py_compile \
+"$PYTHON_BIN" -m py_compile \
   scripts/check_russian_locale_integrity.py \
   scripts/manage_temp_foundation_db.py \
   scripts/render_launchd_launcher_watchdog.py \
@@ -84,15 +94,15 @@ bash -n \
   src/magon_standalone/operating_docs_sync.py \
   src/magon_standalone/foundation/supplier_scheduler.py
 
-./.venv/bin/python scripts/sync_operating_docs.py --check
+"$PYTHON_BIN" scripts/sync_operating_docs.py --check
 # RU: Статический locale-guard режет verify ещё до runtime, если русский source-of-truth снова протёк английскими доменными ярлыками.
-./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only
+"$PYTHON_BIN" scripts/check_russian_locale_integrity.py --static-only
 # RU: Имена repo-local skills тоже держим под guard, чтобы automation и ручной вызов skills опирались на один читаемый naming-contract.
-./.venv/bin/python scripts/check_skill_naming.py
+"$PYTHON_BIN" scripts/check_skill_naming.py
 # RU: Живые Codex automation тоже считаются частью operating-layer, поэтому их id/prompt/cwd/rrule не должны уплывать мимо общего контекста проекта.
-./.venv/bin/python scripts/check_automation_contract.py
+"$PYTHON_BIN" scripts/check_automation_contract.py
 
-./.venv/bin/python -m unittest \
+"$PYTHON_BIN" -m unittest \
   tests.test_foundation_api \
   tests.test_foundation_suppliers \
   tests.test_foundation_catalog \

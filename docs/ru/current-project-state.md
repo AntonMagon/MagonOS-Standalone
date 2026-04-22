@@ -124,6 +124,7 @@
 - проверить backend/workflow:
   - `./scripts/verify_workflow.sh`
 - проверить foundation:
+  - `./scripts/verify_workflow.sh` теперь умеет падать обратно на системный `python3`/`python`, если repo-venv отсутствует, поэтому GitHub Actions проверяет тот же контракт, а не ломается на поиске `.venv`
   - `./.venv/bin/python -m unittest tests.test_foundation_api`
   - `./.venv/bin/python -m unittest tests.test_foundation_suppliers`
   - `./.venv/bin/python -m unittest tests.test_foundation_catalog`
