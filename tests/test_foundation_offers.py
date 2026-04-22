@@ -1,4 +1,5 @@
 # RU: Файл входит в проверенный контур первой волны.
+# RU: Offer tests подтверждают versioned flow и reset confirmation после критичной коммерческой правки.
 from __future__ import annotations
 
 import os
@@ -24,7 +25,6 @@ class TestFoundationOffers(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.database_url = f"sqlite+pysqlite:///{Path(self.tmpdir.name) / 'foundation.sqlite3'}"
-        self.legacy_db_path = str(Path(self.tmpdir.name) / "legacy.sqlite3")
         self._previous = {
             key: os.environ.get(key)
             for key in [
@@ -33,8 +33,6 @@ class TestFoundationOffers(unittest.TestCase):
                 "MAGON_FOUNDATION_REDIS_URL",
                 "MAGON_FOUNDATION_CELERY_BROKER_URL",
                 "MAGON_FOUNDATION_CELERY_RESULT_BACKEND",
-                "MAGON_FOUNDATION_LEGACY_ENABLED",
-                "MAGON_STANDALONE_DB_PATH",
                 "MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL",
                 "MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD",
                 "MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL",
@@ -48,8 +46,6 @@ class TestFoundationOffers(unittest.TestCase):
         os.environ["MAGON_FOUNDATION_REDIS_URL"] = ""
         os.environ["MAGON_FOUNDATION_CELERY_BROKER_URL"] = "memory://"
         os.environ["MAGON_FOUNDATION_CELERY_RESULT_BACKEND"] = "cache+memory://"
-        os.environ["MAGON_FOUNDATION_LEGACY_ENABLED"] = "false"
-        os.environ["MAGON_STANDALONE_DB_PATH"] = self.legacy_db_path
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_EMAIL"] = "admin@example.com"
         os.environ["MAGON_FOUNDATION_DEFAULT_ADMIN_PASSWORD"] = "admin123"
         os.environ["MAGON_FOUNDATION_DEFAULT_OPERATOR_EMAIL"] = "operator@example.com"

@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-23 00:47 +07`",
+  "generated_at": "`2026-04-23 01:32 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -38,6 +38,7 @@
     "versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion",
     "order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench",
     "managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow",
+    "admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits",
     "foundation FastAPI skeleton with separate draft/request/offer/order entities",
     "routing / qualification decisions",
     "feedback ledger / projection",
@@ -60,6 +61,7 @@
     "versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order",
     "слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench",
     "управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow",
+    "контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды",
     "foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`",
     "маршрутизация / квалификационные решения",
     "журнал обратной связи / проекция",
@@ -80,7 +82,7 @@
     "invoice / payment",
     "full ERP order management",
     "giant generic CRM",
-    "broad legacy donor entity mirroring",
+    "broad legacy entity mirroring",
     "source repo feature growth"
   ],
   "out_of_scope_ru": [
@@ -88,17 +90,22 @@
     "счета / оплаты",
     "полное ERP-управление заказами",
     "огромная универсальная CRM",
-    "широкое зеркалирование legacy donor-сущностей",
-    "рост функциональности donor-репозитория"
+    "широкое зеркалирование legacy-сущностей",
+    "рост функциональности source-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-23 00:47 +07`",
-    "branch": "`main`",
-    "current_focus": "Keep the standalone repo aligned around one Postgres-first foundation runtime, one verified smoke/perf contour, and one explicit automation context without legacy drift.",
-    "last_verified_workflow_status": "PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`, PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure."
+    "updated_at": "`2026-04-23 01:32 +07`",
+    "branch": "`codex/full-audit-runtime-alignment`",
+    "current_focus": "Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.",
+    "last_verified_workflow_status": "PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment",
+      "summary": "Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-23 00:47 +07 | main",
       "summary": "Audit the standalone repo against its current wave1 context, fix perf/automation drift, align repo operating config with the Postgres-first foundation runtime, and prove the verified contour end-to-end.",
@@ -107,11 +114,6 @@
     {
       "heading": "2026-04-18 06:10 +07 | codex/entity-help-reference",
       "summary": "Close PostgreSQL-first bootstrap and smoke parity so launcher, seed, all foundation smoke checks, wave1 demo smoke, and the canonical verify path run end-to-end without the old SQLite drift or invalid order flow.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-18 05:56 +07 | codex/entity-help-reference",
-      "summary": "Fix repeatable PostgreSQL bootstrap so permanent supplier parsing/classification and the detached launcher both work end-to-end without seed aborts.",
       "risk": "See worklog entry"
     }
   ],

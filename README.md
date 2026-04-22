@@ -3,7 +3,7 @@
 Standalone MagonOS platform.
 
 This repository is now the primary platform-of-record.
-The legacy donor repo at `/Users/anton/Desktop/MagonOS/MagonOS` remains a donor / bridge / legacy-shell repository only.
+The historical source repo at `/Users/anton/Desktop/MagonOS/MagonOS` is inspection-only and is not part of the active runtime.
 
 Included:
 - supplier discovery pipeline
@@ -22,10 +22,10 @@ Included:
 - production board
 
 Not included:
-- donor ORM/models/views
-- donor admin UI
+- historical source ORM/models/views
+- historical source admin UI
 - accounting / invoice / payment ERP ownership
-- full donor CRM / ERP replacement
+- full external CRM / ERP replacement
 
 ## Wave1 foundation
 Foundation skeleton for the first Codex wave now lives in the same repo and adds:
@@ -39,10 +39,8 @@ Foundation skeleton for the first Codex wave now lives in the same repo and adds
 
 Planning source-of-truth for this contour:
 - `gpt_doc/codex_wave1_spec_ru.docx`
-- `gpt_doc/platform_architecture_report_ru.docx`
-- `gpt_doc/platform_documentation_pack_ru.docx`
 
-The intended wave1 runtime is the new stack itself. Any mounted legacy standalone contour should be treated only as a temporary compatibility bridge during transition.
+The intended wave1 runtime is the active foundation stack itself.
 
 Quick path:
 
@@ -60,12 +58,6 @@ Unified local path:
 
 This path now auto-starts local `db + redis` through `docker compose`/`colima` and keeps the active local runtime on PostgreSQL instead of a separate SQLite fallback.
 
-Legacy bridge is opt-in only:
-
-```bash
-MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh
-```
-
 Runbook:
 
 - Russian runbook: `docs/ru/foundation-runbook.md`
@@ -82,23 +74,6 @@ pip install -e .
 pip install -e .[live]
 ```
 
-## Legacy compatibility start
-```bash
-cd /Users/anton/Desktop/MagonOS-Standalone
-./scripts/run_platform.sh --fresh --port 8091
-```
-
-## Legacy compatibility all-in-one start
-One command starts:
-- public Next.js shell on `http://127.0.0.1:3000/`
-- operator/runtime surfaces under the same shell at `/ops`, `/ui/...`
-- standalone backend on `http://127.0.0.1:8091/`
-
-```bash
-cd /Users/anton/Desktop/MagonOS-Standalone
-./scripts/run_unified_platform.sh --fresh
-```
-
 ## Production/deploy start
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
@@ -113,37 +88,33 @@ MAGON_STANDALONE_BOOTSTRAP_FIXTURE=tests/fixtures/vn_suppliers_raw.json PORT=809
 ## Local URLs
 - public shell: http://127.0.0.1:3000/
 - foundation login: http://127.0.0.1:3000/login
+- admin config: http://127.0.0.1:3000/admin-config
+- admin dashboard: http://127.0.0.1:3000/admin-dashboard
+- supplier workbench: http://127.0.0.1:3000/suppliers
+- request workbench: http://127.0.0.1:3000/request-workbench
+- orders: http://127.0.0.1:3000/orders
 
 Direct backend URLs still exist for debugging:
 - http://127.0.0.1:8091/
 
-Legacy compatibility surfaces exist only when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
-- http://127.0.0.1:3000/dashboard
-- http://127.0.0.1:3000/ops-workbench
-- http://127.0.0.1:3000/ops
-- http://127.0.0.1:3000/ui/companies
-- http://127.0.0.1:3000/ui/commercial-pipeline
-- http://127.0.0.1:3000/ui/quote-intents
-- http://127.0.0.1:3000/ui/production-handoffs
-- http://127.0.0.1:3000/ui/production-board
-- http://127.0.0.1:3000/ui/review-queue
-- http://127.0.0.1:3000/ui/feedback-status
-- http://127.0.0.1:3000/ui/feedback-events
-- http://127.0.0.1:8091/ui/companies
-
 ## Core API endpoints
-- `GET /health`
-- `GET /status`
-- `GET /raw-records`
-- `GET /companies`
-- `GET /scores`
-- `GET /dedup-decisions`
-- `GET /review-queue`
-- `GET /feedback-events`
-- `GET /feedback-status`
-- `GET /feedback-status/{source_key}`
-- `POST /runs`
-- `POST /feedback-events`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /api/v1/meta/system-mode`
+- `GET /api/v1/public/catalog/items`
+- `GET /api/v1/operator/reason-codes`
+- `GET /api/v1/operator/rules`
+- `POST /api/v1/admin/reason-codes`
+- `PATCH /api/v1/admin/reason-codes/{reasonCode}`
+- `POST /api/v1/admin/rules`
+- `PATCH /api/v1/admin/rules/{ruleCode}`
+- `POST /api/v1/admin/rules/{ruleCode}/versions`
+- `GET /api/v1/admin/notification-rules`
+- `POST /api/v1/admin/notification-rules`
+- `PATCH /api/v1/admin/notification-rules/{notificationRuleCode}`
+- `GET /api/v1/operator/supplier-sources`
+- `PATCH /api/v1/admin/supplier-sources/{sourceRegistryCode}`
+- `GET /api/v1/operator/llm/status`
 
 ## Local CLI helpers
 ```bash
@@ -174,10 +145,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-23 00:47 +07`
-- Current focus: Keep the standalone repo aligned around one Postgres-first foundation runtime, one verified smoke/perf contour, and one explicit automation context without legacy drift.
-- Last verified workflow status: PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure.
+- Auto-synced at: `2026-04-23 01:32 +07`
+- Current focus: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
+- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -202,6 +173,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion
   - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
   - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
+  - admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
   - foundation FastAPI skeleton with separate draft/request/offer/order entities
   - routing / qualification decisions
   - feedback ledger / projection
@@ -229,6 +201,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - public request view: `http://127.0.0.1:3000/requests/{customerRef}`
   - public request offer compare: `http://127.0.0.1:3000/requests/{customerRef}` (compare block on the same page)
   - foundation login: `http://127.0.0.1:3000/login`
+  - admin configuration: `http://127.0.0.1:3000/admin-config`
   - operator request workbench: `http://127.0.0.1:3000/request-workbench`
   - operator request detail: `http://127.0.0.1:3000/request-workbench/{requestCode}`
   - operator offer compare / revision: `http://127.0.0.1:3000/request-workbench/{requestCode}` (commercial block on the same page)
@@ -242,21 +215,16 @@ Detailed workflow: `docs/repo-workflow.md`
   - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
   - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
   - supplier source API now also exposes schedule/classification state so operator tooling can tell which source runs continuously, when the next due window arrives, and whether LLM-assisted fallback is enabled
+  - admin configuration UI/API now owns baseline business settings for wave1, so reason catalogs, workflow rules, notification rules, and supplier source schedule/classification no longer require code edits
   - operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
   - direct backend debug: `http://127.0.0.1:8091/`
-  - compatibility-only legacy surfaces when `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
-  - `http://127.0.0.1:3000/ops-workbench`
-  - `http://127.0.0.1:3000/ops`
-  - `http://127.0.0.1:3000/ui/*`
 <!-- AUTO-SYNC:README:END -->
 
 ## Deploy notes
 - This repo is the official product runtime.
-- The donor repo is no longer the official startup path.
-- `scripts/run_platform.sh` is legacy compatibility-only.
-- `scripts/run_unified_platform.sh` is legacy compatibility-only.
+- Active runtime contract is the standalone foundation contour only.
+- The historical source repo is no longer the official startup path.
 - `scripts/run_deploy.sh` is the deploy/runtime entrypoint.
 - `Procfile` points at the production entrypoint.
-- The app is independent from the donor runtime.
-- Legacy standalone contour may still exist as a temporary compatibility surface, but it is opt-in.
+- The app is independent from any old bridge runtime.
 - Foundation wave1 skeleton is the forward runtime base and is already running on the target stack through PostgreSQL + Redis + Alembic + Docker Compose.

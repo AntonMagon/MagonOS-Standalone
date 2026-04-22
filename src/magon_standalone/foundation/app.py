@@ -11,7 +11,6 @@ from magon_standalone.observability import init_backend_observability
 
 from .dependencies import FoundationContainer
 from .db import create_session_factory
-from .legacy_bridge import create_legacy_mount
 from .logging_utils import configure_logging
 from .modules import MODULE_ROUTERS
 from .observability import TelemetryState, telemetry_middleware
@@ -58,7 +57,7 @@ async def _lifespan(app: FastAPI):
 
 
 def create_app(settings: FoundationSettings | None = None) -> FastAPI:
-    # RU: App собираем явно, чтобы optional-контуры вроде legacy mount и новых модулей включались только по понятным правилам.
+    # RU: App собираем явно и только из active foundation-модулей, без старого bridge-контура.
     actual_settings = settings or load_settings()
     if actual_settings.system_mode not in {"normal", "test", "maintenance", "emergency"}:
         raise RuntimeError(f"foundation_system_mode_invalid:{actual_settings.system_mode}")
@@ -124,7 +123,6 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
                 "database": db_health,
                 "redis": redis_health,
                 "celery": celery_health,
-                "legacy_mount_enabled": actual_settings.legacy_enabled,
                 "system_mode": actual_settings.system_mode,
             },
         }
@@ -138,7 +136,6 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
             "env": actual_settings.env_name,
             "system_mode": actual_settings.system_mode,
             "database_url": actual_settings.database_url,
-            "legacy_enabled": actual_settings.legacy_enabled,
         }
 
     @app.get("/observability/summary", tags=["Observability"])
@@ -171,7 +168,6 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
                 "RulesEngine",
                 "AuditDashboards",
             ],
-            "legacy_mount_enabled": actual_settings.legacy_enabled,
             "system_mode": actual_settings.system_mode,
         }
 
@@ -182,9 +178,5 @@ def create_app(settings: FoundationSettings | None = None) -> FastAPI:
             "write_blocked": actual_settings.system_mode in {"maintenance", "emergency"},
             "read_blocked": actual_settings.system_mode == "emergency",
         }
-
-    if actual_settings.legacy_enabled:
-        # RU: Legacy WSGI монтируем последним, чтобы новые FastAPI health/auth/module routes выигрывали матчинг, а старый `/ui/*` контур оставался совместимым.
-        app.mount("/", create_legacy_mount(actual_settings))
 
     return app

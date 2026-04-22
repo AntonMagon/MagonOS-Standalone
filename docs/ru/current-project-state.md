@@ -3,7 +3,7 @@
 ## Где главный репозиторий
 
 - Активный продуктовый репозиторий: `/Users/anton/Desktop/MagonOS-Standalone`
-- Donor / bridge-репозиторий: `/Users/anton/Desktop/MagonOS/MagonOS`
+- Исторический source-репозиторий только для сверки: `/Users/anton/Desktop/MagonOS/MagonOS`
 
 ## Что является плановой истиной
 
@@ -14,11 +14,10 @@
 ## Что является правдой рантайма
 
 - `Standalone` — основной platform-of-record.
-- Legacy donor/back-office — только donor / bridge, но не целевой runtime.
+- Исторический source-репозиторий нужен только для сверки и не входит в активный runtime.
 - По умолчанию работа и изменения идут только в standalone-репозитории.
 - Целевой runtime первой волны — новый стек `FastAPI + PostgreSQL + Redis + Celery + Caddy + Docker Compose`.
-- По умолчанию runtime первой волны стартует без legacy standalone WSGI bridge.
-- Legacy standalone WSGI runtime может жить только как явный compatibility bridge через `MAGON_FOUNDATION_LEGACY_ENABLED=true`, но это не целевая execution-модель первой волны.
+- Истина рантайма первой волны теперь одна: активный foundation contour без старого compatibility bridge.
 
 ## Какая baseline-версия стека подтверждена
 
@@ -69,6 +68,7 @@
 - versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order
 - слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
 - управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
+- контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды
 - foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
@@ -89,8 +89,8 @@
 - счета / оплаты
 - полное ERP-управление заказами
 - огромная универсальная CRM
-- широкое зеркалирование legacy donor-сущностей
-- рост функциональности donor-репозитория
+- широкое зеркалирование legacy-сущностей
+- рост функциональности source-репозитория
 
 ## Канонические команды
 
@@ -115,7 +115,7 @@
   - `./scripts/run_perf_suite.sh smoke`
   - `./scripts/run_perf_suite.sh load`
   - `./scripts/run_perf_suite.sh stress`
-  - perf warmup и k6-пробы обязаны бить только в живые foundation URL (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`), а не в legacy `/status` или donor-era `/ui/*`
+  - perf warmup и k6-пробы обязаны бить только в живые foundation URL (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`), а не в снятые legacy-поверхности вроде `/status` или `/ui/*`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`
@@ -147,10 +147,6 @@
   - `./scripts/foundation_files_documents_smoke_check.sh`
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - канонический `./scripts/verify_workflow.sh` теперь реально исполняет эти foundation smoke-скрипты на временных PostgreSQL БД, а не держит их как manual-only хвост
-- compatibility-only запуск старого контура, если он реально нужен:
-  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
-  - `./scripts/run_unified_platform.sh --fresh`
-  - `./scripts/run_platform.sh --fresh --port 8091`
 - если менялся web:
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
@@ -179,6 +175,7 @@
 - customer request view: `http://127.0.0.1:3000/requests/{customerRef}`
 - customer compare block предложений: `http://127.0.0.1:3000/requests/{customerRef}`
 - foundation login: `http://127.0.0.1:3000/login`
+- admin config: `http://127.0.0.1:3000/admin-config`
 - успешный foundation login должен не просто показать token, а завершать вход переходом в рабочий контур: `admin/operator -> /dashboard`, `customer -> /catalog`
 - client-shell читает foundation session через кэшированный snapshot store; повторный parse одного и того же `localStorage` значения считается регрессией, потому что ломает `useSyncExternalStore` и может зациклить header/runtime
 - operator request workbench: `http://127.0.0.1:3000/request-workbench`
@@ -196,13 +193,9 @@
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - страница `supplier raw ingest` теперь показывает explainable async-state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) и даёт оператору retry / повторный запуск источника
 - API источников поставщиков теперь также отдаёт schedule/classification state: какой source идёт постоянно, когда следующее due-window и включён ли LLM-assisted fallback
+- admin configuration UI/API теперь владеет базовой wave1-настройкой: каталоги причин, workflow rules, notification rules и supplier source schedule/classification больше не требуют правки кода
 - operator LLM status/test surface: `http://127.0.0.1:8091/api/v1/operator/llm/status`
 - direct backend debug: `http://127.0.0.1:8091/`
-- legacy-поверхности только при явном `MAGON_FOUNDATION_LEGACY_ENABLED=true`:
-  - `http://127.0.0.1:3000/ops-workbench`
-  - `http://127.0.0.1:3000/ops`
-  - `http://127.0.0.1:3000/ui/*`
-
 ## Где читать справку по сущностям
 
 - Быстрый product-shell вход: `/reference`

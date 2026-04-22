@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # RU: Скрипт явно проверяет миграционный контур первой волны на чистой БД и не зависит от уже поднятого runtime.
+# RU: Migration check должен подтверждать текущий Postgres-first contour, а не прошлую dev fallback-схему.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,7 +36,6 @@ export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
-export MAGON_FOUNDATION_LEGACY_ENABLED=0
 # RU: Миграции валидируем на одноразовой Postgres БД, чтобы не портить локальную рабочую схему и всё равно поймать drift.
 
 run_alembic upgrade head >/dev/null

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # RU: Скрипт проверяет или поднимает контур первой волны.
+# RU: Order smoke должен проходить только после подтверждённого оффера и payment skeleton первой волны.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -42,7 +43,6 @@ export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
-export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
 # RU: Порядок действий в order smoke повторяет реальные guard-условия оплаты и запуска производства, а не тестовый shortcut.

@@ -5,13 +5,13 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Stable Truth
 - Active product repo: `/Users/anton/Desktop/MagonOS-Standalone`
-- Legacy donor repo: `/Users/anton/Desktop/MagonOS/MagonOS`
+- Historical source repo for evidence-only inspection: `/Users/anton/Desktop/MagonOS/MagonOS`
 - Standalone is the primary platform-of-record.
-- Odoo is donor/bridge context only, not the active runtime.
+- Historical source context is read-only evidence, not part of the active runtime.
 - Wave1 planning truth lives in `gpt_doc/codex_wave1_spec_ru.docx`.
 - Read-only export of the same planning spec lives in `gpt_doc/codex_wave1_spec_ru.pdf`.
 - There are no other active planning docs in `gpt_doc/`; `docs/current-project-state.md` is runtime truth, and the wave1 spec above is the planning truth for the new contour.
-- Wave1 default runtime is the foundation stack without the legacy WSGI bridge; legacy is opt-in only through `MAGON_FOUNDATION_LEGACY_ENABLED=true`.
+- Wave1 default runtime is the active foundation stack only; old compatibility shells are no longer part of the runtime contract.
 - Default changes happen only in this repository.
 - Current verified contour:
   - company
@@ -24,7 +24,9 @@ It exists so the project context survives across sessions instead of being re-ex
   - supplier intelligence pipeline
   - normalization / enrichment / dedup / scoring
   - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
-  - review queue
+  - request / offer / order wave1 contour
+  - files / documents / timeline / notifications / dashboards
+  - admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings
   - routing / qualification decisions
   - feedback ledger / projection
   - workforce estimation
@@ -37,8 +39,8 @@ It exists so the project context survives across sessions instead of being re-ex
   - invoice / payment
   - full ERP order management
   - giant generic CRM
-  - broad Odoo entity mirroring
-  - Odoo runtime reintroduction
+  - broad legacy entity mirroring
+  - legacy runtime reintroduction
   - source repo feature growth
 
 ## Canonical Commands
@@ -53,10 +55,6 @@ It exists so the project context survives across sessions instead of being re-ex
 - Foundation verification:
   - `./.venv/bin/python -m unittest tests.test_foundation_api`
   - `./scripts/foundation_smoke_check.sh`
-- Compatibility-only legacy startup:
-  - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
-  - `./scripts/run_unified_platform.sh --fresh`
-  - `./scripts/run_platform.sh --fresh --port 8091`
 - Workflow verification: `./scripts/verify_workflow.sh`
 - Web typecheck when web changed: `cd apps/web && npm run typecheck`
 - Finalize a substantial task and persist memory:
@@ -74,15 +72,62 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-23 00:47 +07`
-- Branch: `main`
-- Current focus: Keep the standalone repo aligned around one Postgres-first foundation runtime, one verified smoke/perf contour, and one explicit automation context without legacy drift.
-- Last verified workflow status: PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure.
+- Updated at: `2026-04-23 01:32 +07`
+- Branch: `codex/full-audit-runtime-alignment`
+- Current focus: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
+- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment
+- Summary: Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.
+- Changed:
+  - src/magon_standalone/foundation/app.py
+  - src/magon_standalone/foundation/settings.py
+  - src/magon_standalone/foundation/modules/audit_dashboards.py
+  - src/magon_standalone/foundation/modules/rules_engine.py
+  - src/magon_standalone/foundation/modules/suppliers.py
+  - apps/web/app/admin-config/page.tsx
+  - apps/web/components/dashboard/foundation-dashboards.tsx
+  - apps/web/lib/site-nav.ts
+  - apps/web/lib/standalone-api.ts
+  - apps/web/messages/ru.json
+  - apps/web/messages/en.json
+  - tests/test_foundation_admin_config.py
+  - tests/test_foundation_api.py
+  - tests/test_foundation_acceptance.py
+  - tests/test_foundation_catalog.py
+  - tests/test_foundation_draft_request.py
+  - tests/test_foundation_events_dashboards.py
+  - tests/test_foundation_files_documents.py
+  - tests/test_foundation_llm.py
+  - tests/test_foundation_offers.py
+  - tests/test_foundation_orders.py
+  - tests/test_foundation_seed_repeatable.py
+  - tests/test_foundation_suppliers.py
+  - tests/test_supplier_scheduler.py
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - scripts/run_foundation_unified.sh
+  - scripts/run_platform.sh
+  - README.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
 ### 2026-04-23 00:47 +07 | main
 - Summary: Audit the standalone repo against its current wave1 context, fix perf/automation drift, align repo operating config with the Postgres-first foundation runtime, and prove the verified contour end-to-end.
 - Changed:

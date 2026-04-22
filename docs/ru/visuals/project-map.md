@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-23 00:47 +07``
+Обновлено: ``2026-04-23 01:32 +07``
 
 ## Контур движения
 
@@ -31,6 +31,7 @@ flowchart LR
 - versioned-коммерческий слой Offer с compare, reset confirmation и отдельной конвертацией в Order
 - слой `Order` с `OrderLine`, внутренним payment skeleton, ledger trail и operator workbench
 - управляемый файловый и документный контур со storage abstraction, versioning, checks, templates и role-based download flow
+- контур админ-настройки для reason codes, rules, rule versions, notification rules и supplier source settings через API/UI, а не только через сиды
 - foundation-скелет FastAPI с отдельными сущностями `draft / request / offer / order`
 - маршрутизация / квалификационные решения
 - журнал обратной связи / проекция
@@ -58,14 +59,14 @@ flowchart LR
 - счета / оплаты
 - полное ERP-управление заказами
 - огромная универсальная CRM
-- широкое зеркалирование legacy donor-сущностей
-- рост функциональности donor-репозитория
+- широкое зеркалирование legacy-сущностей
+- рост функциональности source-репозитория
 
 ## Активный контекст
 
-- Текущий фокус: Keep the standalone repo aligned around one Postgres-first foundation runtime, one verified smoke/perf contour, and one explicit automation context without legacy drift.
-- Последний подтверждённый статус workflow: PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`, PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure.
+- Текущий фокус: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
+- Последний подтверждённый статус workflow: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
+- Главный операционный риск: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
 
 ## Автоматические контуры контроля
 

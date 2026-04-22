@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # RU: Скрипт проверяет сквозной контур messages/timeline/notifications/dashboards на живом foundation API.
+# RU: Здесь доказывается, что события, причины и dashboard-срезы сходятся в одном read-model.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
@@ -43,7 +44,6 @@ export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
 export MAGON_FOUNDATION_REDIS_URL=""
 export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
-export MAGON_FOUNDATION_LEGACY_ENABLED=0
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
 # RU: Этот smoke проверяет explainable timeline и notifications на реальном foundation API, а не на тестовой заглушке.

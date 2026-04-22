@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# RU: Unified launcher стартует только active foundation contour без старого bridge runtime.
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEB_DIR="$REPO_ROOT/apps/web"
 PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
@@ -98,7 +100,6 @@ export MAGON_ENV="${MAGON_ENV:-local}"
 export MAGON_FOUNDATION_HOST="$BACKEND_HOST"
 export MAGON_FOUNDATION_PORT="$BACKEND_PORT"
 export MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT"
-export MAGON_FOUNDATION_LEGACY_ENABLED="${MAGON_FOUNDATION_LEGACY_ENABLED:-false}"
 export MAGON_FOUNDATION_DATABASE_URL="${MAGON_FOUNDATION_DATABASE_URL:-postgresql+psycopg://magon:magon@127.0.0.1:5432/magon}"
 export MAGON_FOUNDATION_REDIS_URL="${MAGON_FOUNDATION_REDIS_URL:-redis://127.0.0.1:6379/0}"
 # RU: Unified startup остаётся каноническим локальным входом и сам доводит infra/runtime до рабочего состояния.
@@ -192,8 +193,5 @@ fi
 echo "[magon-foundation] web shell ready"
 echo "[magon-foundation] foundation login: http://$WEB_HOST:$WEB_PORT/login"
 echo "[magon-foundation] public shell: http://$WEB_HOST:$WEB_PORT/"
-if [[ "$MAGON_FOUNDATION_LEGACY_ENABLED" == "1" || "$MAGON_FOUNDATION_LEGACY_ENABLED" == "true" || "$MAGON_FOUNDATION_LEGACY_ENABLED" == "yes" || "$MAGON_FOUNDATION_LEGACY_ENABLED" == "on" ]]; then
-  echo "[magon-foundation] legacy operator surfaces: http://$WEB_HOST:$WEB_PORT/ui/companies"
-fi
 
 wait "$WEB_PID"
