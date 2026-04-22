@@ -4,17 +4,31 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMPDIR="$(mktemp -d)"
+PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  # RU: Migration-check обязан работать на CI без локального repo-venv, иначе drift не ловится на чистом runner.
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
+
+run_alembic() {
+  "$PYTHON_BIN" -m alembic "$@"
+}
 
 cleanup() {
   if [[ -n "${DB_NAME:-}" ]]; then
-    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+    "$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
   fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
 "$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
-eval "$("$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_migration)"
+eval "$("$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_migration)"
 
 export MAGON_ENV=test
 export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
@@ -24,8 +38,8 @@ export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
 export MAGON_FOUNDATION_LEGACY_ENABLED=0
 # RU: Миграции валидируем на одноразовой Postgres БД, чтобы не портить локальную рабочую схему и всё равно поймать drift.
 
-"$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
-"$REPO_ROOT/.venv/bin/python" - <<'PY'
+run_alembic upgrade head >/dev/null
+"$PYTHON_BIN" - <<'PY'
 import os
 from sqlalchemy import create_engine, inspect, text
 

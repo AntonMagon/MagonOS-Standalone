@@ -190,3 +190,7 @@ Do not pretend full CRM/quote parity exists.
 - Do not widen feedback into generic sync.
 - Do not spend runs on README/wrapper cleanup unless explicitly asked.
 - Verify with the smallest command that proves the result.
+
+## CI parity note
+- Foundation smoke and migration scripts must work both with repo `.venv` and with a clean CI runner Python.
+- If a smoke script requires `./.venv/bin/python` unconditionally, treat it as repo drift because GitHub Actions may only have `python3`.

@@ -206,3 +206,8 @@
   - какие сущности уже живут в standalone;
   - в каких экранах ими пользуются;
   - какие зависимости и boundaries нельзя ломать при доработке.
+
+## Заметка про CI parity
+
+- Foundation smoke и migration scripts обязаны работать и с repo `.venv`, и на чистом CI runner через системный `python3`.
+- Если smoke-скрипт безусловно требует `./.venv/bin/python`, это считается repo drift, потому что GitHub Actions может запускать проверки без локального repo-venv.

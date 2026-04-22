@@ -1324,3 +1324,26 @@
 - PASS `./.venv/bin/python -m unittest tests.test_foundation_api.TestFoundationApi.test_health_and_login_flow`
 - PASS `./.venv/bin/python -m unittest tests.test_foundation_api tests.test_foundation_seed_repeatable`
 - PASS `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-22 — CI smoke scripts detached from repo-local venv
+
+### Что было найдено
+
+- GitHub Actions run `24790147241` больше не падал на readiness, но всё ещё ломался в `./scripts/foundation_smoke_check.sh`.
+- Root cause был в старых smoke/migration scripts:
+  - они жёстко вызывали `./.venv/bin/python` и `./.venv/bin/alembic`;
+  - локально это работало из-за repo venv;
+  - на GitHub runner repo venv отсутствовал, поэтому create-temp-db шаг не стартовал и `DATABASE_URL` оставался пустым.
+
+### Что было доведено
+
+- Во все foundation smoke/migration scripts добавлен единый fallback:
+  - сначала используется repo `.venv`, если он есть;
+  - иначе скрипт явно переключается на `python3` или `python`;
+  - alembic теперь вызывается через `python -m alembic`, а не через жёсткий бинарник внутри `.venv`.
+- Это выровняло CI behavior с уже исправленным `verify_workflow.sh`: smoke теперь падает только по продуктовой причине, а не по пути к Python.
+
+### Что проверено
+
+- PASS `bash -n scripts/foundation_smoke_check.sh scripts/foundation_catalog_smoke_check.sh scripts/foundation_request_smoke_check.sh scripts/foundation_offer_smoke_check.sh scripts/foundation_order_smoke_check.sh scripts/foundation_supplier_smoke_check.sh scripts/foundation_files_documents_smoke_check.sh scripts/foundation_messages_dashboards_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh`
+- PASS `./scripts/verify_workflow.sh --with-web`

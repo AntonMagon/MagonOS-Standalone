@@ -7,6 +7,20 @@ TMPDIR="$(mktemp -d)"
 PORT="${MAGON_FOUNDATION_PORT:-18193}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
 BASE_URL="http://$HOST:$PORT"
+PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  # RU: В CI repo-venv может отсутствовать, поэтому smoke обязан падать только по продуктовой причине, а не по пути к Python.
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
+
+run_alembic() {
+  "$PYTHON_BIN" -m alembic "$@"
+}
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then
@@ -14,14 +28,14 @@ cleanup() {
     wait "$API_PID" >/dev/null 2>&1 || true
   fi
   if [[ -n "${DB_NAME:-}" ]]; then
-    "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
+    "$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" drop --db-name "$DB_NAME" >/dev/null 2>&1 || true
   fi
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
 "$REPO_ROOT/scripts/ensure_foundation_infra.sh" >/dev/null
-eval "$("$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_catalog)"
+eval "$("$PYTHON_BIN" "$REPO_ROOT/scripts/manage_temp_foundation_db.py" create --prefix foundation_catalog)"
 
 export MAGON_ENV=test
 export MAGON_FOUNDATION_DATABASE_URL="$DATABASE_URL"
@@ -33,9 +47,9 @@ export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
 # RU: Smoke каталога должен идти на временной Postgres БД, иначе витрина проверяется не тем же контуром, что runtime.
 
-"$REPO_ROOT/.venv/bin/alembic" upgrade head >/dev/null
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-catalog-seed.json
-"$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-catalog-api.log 2>&1 &
+run_alembic upgrade head >/dev/null
+"$PYTHON_BIN" "$REPO_ROOT/scripts/seed_foundation.py" >/tmp/magon-foundation-catalog-seed.json
+"$PYTHON_BIN" "$REPO_ROOT/scripts/run_foundation_api.py" --host "$HOST" --port "$PORT" >/tmp/magon-foundation-catalog-api.log 2>&1 &
 API_PID=$!
 
 for _ in $(seq 1 30); do
@@ -53,7 +67,7 @@ CATALOG_JSON="$(curl -fsS "$BASE_URL/api/v1/public/catalog/items")"
 echo "[catalog-smoke] items"
 echo "$CATALOG_JSON"
 
-READY_CODE="$(printf '%s' "$CATALOG_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; data=json.load(sys.stdin)["items"]; print(next(item["code"] for item in data if item["mode"]=="ready"))')"
+READY_CODE="$(printf '%s' "$CATALOG_JSON" | "$PYTHON_BIN" -c 'import json,sys; data=json.load(sys.stdin)["items"]; print(next(item["code"] for item in data if item["mode"]=="ready"))')"
 echo
 
 echo "[catalog-smoke] detail"
@@ -67,7 +81,7 @@ echo "[catalog-smoke] draft"
 echo "$DRAFT_JSON"
 echo
 
-DRAFT_CODE="$(printf '%s' "$DRAFT_JSON" | "$REPO_ROOT/.venv/bin/python" -c 'import json,sys; print(json.load(sys.stdin)["item"]["code"])')"
+DRAFT_CODE="$(printf '%s' "$DRAFT_JSON" | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["item"]["code"])')"
 
 echo "[catalog-smoke] submit draft"
 curl -fsS -X POST "$BASE_URL/api/v1/public/draft-requests/$DRAFT_CODE/submit" \

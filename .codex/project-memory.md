@@ -1466,3 +1466,25 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `./scripts/verify_workflow.sh --with-web`
 - Risk:
   - local runtime and repo verification are green after the blank-env fix, but GitHub Actions still need one more push to prove the same path remotely
+### 2026-04-22 23:50 +07 | codex/entity-help-reference
+- Summary: removed the remaining CI-only smoke failure by making all foundation smoke/migration scripts fall back from repo `.venv` to system Python on clean runners
+- Changed:
+  - scripts/foundation_smoke_check.sh
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/foundation_migration_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n scripts/foundation_smoke_check.sh scripts/foundation_catalog_smoke_check.sh scripts/foundation_request_smoke_check.sh scripts/foundation_offer_smoke_check.sh scripts/foundation_order_smoke_check.sh scripts/foundation_supplier_smoke_check.sh scripts/foundation_files_documents_smoke_check.sh scripts/foundation_messages_dashboards_smoke_check.sh scripts/foundation_migration_check.sh scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - local proof is green; remote GitHub Actions still need the next push to confirm the same smoke path on a clean runner
