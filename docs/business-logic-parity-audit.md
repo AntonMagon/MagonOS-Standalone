@@ -1,5 +1,10 @@
 # Аудит паритета бизнес-логики между legacy donor и standalone platform
 
+> Историческая оговорка:
+> этот файл фиксирует extraction-era donor audit.
+> Каноническая правда по текущему wave1 runtime живёт в `docs/current-project-state.md` и `docs/ru/current-project-state.md`.
+> Не читай этот файл как доказательство текущего foundation runtime на SQLite или donor-era `/ui/*` shell.
+
 ## 1. Executive verdict
 
 ### Короткий ответ
@@ -143,7 +148,7 @@ cd /Users/anton/Desktop/MagonOS-Standalone && ./.venv/bin/python -m unittest \
 
 ### Runtime checks, реально прогнанные
 
-В standalone runtime поднят временный in-memory/temporary SQLite instance и проверены реальные operator surfaces:
+В historical extraction pass поднимался временный SQLite/in-memory contour и проверялись donor-era operator surfaces:
 
 - `/`
 - `/ui/companies`
@@ -153,7 +158,7 @@ cd /Users/anton/Desktop/MagonOS-Standalone && ./.venv/bin/python -m unittest \
 - `/ui/review-queue`
 - `/ui/feedback-status`
 
-Все ответили `200` после fixture pipeline run.
+Это остаётся полезным как donor evidence, но не как канонический runtime proof для текущего foundation shell.
 
 ---
 

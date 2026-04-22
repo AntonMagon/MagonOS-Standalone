@@ -15,14 +15,16 @@ const webUrl = __ENV.WEB_URL || 'http://127.0.0.1:3000';
 
 export default function () {
   const responses = [
-    http.get(`${backendUrl}/health`),
-    http.get(`${backendUrl}/status`),
-    http.get(`${backendUrl}/companies?limit=5`),
+    http.get(`${backendUrl}/health/live`),
+    http.get(`${backendUrl}/health/ready`),
+    http.get(`${backendUrl}/api/v1/meta/system-mode`),
+    http.get(`${backendUrl}/api/v1/public/catalog/items`),
     http.get(`${webUrl}/`),
-    http.get(`${webUrl}/dashboard`),
-    http.get(`${webUrl}/ops-workbench`),
-    http.get(`${webUrl}/project-map`),
-    http.get(`${webUrl}/ui/companies`)
+    http.get(`${webUrl}/login`),
+    http.get(`${webUrl}/marketing`),
+    http.get(`${webUrl}/request-workbench`),
+    http.get(`${webUrl}/orders`),
+    http.get(`${webUrl}/suppliers`)
   ];
 
   responses.forEach((response) => {

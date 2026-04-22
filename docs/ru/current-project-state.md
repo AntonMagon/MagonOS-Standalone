@@ -111,6 +111,11 @@
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
   - `./.venv/bin/python scripts/run_supplier_scheduler.py`
+- perf smoke/load/stress:
+  - `./scripts/run_perf_suite.sh smoke`
+  - `./scripts/run_perf_suite.sh load`
+  - `./scripts/run_perf_suite.sh stress`
+  - perf warmup и k6-пробы обязаны бить только в живые foundation URL (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`), а не в legacy `/status` или donor-era `/ui/*`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`

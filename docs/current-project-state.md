@@ -100,6 +100,11 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
   - `./.venv/bin/python scripts/run_supplier_scheduler.py`
+- perf smoke/load/stress:
+  - `./scripts/run_perf_suite.sh smoke`
+  - `./scripts/run_perf_suite.sh load`
+  - `./scripts/run_perf_suite.sh stress`
+  - perf warmup and k6 probes must use the live foundation URLs (`/health/live`, `/health/ready`, `/api/v1/meta/system-mode`, `/api/v1/public/catalog/items`, `/login`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`) instead of legacy `/status` or donor-era `/ui/*`
 - foundation migrate + seed:
   - `./scripts/run_foundation_migrations.sh`
   - `./.venv/bin/python scripts/seed_foundation.py`

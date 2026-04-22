@@ -58,6 +58,43 @@
   - supply dashboard
   - processing dashboard
 
+## 2026-04-23 — Полный audit контекста, automation-layer и perf smoke cleanup
+
+### Что было найдено
+- Канонический foundation runtime был зелёным, но часть operating-layer drift всё ещё жила в старых policy/config/perf путях:
+  - `.codex/config.toml` смотрел на legacy SQLite startup вместо Postgres-first foundation startup;
+  - `perf/k6/*.js` и `scripts/run_perf_suite.sh` всё ещё грели legacy `/status`, `/ui/*`, `/project-map`;
+  - несколько audit/map документов продолжали выглядеть как текущая runtime truth, хотя по факту были историческими donor/legacy заметками.
+- Repo automation контур сам по себе был установлен, но периодический perf smoke падал на старых URL и поэтому давал ложный operational drift.
+- LaunchAgent `supplier-scheduler` оставался зелёным, а `periodic-checks` и `launcher-watchdog` продолжали показывать в `launchctl` старый `EX_CONFIG`; при этом ручной запуск этих же repo-aware runner'ов уже проходил успешно.
+
+### Что изменено
+- `.codex/config.toml` выровнен под активный Postgres-first foundation runtime и канонический `verify_workflow.sh --with-web`.
+- `scripts/run_perf_suite.sh` и `perf/k6/smoke.js|load.js|stress.js` переведены на foundation endpoints:
+  - `/health/live`
+  - `/health/ready`
+  - `/api/v1/meta/system-mode`
+  - `/api/v1/public/catalog/items`
+  - `/`
+  - `/login`
+  - `/marketing`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+- `docs/current-project-state.md` и `docs/ru/current-project-state.md` теперь явно фиксируют perf smoke/load/stress как часть канонического operational contour.
+- Исторические документы `docs/audit-context.md`, `docs/business-logic-parity-audit.md`, `docs/operating-layer-migration-audit.md`, `docs/ru/code-map.md` помечены и переписаны так, чтобы не притворяться текущей runtime truth.
+- Для problematic launchd runners добавлен repo-aware wrapper `scripts/run_launchd_repo_python.sh`, а renderers `src/magon_standalone/launchd_periodic_checks.py` и `src/magon_standalone/launchd_launcher_watchdog.py` переведены на явный shell-wrapper path.
+- Launchd render tests обновлены под новый wrapper contract.
+
+### Что проверено
+- `./scripts/run_perf_suite.sh smoke`
+- `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+- `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`
+- `./scripts/verify_workflow.sh --with-web`
+
+### Оставшийся риск
+- Product/runtime contour зелёный, но macOS `launchctl print` для `com.magonos.periodic-checks` и `com.magonos.launcher-watchdog` всё ещё может держать `last exit code = 78: EX_CONFIG`, даже когда ручной runner и cached status уже зелёные. Это сейчас отдельный OS-level launchd anomaly, а не подтверждённый дефект foundation runtime.
+
 ## 2026-04-18 — Supplier source operator contour and async parsing acceptance pass
 
 ### Что было найдено

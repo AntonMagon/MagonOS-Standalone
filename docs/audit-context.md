@@ -1,5 +1,10 @@
 # MagonOS Audit Context
 
+> Historical note:
+> this file survives from the donor-extraction phase.
+> Current runtime truth must be taken from `docs/current-project-state.md` and `docs/ru/current-project-state.md`.
+> Use this file as boundary/audit context only.
+
 ## Purpose
 This document is the current project context pack for:
 - technical due diligence
@@ -24,15 +29,15 @@ Role:
 Current official startup:
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
-./scripts/run_unified_platform.sh --fresh
+./scripts/run_foundation_unified.sh --fresh
 ```
 
 Primary local surfaces:
 - public shell: `http://127.0.0.1:3000/`
-- platform dashboard: `http://127.0.0.1:3000/dashboard`
-- ops workspace: `http://127.0.0.1:3000/ops-workbench`
-- operator console: `http://127.0.0.1:3000/ops`
-- operator surfaces: `http://127.0.0.1:3000/ui/*`
+- platform dashboard: `http://127.0.0.1:3000/admin-dashboard`
+- operator workspace: `http://127.0.0.1:3000/request-workbench`
+- operator order workspace: `http://127.0.0.1:3000/orders`
+- supplier workspace: `http://127.0.0.1:3000/suppliers`
 - direct backend debug: `http://127.0.0.1:8091/`
 
 ### 2. Legacy source / donor repo
@@ -53,20 +58,15 @@ Important:
 ## Current Product Reality
 
 This is no longer a toy supplier parser.
-The standalone repo already contains a real product-core contour with:
+The standalone repo now contains a real wave1 foundation contour with:
 - supplier discovery pipeline
 - normalization / enrichment / dedup / scoring
-- SQLite persistence
+- PostgreSQL-first foundation persistence
 - standalone HTTP API
-- operator console
-- company workbench
-- review queue
-- feedback ledger
-- feedback projection / status views
-- commercial pipeline
-- quote intents
-- production handoffs
-- production board
+- customer draft -> request -> offer -> order flow
+- files/documents contour
+- reasons/rules/notifications/timeline/audit
+- operator/customer/admin dashboards
 - public/product shell in Next.js
 
 The current usable flow is roughly:

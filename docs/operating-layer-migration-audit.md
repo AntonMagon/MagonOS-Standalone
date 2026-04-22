@@ -1,5 +1,9 @@
 # Operating Layer Migration Audit
 
+> Historical note:
+> this file explains how the operating layer moved into standalone.
+> Current runtime commands and ownership truth must be read from `docs/current-project-state.md`.
+
 ## Purpose
 This audit records how the project operating layer was migrated from the legacy donor repo into the standalone repo.
 
@@ -82,14 +86,14 @@ Old assumption:
 - Odoo runtime and wrappers are central
 
 New standalone rule:
-- standalone runtime is central
+- foundation runtime is central
 - Odoo is donor/bridge only
 
 Old assumption:
 - source startup scripts and Odoo shell define current workflow
 
 New standalone rule:
-- `scripts/run_unified_platform.sh` and `scripts/run_platform.sh` define the active local platform
+- `scripts/run_foundation_unified.sh` and `scripts/run_foundation_api.py` define the active local platform
 
 Old assumption:
 - operating layer can be split between both repos
