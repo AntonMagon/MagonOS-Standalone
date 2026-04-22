@@ -1431,3 +1431,16 @@ It exists so the project context survives across sessions instead of being re-ex
   - FAIL then root-caused GitHub Actions run `24772735495` at `Repo verify workflow` with `./.venv/bin/python: No such file or directory`
 - Risk:
   - the CI fix still needs one more push after this memory/docs update; the currently running local verify is green but the remote workflow has not yet been retried with the fallback in place
+### 2026-04-22 17:18 +07 | codex/entity-help-reference
+- Summary: fixed operating docs sync so CI runners without ~/.codex/automations fall back to the repo-owned automation list instead of falsely marking AGENTS.md and README.md out of sync
+- Changed:
+  - src/magon_standalone/operating_docs_sync.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `HOME=/tmp/codex-empty-home ./.venv/bin/python scripts/sync_operating_docs.py --check`
+  - PASS `./.venv/bin/python scripts/sync_operating_docs.py --check`
+- Risk:
+  - the GitHub workflow still needs one more push after this fix; until that run completes, the remote gate is not green yet
+
