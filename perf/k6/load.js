@@ -18,11 +18,14 @@ const webUrl = __ENV.WEB_URL || 'http://127.0.0.1:3000';
 
 export default function () {
   const response = http.batch([
-    ['GET', `${backendUrl}/status`],
-    ['GET', `${backendUrl}/companies?limit=10`],
-    ['GET', `${webUrl}/dashboard`],
-    ['GET', `${webUrl}/ops-workbench`],
-    ['GET', `${webUrl}/project-map`]
+    ['GET', `${backendUrl}/health/ready`],
+    ['GET', `${backendUrl}/api/v1/meta/system-mode`],
+    ['GET', `${backendUrl}/api/v1/public/catalog/items`],
+    ['GET', `${webUrl}/`],
+    ['GET', `${webUrl}/marketing`],
+    ['GET', `${webUrl}/request-workbench`],
+    ['GET', `${webUrl}/orders`],
+    ['GET', `${webUrl}/suppliers`]
   ]);
 
   response.forEach((item) => {

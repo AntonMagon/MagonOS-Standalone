@@ -60,14 +60,17 @@ warmup_probe() {
   return 1
 }
 
-# RU: Перед k6 делаем warmup ключевых страниц, чтобы smoke/load мерял живой runtime, а не первую холодную компиляцию Next dev.
-warmup_probe "$BACKEND_URL/health" 2 15
-warmup_probe "$BACKEND_URL/status" 2 15
+# RU: Перед k6 прогреваем только канонические foundation URL, а не legacy /status или donor-era UI маршруты.
+warmup_probe "$BACKEND_URL/health/live" 2 15
+warmup_probe "$BACKEND_URL/health/ready" 2 15
+warmup_probe "$BACKEND_URL/api/v1/meta/system-mode" 2 15
+warmup_probe "$BACKEND_URL/api/v1/public/catalog/items" 2 15
 warmup_probe "$WEB_URL/" 3 30
-warmup_probe "$WEB_URL/dashboard" 3 30
-warmup_probe "$WEB_URL/ops-workbench" 3 30
-warmup_probe "$WEB_URL/project-map" 3 30
-warmup_probe "$WEB_URL/ui/companies" 3 30
+warmup_probe "$WEB_URL/login" 3 30
+warmup_probe "$WEB_URL/marketing" 3 30
+warmup_probe "$WEB_URL/request-workbench" 3 30
+warmup_probe "$WEB_URL/orders" 3 30
+warmup_probe "$WEB_URL/suppliers" 3 30
 
 # RU: Perf-прогоны не стартуют платформу сами — они меряют уже живой runtime, чтобы цифры не смешивались со startup noise.
 k6 run \

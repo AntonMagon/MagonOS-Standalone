@@ -1,5 +1,10 @@
 # Карта кода
 
+> Историческая оговорка:
+> файл частично унаследован из extraction-era.
+> Для текущего runtime source-of-truth сначала читать `docs/ru/current-project-state.md`.
+> Ниже карта кода исправляется под активный foundation-контур, но старые donor-era упоминания нельзя считать каноническим runtime contract.
+
 Этот файл нужен как быстрый вход в структуру проекта на русском языке.
 Он не заменяет чтение кода, но снимает постоянный ручной старт "а что здесь за что отвечает".
 
@@ -31,28 +36,27 @@
 
 ## Backend
 
-### `src/magon_standalone/supplier_intelligence/api.py`
+### `src/magon_standalone/foundation/app.py`
 
-Главный backend UI/API слой.
+Главная точка сборки foundation runtime.
 Отвечает за:
-- HTTP API
-- server-rendered operator pages
-- company/commercial/quote/handoff screens
-- locale cookie и локализацию backend UI
+- FastAPI app
+- регистрацию foundation modules
+- health/ready/meta surfaces
+- основной wave1 API-контур
 
-Если меняется операторский backend UI, очень вероятно, что правки будут здесь.
+Если меняется активный runtime-контур первой волны, сначала смотреть сюда.
 
-### `src/magon_standalone/supplier_intelligence/sqlite_persistence.py`
+### `src/magon_standalone/foundation/models.py`
 
-Главный persistence-слой на SQLite.
+Главный persistence-слой wave1 foundation.
 Отвечает за:
-- сохранение canonical companies
-- feedback ledger / projection
-- commercial records
-- quote intents
-- production handoffs
+- `Draft / Request / Offer / Order`
+- supplier/source/ingest contour
+- files/documents contour
+- timeline / audit / reasons / rules / notifications
 
-Если меняются правила записи, проекции, аудита или связности сущностей, смотреть сюда.
+Если меняются правила записи, связность сущностей или role-scoped visibility, сначала смотреть сюда и в соседние foundation services/modules.
 
 ### `src/magon_standalone/supplier_intelligence/pipeline.py`
 
@@ -84,14 +88,16 @@
 
 App Router страницы Next.js:
 - `page.tsx` — главная витрина
-- `dashboard/page.tsx` — runtime/dashboard
-- `ops-workbench/page.tsx` — операторский вход
-- `project-map/page.tsx` — визуальная карта проекта: контур, риски, автоматические контуры и последние проверенные изменения
-- `personalize/page.tsx` — страница границ/контракта
+- `marketing/page.tsx` — маркетинговый conversion-layer
+- `dashboard/page.tsx` — shell/dashboard
+- `request-workbench/page.tsx` — операторский вход по заявкам
+- `orders/page.tsx` — операторский заказный контур
+- `suppliers/page.tsx` — операторский supplier/source workbench
+- `reference/page.tsx` — встроенная справка по сущностям и зависимостям
 
 Важно:
 - главная витрина не должна превращаться в декоративный 3D-экран без смысла; правая колонка обязана объяснять следующий рабочий шаг
-- `project-map/page.tsx` не должен читать как сырой technical log; для русского locale он обязан отдавать нормальные деловые формулировки, а не полуанглийский project-memory dump
+- рабочие dashboards и карточки обязаны вести дальше по клику, а не быть purely informational
 
 ### `apps/web/components/navigation/site-header.tsx`
 
@@ -112,10 +118,10 @@ App Router страницы Next.js:
 Точка выбора locale и сборки message tree.
 Сначала смотрит cookie, потом `Accept-Language`, затем fallback на default locale.
 
-### `apps/web/lib/project-visual-map.ts`
+### `apps/web/lib/foundation-display.ts`
 
-Тонкий loader для визуальной карты проекта.
-Читает `docs/ru/visuals/project-map.json` от корня репозитория и отдаёт уже сгенерированный payload в web shell без пересборки project state на лету.
+Тонкий display-layer для статусов, ролей и человекочитаемых названий.
+Нужен, чтобы пользовательский shell не светил raw status labels, `ingest jobs`, `Raw layer` и другой служебный мусор.
 
 ### `apps/web/messages/*.json`
 
@@ -135,36 +141,31 @@ Versioned memory проекта.
 Канонический restore context entrypoint.
 Проверяет обязательные repo files и печатает их в стабильном порядке.
 
-### `scripts/run_unified_platform.sh`
+### `scripts/run_foundation_unified.sh`
 
-Канонический entrypoint для полного standalone shell:
-- backend
-- public web shell
-- operator routes через web
-
-Важно:
-- теперь скрипт поднимает Next dev с `WATCHPACK_POLLING=true`
-- это нужно, чтобы локальный unified shell не падал на macOS с `EMFILE: too many open files`
-- dev shell теперь использует отдельный `MAGON_WEB_DIST_DIR=.next-dev`
-- это нужно, чтобы параллельный `next build` не ломал живой runtime на `3000`
-- launcher теперь считает unified shell ready только после успешного `GET /`
-- это нужно, чтобы внешние smoke/perf проверки не ловили холодную компиляцию главной страницы как ложный runtime-failure
-
-### `scripts/run_platform.sh`
-
-Backend-only entrypoint для standalone runtime.
+Канонический entrypoint для полного foundation shell:
+- infra (`db + redis`)
+- foundation backend
+- web shell
 
 Важно:
-- локально он по-прежнему предпочитает repo-owned `.venv/bin/python`
-- если `.venv` нет, но пакет уже установлен в активный Python окружения, скрипт корректно падает назад на `python3`
-- это нужно для CI smoke-runtime, где editable install делается в runner Python без локальной `.venv`
+- это основной all-in-one локальный путь первой волны
+- launcher, verify и operator demo должны ориентироваться именно на него
+
+### `scripts/run_foundation_api.py`
+
+Backend-only entrypoint для foundation runtime.
+
+Важно:
+- это активный API-старт первой волны, а не donor-era `run_platform.sh`
+- health/ready/smoke/perf и launchd-автоматизации должны мерить именно этот контур
 
 ### `Start_Platform.command`
 
 Desktop launcher-обёртка для локального старта с Finder/двойного клика.
 Нужен для удобства:
 - жёстко освободить backend/web порты
-- при необходимости очистить локальную SQLite БД
+- при необходимости прогнать foundation migrate/seed path
 - открыть браузер автоматически
 
 Важно:

@@ -7,10 +7,11 @@ def render_launch_agent(repo_root: Path, interval_seconds: int, label: str = "co
     repo_root = repo_root.resolve()
     stdout_path = repo_root / ".cache" / "launchd-periodic-checks.log"
     stderr_path = repo_root / ".cache" / "launchd-periodic-checks.err.log"
-    python_bin = repo_root / ".venv" / "bin" / "python"
-    runner = repo_root / "scripts" / "run_periodic_checks.py"
+    shell_bin = "/bin/zsh"
+    wrapper = repo_root / "scripts" / "run_launchd_repo_python.sh"
     path_value = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
+    # RU: wrapper нужен именно здесь, потому что launchd запускает агент в урезанном окружении.
     # RU: LaunchAgent держим repo-aware: он всегда запускает именно versioned periodic-check script из текущего standalone repo.
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -26,8 +27,9 @@ def render_launch_agent(repo_root: Path, interval_seconds: int, label: str = "co
     <string>{repo_root}</string>
     <key>ProgramArguments</key>
     <array>
-      <string>{python_bin}</string>
-      <string>{runner}</string>
+      <string>{shell_bin}</string>
+      <string>{wrapper}</string>
+      <string>scripts/run_periodic_checks.py</string>
       <string>--mode</string>
       <string>launchd</string>
     </array>

@@ -74,15 +74,42 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-18 06:10 +07`
-- Branch: `codex/entity-help-reference`
-- Current focus: Make the standalone runtime and smoke contour prove the same PostgreSQL-first business flow that the launcher and operator demos use.
-- Last verified workflow status: PASS `./.venv/bin/python -m unittest tests.test_foundation_seed_repeatable`, PASS `./scripts/run_foundation_migrations.sh && ./.venv/bin/python scripts/seed_foundation.py`, PASS `bash ./scripts/foundation_order_smoke_check.sh`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Fast unit tests still mix SQLite-backed isolation with the live PostgreSQL-first runtime, so DB parity is much better now but not yet absolute across the entire test suite.
+- Updated at: `2026-04-23 00:47 +07`
+- Branch: `main`
+- Current focus: Keep the standalone repo aligned around one Postgres-first foundation runtime, one verified smoke/perf contour, and one explicit automation context without legacy drift.
+- Last verified workflow status: PASS `./scripts/run_perf_suite.sh smoke`, PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`, PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-23 00:47 +07 | main
+- Summary: Audit the standalone repo against its current wave1 context, fix perf/automation drift, align repo operating config with the Postgres-first foundation runtime, and prove the verified contour end-to-end.
+- Changed:
+  - .codex/config.toml
+  - docs/audit-context.md
+  - docs/business-logic-parity-audit.md
+  - docs/current-project-state.md
+  - docs/operating-layer-migration-audit.md
+  - docs/ru/code-map.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - perf/k6/load.js
+  - perf/k6/smoke.js
+  - perf/k6/stress.js
+  - scripts/run_perf_suite.sh
+  - scripts/run_launchd_repo_python.sh
+  - src/magon_standalone/launchd_periodic_checks.py
+  - src/magon_standalone/launchd_launcher_watchdog.py
+  - tests/test_launchd_periodic_checks.py
+  - tests/test_launchd_launcher_watchdog.py
+- Verified:
+  - PASS `./scripts/run_perf_suite.sh smoke`
+  - PASS `./.venv/bin/python scripts/run_periodic_checks.py --mode manual`
+  - PASS `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The core repo/runtime contour is green, but macOS launchctl can still retain stale EX_CONFIG state for periodic-checks and launcher-watchdog even when the repo-aware runners pass manually; that remaining anomaly is OS-level automation state, not a confirmed product failure.
 ### 2026-04-18 06:10 +07 | codex/entity-help-reference
 - Summary: Close PostgreSQL-first bootstrap and smoke parity so launcher, seed, all foundation smoke checks, wave1 demo smoke, and the canonical verify path run end-to-end without the old SQLite drift or invalid order flow.
 - Changed:
