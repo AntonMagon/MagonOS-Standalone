@@ -74,12 +74,12 @@ const DOCUMENT_STATE_LABELS: Record<string, string> = {
 };
 
 const VISIBILITY_SCOPE_LABELS: Record<string, string> = {
-  internal: "Внутренний контур",
-  operator: "Операторский контур",
-  customer: "Клиентский контур",
+  internal: "Только команда",
+  operator: "Только оператор",
+  customer: "Клиенту",
   supplier: "Поставщику",
   public: "Публично",
-  admin: "Только admin",
+  admin: "Только администратору",
 };
 
 const SUPPLIER_TRUST_LABELS: Record<string, string> = {
@@ -220,6 +220,7 @@ export function displayVisibilityScope(value?: string | null): string {
 }
 
 export function displaySupplierTrustLevel(value?: string | null): string {
+  // RU: Уровень доверия к поставщику всегда показываем человеческой фразой, а не raw backend code.
   return fromMap(SUPPLIER_TRUST_LABELS, value);
 }
 
@@ -256,11 +257,11 @@ export function displayDocumentType(value?: string | null): string {
 }
 
 export const VISIBILITY_SCOPE_OPTIONS = [
-  {value: "internal", label: "Внутренний контур"},
-  {value: "customer", label: "Клиентский контур"},
-  {value: "supplier", label: "Контур поставщика"},
+  {value: "internal", label: "Только команда"},
+  {value: "customer", label: "Клиенту"},
+  {value: "supplier", label: "Поставщику"},
   {value: "public", label: "Публично"},
-  {value: "admin", label: "Только admin"},
+  {value: "admin", label: "Только администратору"},
 ] as const;
 
 export const FILE_REVIEW_OPTIONS = [

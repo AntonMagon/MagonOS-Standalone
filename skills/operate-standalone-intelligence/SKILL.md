@@ -23,7 +23,9 @@ Run and verify the standalone supplier-intelligence and operator contour without
 - Fixture-backed pipeline seed:
   - `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
 - Backend API:
-  - `./scripts/run_platform.sh --fresh --port 8091`
+  - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+- Full local platform when operator surfaces are needed:
+  - `./scripts/run_foundation_unified.sh --fresh`
 - Result inspection:
   - `./.venv/bin/python scripts/inspect_results.py --table companies`
   - `./.venv/bin/python scripts/inspect_results.py --table review-queue`
@@ -41,7 +43,7 @@ Run and verify the standalone supplier-intelligence and operator contour without
 State exactly which path was verified:
 - pipeline
 - backend API
-- operator pages
+- operator pages (`/dashboard`, `/request-workbench`, `/orders`, `/suppliers`)
 - persistence rows
 
 ## Failure note

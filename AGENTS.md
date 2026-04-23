@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-23 01:32 +07`
-- Current focus: Keep the standalone repo on one active foundation runtime, one admin-configurable business contour, and no legacy shell drift in product-facing surfaces.
-- Last verified workflow status: PASS `cd apps/web && npm run typecheck`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: Historical source-only modules and audits still exist in the repo for evidence, but the active foundation runtime no longer depends on them; the remaining operational caveat is macOS launchd state outside the product contour.
+- Auto-synced at: `2026-04-23 15:01 +07`
+- Current focus: Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.
+- Last verified workflow status: PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`
+- Biggest operational risk: Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone.
 - Validated contour:
   - company
   - request draft / intake boundary

@@ -53,9 +53,22 @@ Choose the smallest command that proves the automation's claim.
 - Platform smoke:
   - `./scripts/platform_smoke_check.sh`
 - Full local platform:
-  - `./scripts/run_unified_platform.sh --fresh`
+  - `./scripts/run_foundation_unified.sh --fresh`
 - Backend only:
-  - `./scripts/run_platform.sh --fresh --port 8091`
+  - `./.venv/bin/python scripts/run_foundation_api.py --host 127.0.0.1 --port 8091`
+
+## Route truth for recurring checks
+- Public shell:
+  - `http://127.0.0.1:3000/`
+  - `http://127.0.0.1:3000/login`
+  - `http://127.0.0.1:3000/marketing`
+- Core operator/admin surfaces:
+  - `http://127.0.0.1:3000/dashboard`
+  - `http://127.0.0.1:3000/request-workbench`
+  - `http://127.0.0.1:3000/orders`
+  - `http://127.0.0.1:3000/suppliers`
+  - `http://127.0.0.1:3000/admin-config`
+- Do not send recurring automations to removed legacy surfaces like `/ops-workbench`, `/ui/companies`, or compatibility startup wrappers unless the task explicitly says to inspect legacy drift.
 
 ## Automation writing rules
 - Report only concrete findings, drift, or verified green status.

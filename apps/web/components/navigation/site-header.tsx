@@ -25,7 +25,8 @@ export function SiteHeader() {
   const tCommon = useTranslations('common');
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const navItems = session?.token ? siteNav.filter((item) => item.href !== '/login') : siteNav;
-  const primaryHrefs = new Set(['/', '/marketing', '/catalog', '/request-workbench']);
+  // RU: В primary nav оставляем только главные пользовательские пути и ежедневные рабочие экраны, всё вторичное уходит в drawer.
+  const primaryHrefs = new Set(session?.token ? ['/', '/catalog', '/rfq', '/request-workbench', '/orders'] : ['/', '/catalog', '/rfq']);
   const primaryNavItems = navItems.filter((item) => primaryHrefs.has(item.href));
   const secondaryNavItems = navItems.filter((item) => !primaryHrefs.has(item.href));
   const roleLabel =
@@ -59,8 +60,8 @@ export function SiteHeader() {
               <span className="block truncate font-heading text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 {tCommon('brand')}
               </span>
-              {/* RU: В рабочем header держим короткий подзаголовок, чтобы бренд не спорил за место с навигацией и сессией. */}
-              <span className="hidden truncate text-[13px] font-medium text-foreground/74 lg:block">Рабочая платформа</span>
+              {/* RU: Подзаголовок должен сразу говорить про коммерческий сервис, а не про внутреннюю платформу. */}
+              <span className="hidden truncate text-[13px] font-medium text-foreground/74 lg:block">{tHeader('shell')}</span>
             </span>
           </Link>
 
@@ -90,10 +91,10 @@ export function SiteHeader() {
           <div className="flex shrink-0 items-center gap-2">
             {session?.token ? (
               <div className="hidden items-center gap-3 rounded-full border border-foreground/10 bg-foreground/[0.045] px-3 py-2 md:flex">
-                <div className="text-right">
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{tHeader('sessionActive')}</div>
-                  <div className="max-w-[11rem] truncate text-sm font-medium text-foreground/84">
-                    {tHeader('sessionSignedInAs', {role: roleLabel, email: session.user?.email || tHeader('sessionUnknownEmail')})}
+                  <div className="text-right">
+                    <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{tHeader('sessionActive')}</div>
+                    <div className="max-w-[11rem] truncate text-sm font-medium text-foreground/84">
+                      {tHeader('sessionSignedInAs', {role: roleLabel, email: session.user?.email || tHeader('sessionUnknownEmail')})}
                   </div>
                 </div>
               </div>
@@ -132,26 +133,51 @@ export function SiteHeader() {
                     </Dialog.Close>
                   </div>
 
-                  <div className="space-y-3 border-b border-border/80 pb-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{tHeader('navigationLabel')}</div>
-                    <div className="grid gap-3">
-                      {secondaryNavItems.map((item) => {
-                        const active = pathname === item.href;
-                        return (
-                          <Dialog.Close asChild key={item.href}>
-                            <Link
-                              href={item.href as Route}
-                              className={cn(
-                                'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
-                                active ? 'border-primary/30 bg-primary/10 text-foreground' : 'border-border bg-background/78 text-foreground/88'
-                              )}
-                            >
-                              <span>{tNav(item.labelKey)}</span>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </Link>
-                          </Dialog.Close>
-                        );
-                      })}
+                  <div className="space-y-4 border-b border-border/80 pb-4">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{tHeader('primaryLabel')}</div>
+                      <div className="mt-3 grid gap-3">
+                        {primaryNavItems.map((item) => {
+                          const active = pathname === item.href;
+                          return (
+                            <Dialog.Close asChild key={item.href}>
+                              <Link
+                                href={item.href as Route}
+                                className={cn(
+                                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+                                  active ? 'border-primary/30 bg-primary/10 text-foreground' : 'border-border bg-background/78 text-foreground/88'
+                                )}
+                              >
+                                <span>{tNav(item.labelKey)}</span>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </Link>
+                            </Dialog.Close>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{tHeader('navigationLabel')}</div>
+                      <div className="mt-3 grid gap-3">
+                        {secondaryNavItems.map((item) => {
+                          const active = pathname === item.href;
+                          return (
+                            <Dialog.Close asChild key={item.href}>
+                              <Link
+                                href={item.href as Route}
+                                className={cn(
+                                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+                                  active ? 'border-primary/30 bg-primary/10 text-foreground' : 'border-border bg-background/78 text-foreground/88'
+                                )}
+                              >
+                                <span>{tNav(item.labelKey)}</span>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </Link>
+                            </Dialog.Close>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -169,26 +195,6 @@ export function SiteHeader() {
                       </Button>
                     </div>
                   ) : null}
-
-                  <div className="grid gap-3">
-                    {primaryNavItems.map((item) => {
-                      const active = pathname === item.href;
-                      return (
-                        <Dialog.Close asChild key={item.href}>
-                          <Link
-                            // RU: В mobile nav используем тот же boundary-cast, иначе новый route ломает типизацию всего списка.
-                            href={item.href as Route}
-                            className={cn(
-                              'rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
-                              active ? 'border-primary/30 bg-primary/10 text-foreground' : 'border-border bg-background/78 text-foreground/88'
-                            )}
-                          >
-                            {tNav(item.labelKey)}
-                          </Link>
-                        </Dialog.Close>
-                      );
-                    })}
-                  </div>
 
                   <div className="mt-5 space-y-3 border-t border-border/80 pt-4">
                     <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{tHeader('controlsLabel')}</div>

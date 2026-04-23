@@ -7,7 +7,11 @@
 ## Planning truth
 - Wave1 implementation source-of-truth: `gpt_doc/codex_wave1_spec_ru.docx`
 - Read-only export of the same planning spec: `gpt_doc/codex_wave1_spec_ru.pdf`
-- There are no additional active planning documents in `gpt_doc/`; this file remains the runtime/verification truth, but product planning for the new contour must follow the wave1 spec above.
+- Expanded product/planning canon for the current standalone shaping also includes:
+  - `gpt_doc/platform_documentation_pack_ru_v3.docx`
+  - `gpt_doc/platform_documentation_pack_ru_with_marketing.docx`
+  - `gpt_doc/project_marketing_research_vietnam_ru.docx`
+- This file remains the runtime/verification truth, but product-facing UX, IA, marketing copy, and role surfaces must now be checked against that expanded `gpt_doc` package instead of reading the raw wave1 spec in isolation.
 
 ## Runtime truth
 - Standalone is the primary platform-of-record.
@@ -48,6 +52,7 @@
 Also already standalone-owned:
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
 - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
 - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
@@ -55,6 +60,7 @@ Also already standalone-owned:
 - normalization / enrichment / dedup / scoring
 - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
+- product-first public shell over `/`, `/marketing`, `/catalog`, and `/rfq` with managed-service copy instead of architecture jargon
 - draft autosave / abandoned / archive-ready intake layer
 - central request review queue with blocker/clarification flow
 - request draft -> request submit flow with required-field gating
@@ -62,6 +68,7 @@ Also already standalone-owned:
 - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
 - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
 - admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
+- session-driven operator/admin screens now read one stable foundation-session snapshot through `useFoundationSession()`, so logged-in routes do not flash the guest gate or hit hydration mismatches after localStorage boot
 - foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection
@@ -89,17 +96,30 @@ Do not pretend full CRM/quote parity exists.
 - unified foundation local-up:
   - `./scripts/run_foundation_unified.sh --fresh`
   - local launcher/unified path now auto-starts `db + redis` through `docker compose`/`colima` before migrations and backend/web boot
+  - launcher/unified web runtime now defaults to production `next start`; `MAGON_WEB_RUNTIME=dev` is debug-only fallback
+  - `scripts/ensure_web_build.sh` reuses the current `.next` output unless web sources changed, so routine restarts do not rebuild blindly
 - desktop launcher for the same local contour:
   - `./Start_Platform.command`
   - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
   - detached mode now uses the repo-local double-fork helper `scripts/run_detached_command.py`, so backend/web must remain alive after the launcher shell exits instead of depending on the parent terminal session
+  - detached launcher must start production web through `scripts/ensure_web_build.sh` unless `MAGON_WEB_RUNTIME=dev` is explicitly requested
+- VPS/server deploy contour:
+  - `cp .env.prod.example .env.prod`
+  - `./scripts/run_deploy.sh`
+  - `./scripts/run_deploy.sh status`
+  - `./scripts/run_deploy.sh logs --follow api web`
+  - `scripts/run_deploy.sh` now wraps the active foundation `docker compose` runtime; old gunicorn/WSGI/SQLite deploy paths are no longer the production truth
 - hourly self-heal watchdog for the launcher:
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
+  - the launchd repo-wrapper is now shell-safe under both bash and launchd bootstrap, so watchdog and periodic checks no longer depend on a bash-only `BASH_SOURCE` contract while being invoked through another shell
+  - launchd bootstrap now runs from `~/.codex/launchd-support/<label>` instead of the repo path on Desktop, so `WorkingDirectory`, stdout, and stderr no longer depend on a TCC-protected repo location
+  - `com.magonos.launcher-watchdog` and `com.magonos.periodic-checks` are now verified through `launchctl print` with `last exit code = 0`; the remaining launchd risk is no longer a stale cached `EX_CONFIG`
 - hourly supplier parser/classifier scheduler:
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
   - `./.venv/bin/python scripts/run_supplier_scheduler.py`
+  - the supplier scheduler remains the green reference LaunchAgent; the watchdog and periodic agents now use the same home-directory launchd support pattern instead of relying on the Desktop repo path
 - perf smoke/load/stress:
   - `./scripts/run_perf_suite.sh smoke`
   - `./scripts/run_perf_suite.sh load`
@@ -136,6 +156,7 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/foundation_files_documents_smoke_check.sh`
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - the canonical `./scripts/verify_workflow.sh` path now executes the foundation smoke scripts above on temporary PostgreSQL databases instead of treating them as optional manual-only checks
+  - the foundation smoke/demo scripts now reserve a free localhost port per run and use bounded health probes, so stale temp listeners must fail fast instead of hanging the whole verify path
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
@@ -148,6 +169,22 @@ Do not pretend full CRM/quote parity exists.
 
 ## Runtime surfaces
 - public shell: `http://127.0.0.1:3000/`
+- public shell now runs from the production Next bundle by default; the home/status path must stay on short revalidation instead of permanent `no-store`
+- public shell, marketing, catalog, RFQ, request, order, supplier, and admin pages were rechecked in the browser after the latest product-copy/layout pass; the live shell must stay free of raw technical dumps, split-language UI drift, and hydration mismatch errors
+- measured local timings after the production-web switch:
+  - `/` about `0.40s` instead of `~2.60s` on the old `next dev` path
+  - `/marketing` about `0.37s` instead of `~0.85s`
+  - `/catalog` about `0.06s` instead of `~0.66s`
+  - `/request-workbench` about `0.04s` instead of `~0.59s`
+  - `/orders` about `0.12s` instead of `~0.37s`
+  - warmed detached production shell is now even faster in steady state:
+    - `/` about `0.04s`
+    - `/marketing` about `0.02s`
+    - `/catalog` about `0.01s`
+    - `/request-workbench` about `0.01s`
+    - `/orders` about `0.01s`
+    - `/suppliers` about `0.01s`
+    - backend `/health/ready` about `0.01s`
 - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
 - public marketing layer: `http://127.0.0.1:3000/marketing`
 - public showcase: `http://127.0.0.1:3000/catalog`
@@ -167,6 +204,7 @@ Do not pretend full CRM/quote parity exists.
 - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
 - supplier workbench: `http://127.0.0.1:3000/suppliers`
 - supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
+- for admin users the same `/suppliers` surface now also exposes inline operational source controls (`enabled`, schedule on/off, interval, classification mode) so routine parser management no longer requires a second trip to `/admin-config`
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
@@ -200,3 +238,16 @@ Do not pretend full CRM/quote parity exists.
   - `foundation-smoke`
   - `web-quality`
 - Stale branch protection names like `python-tests`, `smoke-runtime`, and `web-build` are invalid drift and must be removed.
+
+## Automation truth
+- Repo-local recurring automations must restore context through `skills/automation-context-guard/SKILL.md`.
+- Repo-local recurring automations must use only the active foundation contour from this file and `docs/ru/current-project-state.md`.
+- Recurring platform/browser checks must target:
+  - `/`
+  - `/login`
+  - `/dashboard`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- Recurring automations must not fall back to removed or compatibility-only surfaces like `/ops-workbench`, `/ui/companies`, `./scripts/run_platform.sh`, or `./scripts/run_unified_platform.sh --fresh` unless the explicit task is to report drift.

@@ -8,7 +8,7 @@ import {Card} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
-import {downloadFoundationFile, fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {downloadFoundationFile, fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {
   displayDocumentState,
   displayDocumentType,
@@ -120,8 +120,18 @@ type TemplatesPayload = {items: DocumentTemplate[]};
 const ACTIONS = ["assign_supplier", "confirm_start", "mark_production", "ready", "delivery", "complete", "cancel", "dispute"] as const;
 const PAYMENT_STATES = ["pending", "confirmed", "failed", "partially_refunded", "refunded"] as const;
 
+function orderActionHint(item: OrderDetail): string {
+  if (item.payment_state === "pending") return "Сначала нужно подтвердить оплату.";
+  if (!item.supplier_refs.length) return "Нужно назначить поставщика.";
+  if (item.readiness_state !== "ready") return "Нужно довести заказ до готовности.";
+  if (item.logistics_state === "not_started") return "Нужно запланировать отгрузку.";
+  if (item.order_status === "completed") return "Проверь итоговые документы и закрытие.";
+  return "Открой действия по заказу и зафиксируй следующий переход.";
+}
+
 export function OrderDetailView({orderCode}: {orderCode: string}) {
-  const session = readFoundationSession();
+  // RU: Деталь заказа тоже должна получать стабильный initial session snapshot, иначе layout скачет на гидратации.
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<Payload | null>(null);
   const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -379,19 +389,38 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
   return (
     <main className="container space-y-6 py-10">
-      <Card className="glass-panel border-white/12 p-6">
+      <Card className="paper-panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Контур исполнения заказа</div>
+            <div className="micro-label">Рабочий заказ</div>
             <h1 className="mt-2 text-3xl leading-tight">{payload.item.code}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-              Заказ остаётся лёгким координационным слоем после подтверждённого предложения и хранит только нужные рабочие связи: поставщика, оплату, этапы и документы.
+              Этот экран нужен, чтобы быстро понять: что с оплатой, кто исполняет заказ, на каком этапе готовность и какое действие нужно сделать сейчас.
             </p>
           </div>
-          <div className="space-y-1 text-right text-sm text-muted-foreground">
-            <div>{displayOrderStatus(payload.item.order_status)}</div>
+          <div className="space-y-2 text-right text-sm text-muted-foreground">
+            <div className="status-pill status-pill-primary">{displayOrderStatus(payload.item.order_status)}</div>
             <div>{displayPaymentState(payload.item.payment_state)}</div>
             <div>{displayLogisticsState(payload.item.logistics_state)}</div>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {/* RU: Верхняя сводка отвечает на четыре главных вопроса по заказу до погружения в формы и таблицы ниже. */}
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Оплата</div>
+            <div className="mt-2 text-base font-medium">{displayPaymentState(payload.item.payment_state)}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Готовность</div>
+            <div className="mt-2 text-base font-medium">{displayReadinessState(payload.item.readiness_state)}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Поставщик</div>
+            <div className="mt-2 text-sm leading-6 text-foreground/84">{payload.item.supplier_refs.length ? payload.item.supplier_refs.join(', ') : 'Ещё не назначен'}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Что сделать сейчас</div>
+            <div className="mt-2 text-sm leading-6 text-foreground/84">{orderActionHint(payload.item)}</div>
           </div>
         </div>
       </Card>
@@ -400,7 +429,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Действия по заказу</h2>
+          <h2 className="text-xl">Что сделать сейчас</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void submitAction(event)}>
             <div className="space-y-2">
               <Label htmlFor="order-action">Операция</Label>
@@ -425,7 +454,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Внутренний платёжный контур</h2>
+          <h2 className="text-xl">Оплата и подтверждение</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void createPayment(event)}>
             <div className="space-y-2">
               <Label htmlFor="payment-amount">Сумма</Label>
@@ -453,7 +482,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Строки заказа</h2>
+          <h2 className="text-xl">Позиции заказа</h2>
           <div className="mt-4 space-y-3 text-sm">
             {payload.lines.map((line) => (
               <div key={line.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -472,7 +501,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Оплаты и ledger</h2>
+          <h2 className="text-xl">Платежи и движения</h2>
           <div className="mt-4 space-y-3 text-sm">
             {payload.payments.map((payment) => (
               <div key={payment.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
@@ -495,7 +524,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Управляемые файлы</h2>
+          <h2 className="text-xl">Файлы по заказу</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void uploadManagedFile(event)}>
             <div className="grid gap-3 md:grid-cols-2">
               <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileType} onChange={(event) => setFileType(event.target.value)}>
@@ -547,7 +576,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
         </Card>
 
         <Card className="glass-panel border-white/12 p-5">
-          <h2 className="text-xl">Управляемые документы</h2>
+          <h2 className="text-xl">Документы по заказу</h2>
           <form className="mt-4 grid gap-3" onSubmit={(event) => void generateDocument(event)}>
             <div className="grid gap-3 md:grid-cols-2">
               <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentTemplateKey} onChange={(event) => setDocumentTemplateKey(event.target.value)}>
@@ -597,7 +626,7 @@ export function OrderDetailView({orderCode}: {orderCode: string}) {
       </section>
 
       <Card className="glass-panel border-white/12 p-5">
-        <h2 className="text-xl">Хронология</h2>
+        <h2 className="text-xl">История исполнения</h2>
         <div className="mt-4 space-y-3 text-sm">
           {payload.timeline.map((event) => (
             <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">

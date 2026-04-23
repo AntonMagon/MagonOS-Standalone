@@ -22,8 +22,10 @@ Run a practical browser regression pass for the standalone web shell and operato
 ## Target surfaces
 - `http://127.0.0.1:3000/`
 - `http://127.0.0.1:3000/dashboard`
-- `http://127.0.0.1:3000/ops-workbench`
-- `http://127.0.0.1:3000/ui/companies`
+- `http://127.0.0.1:3000/request-workbench`
+- `http://127.0.0.1:3000/orders`
+- `http://127.0.0.1:3000/suppliers`
+- `http://127.0.0.1:3000/admin-config`
 
 ## Execution
 1. Start the smallest runtime needed for the target surfaces.
@@ -31,8 +33,9 @@ Run a practical browser regression pass for the standalone web shell and operato
 3. Cover the main business path first:
    - public shell loads
    - dashboard loads
-   - ops workbench loads
-   - operator page loads
+   - request workbench loads
+   - order workbench loads
+   - supplier/admin surfaces load
 4. If a path fails, identify the root cause and fix the smallest owning file set.
 5. Re-run the same regression path after the fix.
 

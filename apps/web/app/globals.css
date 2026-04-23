@@ -65,10 +65,10 @@ html {
 body {
   @apply min-h-screen bg-background text-foreground font-body antialiased;
   background:
-    radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.75), transparent 18%),
-    radial-gradient(circle at 85% 18%, hsl(var(--brand-glow) / 0.1), transparent 20%),
-    radial-gradient(circle at 72% 76%, hsl(var(--brand-warm) / 0.08), transparent 18%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.72), transparent 20%),
+    radial-gradient(circle at 86% 16%, hsl(var(--brand-glow) / 0.05), transparent 18%),
+    radial-gradient(circle at 78% 78%, hsl(var(--brand-warm) / 0.04), transparent 16%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
     hsl(var(--background));
   position: relative;
 }
@@ -84,19 +84,19 @@ body::after {
 
 body::before {
   background:
-    linear-gradient(rgba(43, 46, 52, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(43, 46, 52, 0.018) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(circle at center, black, transparent 88%);
+    linear-gradient(rgba(43, 46, 52, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(43, 46, 52, 0.012) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black, transparent 92%);
 }
 
 body::after {
   background:
-    radial-gradient(circle at 1px 1px, rgba(43, 46, 52, 0.06) 0.6px, transparent 0.8px),
-    linear-gradient(115deg, rgba(255, 255, 255, 0.18), transparent 34%);
+    radial-gradient(circle at 1px 1px, rgba(43, 46, 52, 0.04) 0.5px, transparent 0.8px),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.14), transparent 34%);
   background-size: 8px 8px, auto;
   mix-blend-mode: multiply;
-  opacity: 0.06;
+  opacity: 0.035;
 }
 
 ::selection {
@@ -212,6 +212,50 @@ body::after {
 
   .section-space {
     padding-top: clamp(4rem, 7vw, 6.5rem);
+  }
+
+  /* RU: Status pills — единый визуальный язык статусов для public, operator и admin экранов. */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border));
+    padding: 0.35rem 0.78rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .status-pill-muted {
+    background: rgba(255, 255, 255, 0.46);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .status-pill-primary {
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--primary) / 0.24);
+  }
+
+  .status-pill-warn {
+    background: rgba(248, 191, 36, 0.14);
+    color: rgb(146, 97, 24);
+    border-color: rgba(248, 191, 36, 0.24);
+  }
+
+  .status-pill-danger {
+    background: hsl(var(--danger) / 0.12);
+    color: rgb(159, 35, 28);
+    border-color: hsl(var(--danger) / 0.24);
+  }
+
+  .status-pill-success {
+    background: rgba(16, 185, 129, 0.14);
+    color: rgb(6, 95, 70);
+    border-color: rgba(16, 185, 129, 0.24);
   }
 
   .micro-label {

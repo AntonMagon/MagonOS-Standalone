@@ -604,6 +604,7 @@ def order_operator_view(record) -> dict[str, object]:
         "offer_id": record.offer_id,
         "offer_version_id": record.offer_version_id,
         "request_id": record.request_id,
+        # RU: В order payload отдаём request title, чтобы UI показывал понятный бизнес-кейс, а не только email или тестовое имя контакта.
         "customer_refs": dict(record.customer_refs_json or {}),
         "supplier_refs": list(record.supplier_refs_json or []),
         "internal_owner_user_id": record.internal_owner_user_id,

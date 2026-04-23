@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {displaySupplierTrustLevel, formatFoundationDate} from "@/lib/foundation-display";
 
 // RU: Карточка площадки нужна как operator view на конкретный supplier site, а не как универсальная supplier-страница.
@@ -29,7 +29,8 @@ type SitePayload = {
 export default function SupplierSitePage() {
   const params = useParams<{siteCode: string}>();
   const siteCode = String(params?.siteCode || "");
-  const session = readFoundationSession();
+  // RU: Используем общий session-hook, чтобы server/client не расходились на первом рендере страницы площадки.
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<SitePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -23,6 +23,122 @@
 - Новый backend — FastAPI modular monolith.
 - Legacy WSGI bridge сохранён только как опциональный compatibility layer и больше не является default runtime для wave1 foundation.
 
+## 2026-04-23 — Automation layer aligned with the active foundation contour
+
+### Что было найдено
+- Реальный drift шёл не из самих automation TOML, а из их skill-layer и launchd-wrapper:
+  - `skills/web-regression-pass/SKILL.md` продолжал гнать recurring browser-checks в `/ops-workbench` и `/ui/companies`;
+  - `skills/operate-standalone-intelligence/SKILL.md` и `skills/automation-context-guard/SKILL.md` всё ещё учили automation пользоваться `run_platform.sh` и `run_unified_platform.sh --fresh`;
+  - launchd wrapper `scripts/run_launchd_repo_python.sh` был написан под bash-only `BASH_SOURCE`, хотя plist вызывали его через другой shell.
+- Из-за этого periodic checks и watchdog могли выглядеть как "глючные", хотя product runtime уже жил на другом foundation contour.
+
+### Что изменено
+- `scripts/run_launchd_repo_python.sh` сделан shell-safe через `$0`, чтобы repo-aware wrapper жил и под launchd bootstrap.
+- `src/magon_standalone/launchd_periodic_checks.py` и `src/magon_standalone/launchd_launcher_watchdog.py` переведены на явный `bash`-вызов wrapper.
+- Skills выровнены под один foundation contour:
+  - `skills/automation-context-guard/SKILL.md`
+  - `skills/operate-platform/SKILL.md`
+  - `skills/operate-standalone-intelligence/SKILL.md`
+  - `skills/web-regression-pass/SKILL.md`
+- Web read-first docs и RU code-map перестали рекламировать старые routes/entrypoints:
+  - `apps/web/README.md`
+  - `docs/ru/code-map.md`
+- Все активные repo-local automation prompts теперь дополнительно закрепляют правило:
+  - использовать только активный foundation contour;
+  - не ходить в removed web surfaces и compatibility wrappers, если задача не про drift-report.
+
+### Что подтверждено
+- `env -i HOME=\"$HOME\" PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`
+- `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+- `./scripts/install_launchd_periodic_checks.sh --interval 1800`
+- `./scripts/launchd_launcher_watchdog_status.sh`
+- `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-23 — Один честный VPS/server deploy contour
+
+### Что было найдено
+- Активный foundation runtime уже давно живёт как `PostgreSQL + Redis + API + worker + web + Caddy`, но серверный entrypoint всё ещё врал:
+  - `scripts/run_deploy.sh` поднимал старый gunicorn/WSGI/SQLite path;
+  - `docs/deployment.md` и `README.md` рекламировали этот legacy path как production truth;
+  - `scripts/run_unified_platform.sh` продолжал держать отдельный старый local contour и добавлял ещё одну ложную "правду запуска".
+- В результате локальный foundation runtime, compose contour и VPS/deploy docs расходились, хотя продукт уже давно живёт на одном foundation stack.
+
+### Что изменено
+- `scripts/run_deploy.sh` переписан в compose-first deploy wrapper:
+  - `up / down / restart / status / logs / build / pull / config`;
+  - по умолчанию стартует production contour через `docker compose up -d --build`;
+  - требует `.env.prod` для mutating-команд вместо молчаливого старта с SQLite;
+  - режет placeholder-пароли, чтобы VPS не поднимался на `magon`/`change-me-*`.
+- `scripts/run_unified_platform.sh` больше не держит свой старый runtime и сведён к совместимому alias на `scripts/run_foundation_unified.sh`.
+- `.env.prod.example` больше не подсказывает `POSTGRES_PASSWORD=magon`; production template теперь явно требует заменить пароль.
+- `docs/deployment.md`, `README.md`, `docs/current-project-state.md` и `docs/ru/current-project-state.md` выровнены под одну истину:
+  - локальный продуктовый contour = launcher/unified foundation path;
+  - VPS/server contour = `scripts/run_deploy.sh` поверх foundation `docker compose`;
+  - old gunicorn/WSGI/SQLite deploy path не считается production-правдой.
+
+### Что подтверждено
+- `bash -n scripts/run_deploy.sh scripts/run_unified_platform.sh`
+- `./scripts/run_deploy.sh help`
+- `./scripts/run_deploy.sh config --env-file .env.prod.example`
+- `./scripts/run_unified_platform.sh --help`
+
+## 2026-04-23 — Parser control moved onto the actual supplier workbench
+
+### Что было найдено
+- Сам parsing contour уже был собран технически:
+  - source registry
+  - ingest queue/retry/rerun
+  - schedule/classification state
+  - admin PATCH API для source settings
+- Но в продуктовой работе это выглядело разорванно:
+  - `/suppliers` умел запускать и повторять ingest;
+  - `/admin-config` умел менять source settings;
+  - в результате parser казался "неуправляемым" прямо на рабочем экране поставщиков.
+
+### Что изменено
+- `/suppliers` теперь показывает не только запуск и последний ingest, но и оперативный контроль источника для администратора:
+  - источник включён/выключен;
+  - расписание включено/выключено;
+  - интервал запуска;
+  - режим классификации;
+  - явный статус текущего scheduling window.
+- Глубокий JSON-конфиг по-прежнему остаётся в `/admin-config`, но routine parser-control больше не требует второго экрана.
+
+### Что подтверждено
+- `cd apps/web && npm run typecheck`
+- `curl -s -o /dev/null -w 'suppliers:%{http_code} total=%{time_total}\n' http://127.0.0.1:3000/suppliers`
+
+## 2026-04-23 — Browser-aware routing for dynamic supplier-owned sites
+
+### Что было найдено
+- Живой parser contour уже умел:
+  - находить seed pages,
+  - профилировать страницы,
+  - открывать JS-heavy каталоги через Playwright,
+  - переходить на сайты самих поставщиков.
+- Но в routing был реальный дефект:
+  - supplier-owned сайт мог быть помечен как `browser_required`;
+  - router всё равно отправлял его в обычный `COMPANY_SITE`;
+  - этот executor ходил только через plain HTTP и не открывал рендеренные `about/contact/services` страницы через браузер.
+- Значит архитектурно parser уже обещал browser-aware company-site analysis, но на части сайтов фактически не делал этого.
+
+### Что изменено
+- Введён новый scenario key: `JS_COMPANY_SITE`.
+- Router теперь отправляет supplier-owned сайты в `JS_COMPANY_SITE`, если:
+  - profiler пометил их как `browser_required`, или
+  - domain override требует `force_render`.
+- Добавлен `JsCompanySiteExecutor`:
+  - обходит supplier-owned сайт через один browser session;
+  - открывает базовый URL и допустимые внутренние страницы;
+  - отдаёт рендеренный HTML в `extract_company_site`;
+  - сохраняет screenshot evidence и event log по тем же правилам, что и остальные browser-driven scenarios.
+- `PlaywrightBrowserRuntime` получил `fetch_many(...)`, чтобы обход внутренних страниц одного supplier-site не поднимал отдельный Chromium на каждый URL.
+
+### Что подтверждено
+- `./.venv/bin/python -m py_compile src/magon_standalone/supplier_intelligence/contracts.py src/magon_standalone/supplier_intelligence/scenario_router.py src/magon_standalone/supplier_intelligence/browser_runtime.py src/magon_standalone/supplier_intelligence/scenario_registry.py tests/test_scenario_router.py`
+- `./.venv/bin/python -m unittest tests.test_scenario_router`
+
 ### Модули
 - `UsersAccess`
 - `Companies`
@@ -58,6 +174,118 @@
   - supply dashboard
   - processing dashboard
 
+## 2026-04-23 — Product-first shell cleanup and stable session hydration
+
+### Что было найдено
+- Public, operator и admin UI уже держали рабочий contour, но говорили на смешанном языке:
+  - внутренние термины вроде `draft`, `RFQ`, `ingest`, `первая волна` и другие архитектурные хвосты торчали там, где нужен простой продуктовый текст;
+  - главная, marketing и каталог не объясняли оффер как managed service для печати и упаковки;
+  - login, dashboard, orders, suppliers и admin-config показывали слишком много внутренней техники и слабую иерархию действий;
+  - часть авторизованных страниц читала `readFoundationSession()` прямо в render и из-за localStorage получала hydration mismatch: server рендерил гостевой gate, а клиент сразу рисовал авторизованный экран.
+
+### Что изменено
+- Public shell `/`, `/marketing`, `/catalog`, `/catalog/{itemCode}` и `/rfq` переписан под один понятный оффер:
+  - печать и упаковка без хаоса;
+  - простой вход через каталог;
+  - отдельный сложный запрос;
+  - объяснение того, что происходит после отправки.
+- Header и IA упрощены:
+  - в primary nav оставлены только ключевые пути;
+  - operator/admin разделы собраны в более понятный service layer.
+- Request/order/supplier/admin screens очищены до рабочих operator/admin формулировок:
+  - меньше сырых статусов;
+  - больше следующего шага, легенды и полезного действия.
+- Login больше не показывает token/debug dump и ведёт в рабочую область по роли.
+- Supplier source и demo-данные досидированы под человеческие названия и более ясный operator смысл.
+- Авторизованные экраны переведены на `useFoundationSession()`:
+  - `/suppliers`
+  - `/suppliers/{supplierCode}`
+  - `/supplier-sites/{siteCode}`
+  - `/supplier-ingests/{ingestCode}`
+  - `/request-workbench`
+  - `/request-workbench/{requestCode}`
+  - `/orders`
+  - `/orders/{orderCode}`
+  - `/dashboard`
+  - `/admin-config`
+  - foundation dashboards
+- Это зафиксировало один стабильный session snapshot и убрало hydration mismatch / guest-flash на operator/admin страницах.
+
+### Что подтверждено
+- `./scripts/verify_workflow.sh --with-web`
+- `cd apps/web && npm run build`
+- browser pass по:
+  - `/`
+  - `/marketing`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- browser console на живой сессии без ошибок и предупреждений о hydration mismatch.
+
+## 2026-04-23 — Production web by default and faster local shell startup
+
+### Что было найдено
+- Launcher и unified local runtime всё ещё поднимали web через `next dev`, поэтому первая загрузка shell и обычные локальные рестарты платили за dev-компиляцию вместо открытия уже собранного продукта.
+- Главная страница тянула foundation status через полностью dynamic/no-store path, хотя для public shell достаточно короткого revalidate-окна и не нужно бить в backend на каждый hit.
+
+### Что изменено
+- Добавлен `scripts/ensure_web_build.sh`, который:
+  - ставит web dependencies при необходимости;
+  - переиспользует текущий `.next` bundle;
+  - пересобирает production web только если исходники новее `BUILD_ID`.
+- `Start_Platform.command` и `scripts/run_foundation_unified.sh` теперь по умолчанию поднимают production web через `next start`.
+- `MAGON_WEB_RUNTIME=dev` оставлен только как явный debug fallback.
+- `apps/web/lib/standalone-api.ts` переведён на короткий revalidate для public shell status/company fetches вместо постоянного `no-store`.
+- `apps/web/app/page.tsx` теперь фиксирует короткий ISR для главной.
+
+### Что подтверждено
+- Detached launcher поднимает backend и production web без `next dev`.
+- Локально после переключения на production shell замерены улучшения:
+  - `/` примерно `0.40s` вместо `~2.60s`
+  - `/marketing` примерно `0.37s` вместо `~0.85s`
+  - `/catalog` примерно `0.06s` вместо `~0.66s`
+  - `/request-workbench` примерно `0.04s` вместо `~0.59s`
+  - `/orders` примерно `0.12s` вместо `~0.37s`
+- `./scripts/verify_workflow.sh --with-web` остаётся зелёным на новом runtime path.
+
+## 2026-04-23 — Smoke/demo verify hardening against port-collision hangs
+
+### Что было найдено
+- Production web уже был быстрым, но canonical verify всё ещё мог виснуть не по продуктовой причине:
+  - несколько foundation smoke/demo-скриптов держали фиксированные localhost-порты;
+  - readiness loops ждали `health/live` без таймаута и без проверки, жив ли сам temp API process.
+- Из-за этого старый локальный listener или bind conflict превращал `verify_workflow.sh --with-web` в бесконечное ожидание вместо явного fail-fast.
+
+### Что изменено
+- `foundation_catalog_smoke_check.sh`
+- `foundation_request_smoke_check.sh`
+- `foundation_offer_smoke_check.sh`
+- `foundation_order_smoke_check.sh`
+- `foundation_files_documents_smoke_check.sh`
+- `foundation_supplier_smoke_check.sh`
+- `foundation_messages_dashboards_smoke_check.sh`
+- `foundation_wave1_demo_smoke_check.sh`
+
+Во всех этих скриптах теперь один и тот же contract:
+- свободный порт резервируется динамически на каждый запуск;
+- `health/live` вызывается с таймаутом;
+- readiness loop падает сразу, если temp foundation API уже умер;
+- bind conflict и stale listener больше не должны держать verify в подвешенном состоянии.
+
+### Что подтверждено
+- `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+- `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+- `./scripts/verify_workflow.sh --with-web`
+- warmed detached production shell после этого остаётся быстрым:
+  - `/` около `0.04s`
+  - `/marketing` около `0.02s`
+  - `/catalog` около `0.01s`
+  - `/request-workbench` около `0.01s`
+  - `/orders` около `0.01s`
+  - `/suppliers` около `0.01s`
+  - `/health/ready` около `0.01s`
+
 ## 2026-04-23 — Единый foundation contour без active legacy drift
 
 ### Что было найдено
@@ -88,6 +316,34 @@
 - Проверка нового admin configuration contour покрыта тестом `tests/test_foundation_admin_config.py`.
 - Полный `./scripts/verify_workflow.sh --with-web` остаётся зелёным после удаления active legacy drift и добавления новых admin surfaces.
 - Web typecheck проходит с новым `/admin-config` и обновлёнными shell messages.
+
+## 2026-04-23 — Продуктовый канон для пересборки UI зафиксирован по полному пакету `gpt_doc`
+
+### Что было найдено
+- Ранее planning truth в runtime-docs была зафиксирована слишком узко: только через `codex_wave1_spec_ru.docx`.
+- После повторного чтения полного пакета `gpt_doc` стало ясно, что для product-facing UX этого недостаточно:
+  - `platform_documentation_pack_ru_v3` задаёт канонические объекты, роли, экраны и сценарии;
+  - marketing research задаёт фронтовый оффер, воронку и запрет на маркетплейс/AI-jargon.
+- Текущий web shell действительно дрейфует от этой базы: часть экранов говорит языком архитектуры, а не языком managed service для печати и упаковки.
+
+### Что изменено
+- `docs/current-project-state.md` и `docs/ru/current-project-state.md` обновлены: planning truth теперь читается как расширенный пакет `gpt_doc`, а не как одинокая wave1-спецификация.
+- Добавлен отдельный продуктовый execution-plan:
+  - `docs/ru/foundation-product-rebuild-plan.md`
+- В `.codex/project-memory.md` и `docs/implementation-notes.md` зафиксировано:
+  - следующий UI/product проход обязан опираться на managed-service оффер;
+  - публичные и operator/admin surfaces нельзя больше собирать вокруг внутреннего архитектурного жаргона.
+
+### Что подтверждено
+- DOCX-структура, таблицы ролей, статусов, экранов и маркетинговых ограничений реально считаны из полного пакета `gpt_doc`.
+- Живые ключевые web surfaces по-прежнему доступны и могут служить baseline для следующего product/UI прохода:
+  - `/`
+  - `/marketing`
+  - `/catalog`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
 
 ## 2026-04-23 — Полный audit контекста, automation-layer и perf smoke cleanup
 
@@ -123,8 +379,56 @@
 - `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`
 - `./scripts/verify_workflow.sh --with-web`
 
-### Оставшийся риск
-- Product/runtime contour зелёный, но macOS `launchctl print` для `com.magonos.periodic-checks` и `com.magonos.launcher-watchdog` всё ещё может держать `last exit code = 78: EX_CONFIG`, даже когда ручной runner и cached status уже зелёные. Это сейчас отдельный OS-level launchd anomaly, а не подтверждённый дефект foundation runtime.
+### Итог после повторной проверки
+- Этот риск был не cosmetic launchd anomaly, а незакрытый execution-path defect:
+  - LaunchAgents всё ещё стартовали из repo-path на Desktop;
+  - `WorkingDirectory`, stdout и stderr оставались завязаны на TCC-защищённую директорию;
+  - runtime locale guard всё ещё обходил снятые маршруты `/ops-workbench` и `/project-map`, из-за чего `periodic-checks` мог падать уже после успешного bootstrap.
+
+## 2026-04-23 — Launchd contour закрыт до реального `exit code = 0`
+
+### Что было найдено
+- После shell-safe wrapper фикса launchd всё ещё не был честно закрыт:
+  - `launchctl print` продолжал держать `EX_CONFIG`;
+  - старые repo log-файлы под Desktop почти не обновлялись;
+  - broad macOS logs показывали упор в Desktop/TCC path, а не просто в "кэш launchctl".
+- Отдельно `periodic-checks` продолжал падать уже по содержательной причине:
+  - runtime locale guard в `src/magon_standalone/locale_integrity.py` всё ещё обходил legacy surfaces `/ops-workbench` и `/project-map`;
+  - из-за этого launchd-env run реально получал HTTP 500 на снятых страницах даже при живом foundation runtime.
+
+### Что изменено
+- `src/magon_standalone/launchd_launcher_watchdog.py` и `src/magon_standalone/launchd_periodic_checks.py` теперь рендерят plist так, чтобы LaunchAgent жил из `~/.codex/launchd-support/<label>`, а не из repo-path на Desktop.
+- `scripts/render_launchd_launcher_watchdog.py` и `scripts/render_launchd_periodic_checks.py` получили явные `--launchd-root` и `--program` аргументы.
+- `scripts/install_launchd_launcher_watchdog.sh` и `scripts/install_launchd_periodic_checks.sh` теперь:
+  - создают home-directory support path;
+  - пишут repo-aware helper `run-agent.sh`;
+  - отдают stdout/stderr и `WorkingDirectory` вне Desktop.
+- `scripts/launchd_launcher_watchdog_status.sh` и `scripts/launchd_periodic_checks_status.sh` теперь показывают support-path и живые log locations, а не только plist state.
+- `src/magon_standalone/locale_integrity.py` переведён на живые standalone routes:
+  - `/`
+  - `/dashboard`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- RU: Смысл фикса не в обходе launchd, а в том, чтобы agent запускался из домашней support-директории без TCC-зависимости от Desktop и проверял только живые runtime surfaces.
+
+### Что подтверждено
+- `bash -n scripts/install_launchd_launcher_watchdog.sh scripts/install_launchd_periodic_checks.sh scripts/launchd_launcher_watchdog_status.sh scripts/launchd_periodic_checks_status.sh`
+- `./.venv/bin/python -m py_compile scripts/render_launchd_launcher_watchdog.py scripts/render_launchd_periodic_checks.py src/magon_standalone/launchd_launcher_watchdog.py src/magon_standalone/launchd_periodic_checks.py`
+- `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+- `./scripts/install_launchd_periodic_checks.sh --interval 1800`
+- `./scripts/launchd_launcher_watchdog_status.sh`
+- `./scripts/launchd_periodic_checks_status.sh`
+- `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`
+- `env -i PATH='/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' PYTHONDONTWRITEBYTECODE=1 XPC_SERVICE_NAME=com.magonos.periodic-checks HOME=\"$HOME\" /bin/bash ~/.codex/launchd-support/com.magonos.periodic-checks/run-agent.sh scripts/run_periodic_checks.py --mode launchd`
+- `launchctl kickstart -k gui/$(id -u)/com.magonos.periodic-checks`
+- `launchctl kickstart -k gui/$(id -u)/com.magonos.launcher-watchdog`
+
+### Итог
+- `com.magonos.launcher-watchdog` теперь подтверждён с `last exit code = 0`.
+- `com.magonos.periodic-checks` теперь тоже подтверждён с `last exit code = 0`.
+- Старый тезис про "cached EX_CONFIG" больше не актуален: реальный launchd execution path закрыт.
 
 ## 2026-04-18 — Supplier source operator contour and async parsing acceptance pass
 

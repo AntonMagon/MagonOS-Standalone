@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import {getTranslations} from 'next-intl/server';
-import {ArrowRight, DatabaseZap, Factory, ListChecks, MessageSquareQuote} from 'lucide-react';
+import {ArrowRight, CircleAlert, DatabaseZap, Factory, ListChecks, MessageSquareQuote, Settings2} from 'lucide-react';
 
 import {MetricCard} from '@/components/dashboard/metric-card';
 import {SectionIntro} from '@/components/sections/section-intro';
 import {MagicCard} from '@/components/ui/magic-card';
-import {getPlatformStatus, getRecentCompanies} from '@/lib/standalone-api';
+import {getPlatformStatus} from '@/lib/standalone-api';
 
 // RU: Dashboard остаётся коротким runtime-входом в ключевые operator surfaces, а не отдельной бизнес-панелью со своей логикой.
 const linkedSurfaces = [
@@ -30,9 +30,29 @@ export default async function DashboardPage() {
   // RU: Данные берём напрямую из API, чтобы главный экран не жил своей отдельной тестовой правдой.
   const t = await getTranslations('dashboard');
   const status = await getPlatformStatus();
-  const recentCompanies = await getRecentCompanies(4);
 
   const counts = status?.storage_counts || {};
+  // RU: На overview держим только следующие рабочие переходы, чтобы экран не имитировал аналитику без действия.
+  const actionItems = [
+    {
+      title: t('actions.requests.title'),
+      body: t('actions.requests.body'),
+      href: '/request-workbench',
+      icon: ListChecks,
+    },
+    {
+      title: t('actions.suppliers.title'),
+      body: t('actions.suppliers.body'),
+      href: '/suppliers',
+      icon: Factory,
+    },
+    {
+      title: t('actions.config.title'),
+      body: t('actions.config.body'),
+      href: '/admin-config',
+      icon: Settings2,
+    },
+  ] as const;
 
   return (
     <main className="container space-y-6 pt-8 md:space-y-8 md:pt-10">
@@ -112,32 +132,28 @@ export default async function DashboardPage() {
             <h2 className="text-2xl leading-tight">{t('recentTitle')}</h2>
           </div>
           <div className="grid gap-3">
-            {recentCompanies.length ? (
-              recentCompanies.map((company) => (
-                <div
-                  key={company.id}
-                  className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4"
-                >
+            {actionItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4 transition-colors hover:bg-black/16">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="text-lg font-medium leading-tight">{company.canonical_name}</div>
-                      <div className="mt-1 truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">{company.canonical_key}</div>
+                      <div className="text-lg font-medium leading-tight">{item.title}</div>
+                      <div className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</div>
                     </div>
-                    <span className="rounded-full border border-white/12 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      {t('recentPublicLabel')}
-                    </span>
+                    <div className="rounded-full border border-white/12 bg-white/8 p-2 text-primary">
+                      <Icon className="h-4 w-4" />
+                    </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    <span>{company.city || t('recentUnknownCity')}</span>
-                    <span className="break-all">{company.canonical_email || t('recentNoEmail')}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-[1.2rem] border border-dashed border-white/12 bg-black/10 p-4 text-sm text-muted-foreground">
-                {t('recentEmpty')}
+                </Link>
+              );
+            })}
+            <div className="rounded-[1.2rem] border border-dashed border-white/12 bg-black/10 p-4 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>{t('recentEmpty')}</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>

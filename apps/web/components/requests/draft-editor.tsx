@@ -229,18 +229,33 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
 
   return (
     <main className="container space-y-6 py-10">
-      <Card className="glass-panel border-white/12 p-6">
+      <Card className="paper-panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Черновик первой волны</div>
-            <h1 className="mt-2 text-3xl leading-tight">Черновик {item.code}</h1>
+            <div className="micro-label">Черновик клиента</div>
+            <h1 className="mt-2 text-3xl leading-tight">Подготовка заявки {item.code}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-              Черновик остаётся отдельным входным слоем. Пока обязательные поля не заполнены, система не создаёт рабочую заявку.
+              Это ещё не рабочая заявка. Здесь нужно собрать обязательные поля, ссылки на файлы и понятное описание задачи, после чего кейс уйдёт в операторский приём.
             </p>
           </div>
           <div className="space-y-2 text-right text-sm text-muted-foreground">
             <div>Статус: {displayDraftStatus(item.draft_status)}</div>
             <div>{saving ? "Автосохранение..." : "Автосохранение активно"}</div>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {/* RU: Сначала объясняем цель черновика и следующий шаг, а уже потом показываем обязательные поля и историю. */}
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+            <div className="font-medium">Что сделать</div>
+            <div className="mt-1 text-muted-foreground">Опиши задачу, сроки, контакт и всё, что влияет на расчёт.</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+            <div className="font-medium">Когда появится заявка</div>
+            <div className="mt-1 text-muted-foreground">Только после того, как обязательные поля будут заполнены и черновик отправят в работу.</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+            <div className="font-medium">Что дальше увидит оператор</div>
+            <div className="mt-1 text-muted-foreground">Описание задачи, файлы, сроки и контекст товара или услуги без потери данных.</div>
           </div>
         </div>
       </Card>
@@ -304,7 +319,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
 
         <div className="space-y-4">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Обязательные поля</h2>
+            <h2 className="text-xl">Что ещё нужно заполнить</h2>
             <div className="mt-4 space-y-3">
               {item.required_fields_state.map((field) => (
                 <div key={field.field_name} className="rounded-2xl border border-white/10 bg-black/10 p-3">
@@ -317,7 +332,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Файлы / ссылки</h2>
+            <h2 className="text-xl">Ссылки на файлы и материалы</h2>
             <form className="mt-4 space-y-3" onSubmit={(event) => void handleAddLink(event)}>
               <Input placeholder="Название ссылки" value={linkLabel} onChange={(event) => setLinkLabel(event.target.value)} />
               <Input placeholder="https://..." value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} />
@@ -334,7 +349,7 @@ export function DraftEditor({draftCode}: DraftEditorProps) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Хронология</h2>
+            <h2 className="text-xl">История черновика</h2>
             <div className="mt-4 space-y-3 text-sm">
               {item.timeline.map((event) => (
                 <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">

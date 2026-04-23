@@ -61,10 +61,10 @@ function databaseLabelFromUrl(databaseUrl?: string): string {
   return databaseUrl;
 }
 
-async function fetchJson<T>(path: string): Promise<T | null> {
+async function fetchJson<T>(path: string, revalidateSeconds = 30): Promise<T | null> {
   try {
     const response = await fetch(`${apiBaseUrl()}${path}`, {
-      cache: 'no-store'
+      next: {revalidate: revalidateSeconds}
     });
     if (!response.ok) {
       return null;
@@ -78,8 +78,8 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 export async function getPlatformStatus(): Promise<PlatformStatus | null> {
   // RU: Public shell берёт online-state только из активного foundation contour, чтобы не держать скрытый fallback в старый runtime.
   const [health, companies] = await Promise.all([
-    fetchJson<FoundationHealth>('/health'),
-    fetchJson<PublicCompaniesPayload>('/api/v1/public/companies'),
+    fetchJson<FoundationHealth>('/health', 15),
+    fetchJson<PublicCompaniesPayload>('/api/v1/public/companies', 120),
   ]);
   if (!health) {
     return null;
@@ -98,7 +98,7 @@ export async function getPlatformStatus(): Promise<PlatformStatus | null> {
 
 export async function getRecentCompanies(limit = 5): Promise<PlatformCompany[]> {
   // RU: Для active standalone shell читаем только foundation company-registry и не прячем старый runtime за fallback-логикой.
-  const foundationPayload = await fetchJson<PublicCompaniesPayload>('/api/v1/public/companies');
+  const foundationPayload = await fetchJson<PublicCompaniesPayload>('/api/v1/public/companies', 120);
   if (foundationPayload?.items) {
     return foundationPayload.items.slice(0, limit).map((item) => ({
       id: item.id,
@@ -110,6 +110,7 @@ export async function getRecentCompanies(limit = 5): Promise<PlatformCompany[]> 
 }
 
 export function getOperatorUrl(path = ''): Route {
+  // RU: Этот helper оставлен только как совместимый bridge для старых operator deep-link'ов; активный shell и автоматизации не должны строиться вокруг legacy /ops-/ui-маршрутов.
   const normalized = path.replace(/^\/+/, '');
   if (!normalized) {
     return '/ops' as Route;

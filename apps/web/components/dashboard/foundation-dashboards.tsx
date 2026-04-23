@@ -8,7 +8,7 @@ import {type ReactNode, useEffect, useState} from "react";
 
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {
   displayOfferStatus,
   displayOrderStatus,
@@ -216,6 +216,7 @@ function CountSection({
         {entries.map(([key, value]) => {
           const content = (
             <div className="rounded-2xl border border-white/10 bg-black/10 p-4 transition-colors hover:bg-black/16">
+              {/* RU: Summary-карточка тоже ведёт дальше по клику, чтобы dashboard не был тупиковой сводкой. */}
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{formatKey ? formatKey(key) : key}</div>
               <div className="mt-2 text-3xl leading-none">{value}</div>
             </div>
@@ -324,7 +325,8 @@ function OffersPendingSection({items}: {items: OfferPendingItem[]}) {
 }
 
 function SessionGate({title, description, children}: {title: string; description: string; children: ReactNode}) {
-  const session = readFoundationSession();
+  // RU: Gate использует session hook, чтобы дашборды не гидратировались сначала как guest, а потом как operator/admin.
+  const session = useFoundationSession();
   if (!session?.token) {
     return (
       <main className="container py-10">
@@ -351,14 +353,14 @@ function WorkbenchLinks() {
       <Link href="/suppliers"><Button variant="secondary">Поставщики</Button></Link>
       <Link href="/processing-dashboard"><Button variant="secondary">Производство</Button></Link>
       <Link href="/supply-dashboard"><Button variant="secondary">Снабжение</Button></Link>
-      <Link href="/admin-dashboard"><Button variant="secondary">Админ</Button></Link>
-      <Link href="/admin-config"><Button variant="secondary">Настройка</Button></Link>
+      <Link href="/admin-dashboard"><Button variant="secondary">Обзор админа</Button></Link>
+      <Link href="/admin-config"><Button variant="secondary">Настройка системы</Button></Link>
     </div>
   );
 }
 
 export function OperatorWorkbenchView() {
-  const session = readFoundationSession();
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<OperatorWorkbenchPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -389,10 +391,10 @@ export function OperatorWorkbenchView() {
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Операторский контур</div>
+              <div className="micro-label">Рабочий стол оператора</div>
               <h1 className="mt-2 text-3xl leading-tight">Операторский рабочий стол</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Единая панель для заявок, причин блокировки, просрочек, ролевых уведомлений и объяснимых переходов.
+                Этот экран нужен не для отчёта, а для приоритизации. Здесь видно, какие заявки, предложения и поставщики требуют действия прямо сейчас.
               </p>
             </div>
             <WorkbenchLinks />
@@ -410,7 +412,7 @@ export function OperatorWorkbenchView() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <CountSection title="Предложения по статусам" counts={payload.offers_by_status} formatKey={displayOfferStatus} href="/request-workbench" actionLabel="Открыть коммерческий контур" />
+              <CountSection title="Предложения по статусам" counts={payload.offers_by_status} formatKey={displayOfferStatus} href="/request-workbench" actionLabel="Открыть предложения" />
               <CountSection title="Поставщики по доверию" counts={payload.suppliers_by_trust} formatKey={displaySupplierTrustLevel} href="/suppliers" actionLabel="Открыть поставщиков" />
               <CountSection title="Поставщики по статусам" counts={payload.suppliers_by_status} formatKey={displaySupplierStatus} href="/suppliers" actionLabel="Открыть поставщиков" />
             </section>
@@ -430,7 +432,7 @@ export function OperatorWorkbenchView() {
 }
 
 export function AdminDashboardView() {
-  const session = readFoundationSession();
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<AdminDashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -461,10 +463,10 @@ export function AdminDashboardView() {
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Административный контур</div>
+              <div className="micro-label">Обзор администратора</div>
               <h1 className="mt-2 text-3xl leading-tight">Панель администратора</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                Здесь видны правила, версии, объём событий, уведомления и базовая телеметрия без скрытой логики.
+                Здесь видно, что меняет поведение системы: правила, уведомления, блокеры и общая служебная телеметрия.
               </p>
             </div>
             <WorkbenchLinks />
@@ -509,7 +511,7 @@ export function AdminDashboardView() {
 }
 
 export function SupplyDashboardView() {
-  const session = readFoundationSession();
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<SupplyDashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -600,7 +602,7 @@ export function SupplyDashboardView() {
 }
 
 export function ProcessingDashboardView() {
-  const session = readFoundationSession();
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<ProcessingDashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -631,7 +633,7 @@ export function ProcessingDashboardView() {
         <Card className="glass-panel border-white/12 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Производственный контур</div>
+              <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Производственный обзор</div>
               <h1 className="mt-2 text-3xl leading-tight">Производственный срез</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
                 Здесь собраны статусы заявок, ожидающие подтверждения офферы, состояния заказов и все блокировки с просрочками для ручного ведения исполнения.

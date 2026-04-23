@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {displayReasonCode, displaySupplierStatus, formatFoundationDate} from "@/lib/foundation-display";
 
 // RU: Страница запуска импорта обязана показывать explainable async-state и не прятать retry/failure детали за API-only контуром.
@@ -53,7 +53,8 @@ type IngestDetailPayload = {
 export default function SupplierIngestPage() {
   const params = useParams<{ingestCode: string}>();
   const ingestCode = String(params?.ingestCode || "");
-  const session = readFoundationSession();
+  // RU: Session читаем через hook, иначе gate-экран и detail layout начинают спорить при гидратации.
+  const session = useFoundationSession();
   const [payload, setPayload] = useState<IngestDetailPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
@@ -150,7 +151,7 @@ export default function SupplierIngestPage() {
   if (!session?.token) {
     return (
       <main className="container py-10">
-        <Card className="glass-panel border-white/12 p-6">
+        <Card className="paper-panel p-6">
           <h1 className="text-3xl leading-tight">Запуск импорта поставщиков</h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">Для этого экрана нужен вход в платформу.</p>
           <div className="mt-6">
@@ -169,8 +170,11 @@ export default function SupplierIngestPage() {
       {error ? <Card className="border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">{error}</Card> : null}
       {payload ? (
         <>
-          <Card className="glass-panel border-white/12 p-5">
+          <Card className="paper-panel p-5">
             <h1 className="text-3xl leading-tight">{payload.ingest.code}</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+              Этот экран показывает, что именно нашёл запуск, где случился сбой и какое действие оператору нужно сделать дальше.
+            </p>
             <div className="mt-4 space-y-2 text-sm text-muted-foreground">
               <div>
                 {payload.ingest.source_registry_code} · {displayIngestStatus(payload.ingest.ingest_status)} · {displayTriggerMode(payload.ingest.trigger_mode)} · задача {payload.ingest.task_id || "не назначена"}
@@ -183,6 +187,21 @@ export default function SupplierIngestPage() {
               </div>
               <div>
                 повторов {payload.ingest.retry_count} · последний повтор: {formatFoundationDate(payload.ingest.last_retry_at, "Не было")}
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {/* RU: Верхние карточки сначала объясняют смысл запуска, иначе оператор видит сырой ingest dump без контекста. */}
+              <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+                <div className="font-medium">Что это за запуск</div>
+                <div className="mt-1 text-muted-foreground">Один проход по выбранному источнику: собрать, привести к общей форме и показать спорные совпадения.</div>
+              </div>
+              <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+                <div className="font-medium">Когда нужен повтор</div>
+                <div className="mt-1 text-muted-foreground">Если запуск упал, не завершился или нашёл пустой результат там, где ожидались компании.</div>
+              </div>
+              <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4 text-sm leading-6 text-foreground/82">
+                <div className="font-medium">Что делать дальше</div>
+                <div className="mt-1 text-muted-foreground">Проверить спорные совпадения, открыть поставщиков и запустить источник заново при необходимости.</div>
               </div>
             </div>
             {payload.ingest.failure_code ? (
@@ -201,14 +220,14 @@ export default function SupplierIngestPage() {
             ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => void forceRerunSource()} disabled={actionBusy !== null || !payload.ingest.source_registry_code}>
-                {actionBusy === "force" ? "Ставлю повторный запуск..." : "Запустить источник заново"}
+                {actionBusy === "force" ? "Ставлю повторный запуск..." : "Повторить запуск источника"}
               </Button>
             </div>
           </Card>
 
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Первичный слой</h2>
+              <h2 className="text-xl">Что нашли в источнике</h2>
               <div className="mt-4 space-y-3">
                 {payload.raw_records.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">
@@ -229,7 +248,7 @@ export default function SupplierIngestPage() {
             </Card>
 
             <Card className="glass-panel border-white/12 p-5">
-              <h2 className="text-xl">Разбор дублей</h2>
+              <h2 className="text-xl">Что требует ручной проверки</h2>
               <div className="mt-4 space-y-3">
                 {payload.dedup_candidates.map((item) => (
                   <div key={item.code} className="rounded-2xl border border-white/10 bg-black/10 p-4 text-sm">

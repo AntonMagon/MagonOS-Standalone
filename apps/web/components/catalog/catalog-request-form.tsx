@@ -103,9 +103,9 @@ export function CatalogRequestForm({
   }
 
   return (
-    <Card className="glass-panel border-white/12 p-6">
+    <Card className="paper-panel p-6">
       <div className="space-y-2">
-        <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">{t(`labels.${intakeChannel}`)}</div>
+        <div className="micro-label">{t(`labels.${intakeChannel}`)}</div>
         <h2 className="text-2xl leading-tight">{compact ? t("compactTitle") : t("fullTitle")}</h2>
         <p className="text-sm leading-6 text-muted-foreground">
           {catalogItemTitle ? t("linkedItem", {title: catalogItemTitle}) : t("generalLead")}
@@ -113,6 +113,10 @@ export function CatalogRequestForm({
       </div>
 
       <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+        <div className="md:col-span-2 rounded-[1.4rem] border border-border/75 bg-white/52 p-4 text-sm leading-6 text-muted-foreground">
+          {/* RU: Перед формой коротко объясняем, что это ещё не мгновенный заказ, а вход в проверяемый ручной приём. */}
+          {t("privacyHint")}
+        </div>
         <div className="space-y-2">
           <Label htmlFor="catalog-request-name">{t("customerName")}</Label>
           <Input id="catalog-request-name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
@@ -175,7 +179,6 @@ export function CatalogRequestForm({
           <Button type="submit" disabled={loading}>
             {loading ? t("submitting") : t("submit")}
           </Button>
-          <div className="text-sm leading-6 text-muted-foreground">{t("privacyHint")}</div>
         </div>
         {error ? (
           <div className="md:col-span-2 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div>

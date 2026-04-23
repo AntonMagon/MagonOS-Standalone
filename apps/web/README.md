@@ -8,10 +8,13 @@ The old copy in `/Users/anton/Desktop/MagonOS/MagonOS/apps/web` is legacy donor 
 ## Run
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
-./scripts/run_unified_platform.sh --fresh
+./scripts/run_foundation_unified.sh --fresh
 ```
 
 Primary local URL: `http://127.0.0.1:3000`
+
+The canonical local runtime now starts the production web bundle by default.
+Use `MAGON_WEB_RUNTIME=dev` only for explicit frontend debugging.
 
 Direct standalone-only frontend development still works:
 
@@ -38,6 +41,7 @@ npm run typecheck
 Important:
 - `npm run typecheck` already runs `next typegen` first, so it no longer depends on a prior `next build` or `next dev`
 - keep `MAGON_WEB_DIST_DIR=.next-dev` for dev mode if you want to avoid collisions with a separate `next build`
+- RU: Автоматизации и обычный локальный runtime должны идти через foundation launcher, а не через legacy compatibility wrappers.
 
 ## Design system
 - Core primitives live in `components/ui/`

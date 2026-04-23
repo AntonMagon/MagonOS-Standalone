@@ -14,6 +14,7 @@ OPEN_BROWSER="1"
 SEED_FLAG="--seed"
 KEEP_DB="0"
 DETACH="0"
+WEB_RUNTIME="${MAGON_WEB_RUNTIME:-production}"
 
 usage() {
   cat <<USAGE
@@ -167,9 +168,16 @@ if [[ "$DETACH" == "1" ]]; then
   wait_for_url "http://$BACKEND_HOST:$BACKEND_PORT/health/ready" "foundation backend"
 
   echo "[magon-restart] starting foundation web on http://$WEB_HOST:$WEB_PORT"
-  # RU: Detach-ветка должна поднимать тот же foundation web runtime, но без foreground trap из run_foundation_unified.sh, иначе launcher сам убивает уже готовые процессы.
-  start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid "$REPO_ROOT/apps/web" \
-    /usr/bin/env "MAGON_API_BASE_URL=http://$BACKEND_HOST:$BACKEND_PORT" "MAGON_WEB_DIST_DIR=.next-dev" "WATCHPACK_POLLING=true" "WATCHPACK_POLLING_INTERVAL=1000" npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
+  if [[ "$WEB_RUNTIME" == "production" ]]; then
+    "$REPO_ROOT/scripts/ensure_web_build.sh"
+    # RU: Launcher по умолчанию поднимает production web path, чтобы обычная рабочая сессия не жила на медленном next dev.
+    start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid "$REPO_ROOT/apps/web" \
+      /usr/bin/env "MAGON_API_BASE_URL=http://$BACKEND_HOST:$BACKEND_PORT" npm run start -- --hostname "$WEB_HOST" --port "$WEB_PORT"
+  else
+    # RU: Dev runtime сохраняем только как явный fallback для отладки, а не как стандартный повседневный launcher path.
+    start_detached "$WEB_LOG" /tmp/magon-foundation-web.pid "$REPO_ROOT/apps/web" \
+      /usr/bin/env "MAGON_API_BASE_URL=http://$BACKEND_HOST:$BACKEND_PORT" "MAGON_WEB_DIST_DIR=.next-dev" "WATCHPACK_POLLING=true" "WATCHPACK_POLLING_INTERVAL=1000" npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT"
+  fi
   wait_for_url "http://$WEB_HOST:$WEB_PORT/login" "foundation web"
 
   echo

@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-23 01:32 +07``
+Updated: ``2026-04-23 15:01 +07``
 
 ## Flow contour
 
@@ -17,6 +17,7 @@ flowchart LR
 
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
 - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
 - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
@@ -24,6 +25,7 @@ flowchart LR
 - normalization / enrichment / dedup / scoring
 - lightweight marketing/conversion layer over showcase + RFQ + guest draft entry
 - limited catalog / showcase contour with guest draft + RFQ entry
+- product-first public shell over `/`, `/marketing`, `/catalog`, and `/rfq` with managed-service copy instead of architecture jargon
 - draft autosave / abandoned / archive-ready intake layer
 - central request review queue with blocker/clarification flow
 - request draft -> request submit flow with required-field gating
@@ -31,6 +33,7 @@ flowchart LR
 - order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench
 - managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow
 - admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits
+- session-driven operator/admin screens now read one stable foundation-session snapshot through `useFoundationSession()`, so logged-in routes do not flash the guest gate or hit hydration mismatches after localStorage boot
 - foundation FastAPI skeleton with separate draft/request/offer/order entities
 - routing / qualification decisions
 - feedback ledger / projection

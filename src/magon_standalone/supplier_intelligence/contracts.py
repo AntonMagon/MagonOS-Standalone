@@ -17,6 +17,8 @@ ScenarioKey = Literal[
     "SIMPLE_DIRECTORY",
     "JS_DIRECTORY",
     "COMPANY_SITE",
+    # RU: JS_COMPANY_SITE держит отдельный browser-aware сценарий для supplier-owned сайтов, где requests-only обход уже не даёт честную страницу.
+    "JS_COMPANY_SITE",
     "HARD_DYNAMIC_OR_BLOCKED",
     "AI_ASSISTED_EXTRACTION",
 ]

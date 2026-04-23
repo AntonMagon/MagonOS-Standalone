@@ -8,7 +8,7 @@ import {Card} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
-import {downloadFoundationFile, fetchFoundationJson, readFoundationSession} from "@/lib/foundation-client";
+import {downloadFoundationFile, fetchFoundationJson, useFoundationSession} from "@/lib/foundation-client";
 import {
   FILE_REVIEW_OPTIONS,
   FILE_TYPE_OPTIONS,
@@ -140,8 +140,17 @@ function ownerLabel(ownerType: string): string {
   return "Заявка";
 }
 
+function requestOwnerHint(status: string): string {
+  if (status === "needs_clarification") return "Нужны уточнения от клиента или оператора.";
+  if (status === "supplier_search") return "Оператор подбирает поставщика и сценарий исполнения.";
+  if (status === "offer_prep") return "Оператор готовит предложение и проверяет документы.";
+  if (status === "offer_sent") return "Ждём ответ по коммерческому предложению.";
+  return "Оператор проверяет ввод и двигает заявку по следующему этапу.";
+}
+
 export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
-  const session = readFoundationSession();
+  // RU: Стабильный session snapshot нужен и здесь, иначе request detail сначала рендерит gate, а потом резко меняет дерево.
+  const session = useFoundationSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState<RequestDetail | null>(null);
@@ -543,22 +552,41 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
 
   return (
     <main className="container space-y-6 py-10">
-      <Card className="glass-panel border-white/12 p-6">
+      <Card className="paper-panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Рабочая карточка заявки</div>
+            <div className="micro-label">Рабочая заявка</div>
             <h1 className="mt-2 text-3xl leading-tight">{item.title ?? item.code}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-              Заявка остаётся центральной рабочей сущностью: вокруг неё живут предложения, документы, файлы и причины решений, но они не смешиваются в одну запись.
+              Это главный рабочий объект по кейсу: здесь видно текущий этап, кто должен действовать, что блокирует движение и куда ведёт следующий шаг.
             </p>
           </div>
-          <div className="space-y-1 text-right text-sm text-muted-foreground">
+          <div className="space-y-2 text-right text-sm text-muted-foreground">
             <div>Код заявки: {item.code}</div>
             <div>Клиентская ссылка: {item.customer_ref ?? "Не указана"}</div>
-            <div>Статус: {displayRequestStatus(item.request_status)}</div>
+            <div className="status-pill status-pill-primary">{displayRequestStatus(item.request_status)}</div>
           </div>
         </div>
         {item.summary ? <p className="mt-4 text-sm leading-7 text-foreground/84">{item.summary}</p> : null}
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {/* RU: Сводка заявки должна сразу показать этап, владельца действия, срок и блокеры до offers/files/documents. */}
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Текущий этап</div>
+            <div className="mt-2 text-base font-medium">{displayRequestStatus(item.request_status)}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Кто должен действовать</div>
+            <div className="mt-2 text-sm leading-6 text-foreground/84">{requestOwnerHint(item.request_status)}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Дедлайн</div>
+            <div className="mt-2 text-sm leading-6 text-foreground/84">{formatFoundationDate(item.requested_deadline_at, "Не указан")}</div>
+          </div>
+          <div className="rounded-[1.3rem] border border-border/75 bg-white/54 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Блокеры</div>
+            <div className="mt-2 text-sm leading-6 text-foreground/84">{item.reasons.length ? `${item.reasons.length} активных записи` : "Пока нет активных причин"}</div>
+          </div>
+        </div>
         {item.order ? (
           <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
             Заказ {item.order.code} · {displayOrderStatus(item.order.order_status)} · {displayPaymentState(item.order.payment_state)} · {displayLogisticsState(item.order.logistics_state)}
@@ -576,7 +604,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)]">
         <div className="space-y-4">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Переход статуса</h2>
+            <h2 className="text-xl">Сменить этап заявки</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void submitTransition(event)}>
               <div className="space-y-2">
                 <Label htmlFor="target-status">Целевой статус</Label>
@@ -597,7 +625,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Предложения и версии</h2>
+            <h2 className="text-xl">Коммерческие варианты</h2>
             <div className="mt-4 space-y-3 text-sm">
               {offers.map((offerItem) => (
                 <div key={offerItem.offer.code} className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -641,7 +669,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Создать или пересмотреть предложение</h2>
+            <h2 className="text-xl">Собрать или обновить предложение</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void createOffer(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <Input placeholder="Цена" value={offerForm.amount} onChange={(event) => setOfferForm((current) => ({...current, amount: event.target.value}))} />
@@ -668,7 +696,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Управляемые файлы</h2>
+            <h2 className="text-xl">Файлы по кейсу</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void uploadManagedFile(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={fileOwnerScope} onChange={(event) => setFileOwnerScope(event.target.value as "request" | "offer")}>
@@ -726,7 +754,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
 
         <div className="space-y-4">
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Уточнения и follow-up</h2>
+            <h2 className="text-xl">Что нужно уточнить</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void addFollowUp(event)}>
               <Input placeholder="Название шага" value={followUpTitle} onChange={(event) => setFollowUpTitle(event.target.value)} />
               <Textarea placeholder="Что именно нужно сделать" rows={3} value={followUpDetail} onChange={(event) => setFollowUpDetail(event.target.value)} />
@@ -735,13 +763,13 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                 <input type="checkbox" checked={followUpCustomerVisible} onChange={(event) => setFollowUpCustomerVisible(event.target.checked)} />
                 Видно клиенту
               </label>
-              <Button type="submit">Создать follow-up</Button>
+              <Button type="submit">Создать следующее действие</Button>
             </form>
             <div className="mt-4 space-y-3 text-sm">
               {item.follow_up_items.map((followUp) => (
                 <div key={followUp.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
                   <div className="font-medium">{followUp.title}</div>
-                  <div className="mt-1 text-muted-foreground">{displayMaybe(followUp.follow_up_status)} · {followUp.customer_visible ? "Клиент видит" : "Внутренний контур"}</div>
+                  <div className="mt-1 text-muted-foreground">{displayMaybe(followUp.follow_up_status)} · {followUp.customer_visible ? "Клиент видит" : "Только команда"}</div>
                   {followUp.detail ? <div className="mt-2 text-foreground/80">{followUp.detail}</div> : null}
                 </div>
               ))}
@@ -758,7 +786,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Управляемые документы</h2>
+            <h2 className="text-xl">Документы по кейсу</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void generateDocument(event)}>
               <div className="grid gap-3 md:grid-cols-2">
                 <select className="w-full rounded-xl border border-white/12 bg-black/10 px-3 py-2 text-sm" value={documentOwnerScope} onChange={(event) => setDocumentOwnerScope(event.target.value as "request" | "offer")}>
@@ -804,12 +832,12 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
                   </div>
                 </div>
               ))}
-              {!item.documents.length ? <div className="text-muted-foreground">Пока нет документов для этого контура.</div> : null}
+              {!item.documents.length ? <div className="text-muted-foreground">Пока нет документов по этому кейсу.</div> : null}
             </div>
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Причины и блокеры</h2>
+            <h2 className="text-xl">Блокеры и причины</h2>
             <form className="mt-4 grid gap-3" onSubmit={(event) => void addReason(event)}>
               <div className="space-y-2">
                 <Label htmlFor="reason-kind">Тип записи</Label>
@@ -831,7 +859,7 @@ export function RequestWorkbenchDetail({requestCode}: {requestCode: string}) {
           </Card>
 
           <Card className="glass-panel border-white/12 p-5">
-            <h2 className="text-xl">Хронология</h2>
+            <h2 className="text-xl">История изменений</h2>
             <div className="mt-4 space-y-3 text-sm">
               {item.timeline.map((event) => (
                 <div key={event.code} className="rounded-2xl border border-white/10 bg-black/10 p-3">
