@@ -23,6 +23,122 @@
 - Новый backend — FastAPI modular monolith.
 - Legacy WSGI bridge сохранён только как опциональный compatibility layer и больше не является default runtime для wave1 foundation.
 
+## 2026-04-23 — Automation layer aligned with the active foundation contour
+
+### Что было найдено
+- Реальный drift шёл не из самих automation TOML, а из их skill-layer и launchd-wrapper:
+  - `skills/web-regression-pass/SKILL.md` продолжал гнать recurring browser-checks в `/ops-workbench` и `/ui/companies`;
+  - `skills/operate-standalone-intelligence/SKILL.md` и `skills/automation-context-guard/SKILL.md` всё ещё учили automation пользоваться `run_platform.sh` и `run_unified_platform.sh --fresh`;
+  - launchd wrapper `scripts/run_launchd_repo_python.sh` был написан под bash-only `BASH_SOURCE`, хотя plist вызывали его через другой shell.
+- Из-за этого periodic checks и watchdog могли выглядеть как "глючные", хотя product runtime уже жил на другом foundation contour.
+
+### Что изменено
+- `scripts/run_launchd_repo_python.sh` сделан shell-safe через `$0`, чтобы repo-aware wrapper жил и под launchd bootstrap.
+- `src/magon_standalone/launchd_periodic_checks.py` и `src/magon_standalone/launchd_launcher_watchdog.py` переведены на явный `bash`-вызов wrapper.
+- Skills выровнены под один foundation contour:
+  - `skills/automation-context-guard/SKILL.md`
+  - `skills/operate-platform/SKILL.md`
+  - `skills/operate-standalone-intelligence/SKILL.md`
+  - `skills/web-regression-pass/SKILL.md`
+- Web read-first docs и RU code-map перестали рекламировать старые routes/entrypoints:
+  - `apps/web/README.md`
+  - `docs/ru/code-map.md`
+- Все активные repo-local automation prompts теперь дополнительно закрепляют правило:
+  - использовать только активный foundation contour;
+  - не ходить в removed web surfaces и compatibility wrappers, если задача не про drift-report.
+
+### Что подтверждено
+- `env -i HOME=\"$HOME\" PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`
+- `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+- `./scripts/install_launchd_periodic_checks.sh --interval 1800`
+- `./scripts/launchd_launcher_watchdog_status.sh`
+- `./.venv/bin/python scripts/check_russian_locale_integrity.py --static-only`
+- `./scripts/verify_workflow.sh --with-web`
+
+## 2026-04-23 — Один честный VPS/server deploy contour
+
+### Что было найдено
+- Активный foundation runtime уже давно живёт как `PostgreSQL + Redis + API + worker + web + Caddy`, но серверный entrypoint всё ещё врал:
+  - `scripts/run_deploy.sh` поднимал старый gunicorn/WSGI/SQLite path;
+  - `docs/deployment.md` и `README.md` рекламировали этот legacy path как production truth;
+  - `scripts/run_unified_platform.sh` продолжал держать отдельный старый local contour и добавлял ещё одну ложную "правду запуска".
+- В результате локальный foundation runtime, compose contour и VPS/deploy docs расходились, хотя продукт уже давно живёт на одном foundation stack.
+
+### Что изменено
+- `scripts/run_deploy.sh` переписан в compose-first deploy wrapper:
+  - `up / down / restart / status / logs / build / pull / config`;
+  - по умолчанию стартует production contour через `docker compose up -d --build`;
+  - требует `.env.prod` для mutating-команд вместо молчаливого старта с SQLite;
+  - режет placeholder-пароли, чтобы VPS не поднимался на `magon`/`change-me-*`.
+- `scripts/run_unified_platform.sh` больше не держит свой старый runtime и сведён к совместимому alias на `scripts/run_foundation_unified.sh`.
+- `.env.prod.example` больше не подсказывает `POSTGRES_PASSWORD=magon`; production template теперь явно требует заменить пароль.
+- `docs/deployment.md`, `README.md`, `docs/current-project-state.md` и `docs/ru/current-project-state.md` выровнены под одну истину:
+  - локальный продуктовый contour = launcher/unified foundation path;
+  - VPS/server contour = `scripts/run_deploy.sh` поверх foundation `docker compose`;
+  - old gunicorn/WSGI/SQLite deploy path не считается production-правдой.
+
+### Что подтверждено
+- `bash -n scripts/run_deploy.sh scripts/run_unified_platform.sh`
+- `./scripts/run_deploy.sh help`
+- `./scripts/run_deploy.sh config --env-file .env.prod.example`
+- `./scripts/run_unified_platform.sh --help`
+
+## 2026-04-23 — Parser control moved onto the actual supplier workbench
+
+### Что было найдено
+- Сам parsing contour уже был собран технически:
+  - source registry
+  - ingest queue/retry/rerun
+  - schedule/classification state
+  - admin PATCH API для source settings
+- Но в продуктовой работе это выглядело разорванно:
+  - `/suppliers` умел запускать и повторять ingest;
+  - `/admin-config` умел менять source settings;
+  - в результате parser казался "неуправляемым" прямо на рабочем экране поставщиков.
+
+### Что изменено
+- `/suppliers` теперь показывает не только запуск и последний ingest, но и оперативный контроль источника для администратора:
+  - источник включён/выключен;
+  - расписание включено/выключено;
+  - интервал запуска;
+  - режим классификации;
+  - явный статус текущего scheduling window.
+- Глубокий JSON-конфиг по-прежнему остаётся в `/admin-config`, но routine parser-control больше не требует второго экрана.
+
+### Что подтверждено
+- `cd apps/web && npm run typecheck`
+- `curl -s -o /dev/null -w 'suppliers:%{http_code} total=%{time_total}\n' http://127.0.0.1:3000/suppliers`
+
+## 2026-04-23 — Browser-aware routing for dynamic supplier-owned sites
+
+### Что было найдено
+- Живой parser contour уже умел:
+  - находить seed pages,
+  - профилировать страницы,
+  - открывать JS-heavy каталоги через Playwright,
+  - переходить на сайты самих поставщиков.
+- Но в routing был реальный дефект:
+  - supplier-owned сайт мог быть помечен как `browser_required`;
+  - router всё равно отправлял его в обычный `COMPANY_SITE`;
+  - этот executor ходил только через plain HTTP и не открывал рендеренные `about/contact/services` страницы через браузер.
+- Значит архитектурно parser уже обещал browser-aware company-site analysis, но на части сайтов фактически не делал этого.
+
+### Что изменено
+- Введён новый scenario key: `JS_COMPANY_SITE`.
+- Router теперь отправляет supplier-owned сайты в `JS_COMPANY_SITE`, если:
+  - profiler пометил их как `browser_required`, или
+  - domain override требует `force_render`.
+- Добавлен `JsCompanySiteExecutor`:
+  - обходит supplier-owned сайт через один browser session;
+  - открывает базовый URL и допустимые внутренние страницы;
+  - отдаёт рендеренный HTML в `extract_company_site`;
+  - сохраняет screenshot evidence и event log по тем же правилам, что и остальные browser-driven scenarios.
+- `PlaywrightBrowserRuntime` получил `fetch_many(...)`, чтобы обход внутренних страниц одного supplier-site не поднимал отдельный Chromium на каждый URL.
+
+### Что подтверждено
+- `./.venv/bin/python -m py_compile src/magon_standalone/supplier_intelligence/contracts.py src/magon_standalone/supplier_intelligence/scenario_router.py src/magon_standalone/supplier_intelligence/browser_runtime.py src/magon_standalone/supplier_intelligence/scenario_registry.py tests/test_scenario_router.py`
+- `./.venv/bin/python -m unittest tests.test_scenario_router`
+
 ### Модули
 - `UsersAccess`
 - `Companies`
@@ -106,6 +222,69 @@
   - `/suppliers`
   - `/admin-config`
 - browser console на живой сессии без ошибок и предупреждений о hydration mismatch.
+
+## 2026-04-23 — Production web by default and faster local shell startup
+
+### Что было найдено
+- Launcher и unified local runtime всё ещё поднимали web через `next dev`, поэтому первая загрузка shell и обычные локальные рестарты платили за dev-компиляцию вместо открытия уже собранного продукта.
+- Главная страница тянула foundation status через полностью dynamic/no-store path, хотя для public shell достаточно короткого revalidate-окна и не нужно бить в backend на каждый hit.
+
+### Что изменено
+- Добавлен `scripts/ensure_web_build.sh`, который:
+  - ставит web dependencies при необходимости;
+  - переиспользует текущий `.next` bundle;
+  - пересобирает production web только если исходники новее `BUILD_ID`.
+- `Start_Platform.command` и `scripts/run_foundation_unified.sh` теперь по умолчанию поднимают production web через `next start`.
+- `MAGON_WEB_RUNTIME=dev` оставлен только как явный debug fallback.
+- `apps/web/lib/standalone-api.ts` переведён на короткий revalidate для public shell status/company fetches вместо постоянного `no-store`.
+- `apps/web/app/page.tsx` теперь фиксирует короткий ISR для главной.
+
+### Что подтверждено
+- Detached launcher поднимает backend и production web без `next dev`.
+- Локально после переключения на production shell замерены улучшения:
+  - `/` примерно `0.40s` вместо `~2.60s`
+  - `/marketing` примерно `0.37s` вместо `~0.85s`
+  - `/catalog` примерно `0.06s` вместо `~0.66s`
+  - `/request-workbench` примерно `0.04s` вместо `~0.59s`
+  - `/orders` примерно `0.12s` вместо `~0.37s`
+- `./scripts/verify_workflow.sh --with-web` остаётся зелёным на новом runtime path.
+
+## 2026-04-23 — Smoke/demo verify hardening against port-collision hangs
+
+### Что было найдено
+- Production web уже был быстрым, но canonical verify всё ещё мог виснуть не по продуктовой причине:
+  - несколько foundation smoke/demo-скриптов держали фиксированные localhost-порты;
+  - readiness loops ждали `health/live` без таймаута и без проверки, жив ли сам temp API process.
+- Из-за этого старый локальный listener или bind conflict превращал `verify_workflow.sh --with-web` в бесконечное ожидание вместо явного fail-fast.
+
+### Что изменено
+- `foundation_catalog_smoke_check.sh`
+- `foundation_request_smoke_check.sh`
+- `foundation_offer_smoke_check.sh`
+- `foundation_order_smoke_check.sh`
+- `foundation_files_documents_smoke_check.sh`
+- `foundation_supplier_smoke_check.sh`
+- `foundation_messages_dashboards_smoke_check.sh`
+- `foundation_wave1_demo_smoke_check.sh`
+
+Во всех этих скриптах теперь один и тот же contract:
+- свободный порт резервируется динамически на каждый запуск;
+- `health/live` вызывается с таймаутом;
+- readiness loop падает сразу, если temp foundation API уже умер;
+- bind conflict и stale listener больше не должны держать verify в подвешенном состоянии.
+
+### Что подтверждено
+- `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+- `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+- `./scripts/verify_workflow.sh --with-web`
+- warmed detached production shell после этого остаётся быстрым:
+  - `/` около `0.04s`
+  - `/marketing` около `0.02s`
+  - `/catalog` около `0.01s`
+  - `/request-workbench` около `0.01s`
+  - `/orders` около `0.01s`
+  - `/suppliers` около `0.01s`
+  - `/health/ready` около `0.01s`
 
 ## 2026-04-23 — Единый foundation contour без active legacy drift
 

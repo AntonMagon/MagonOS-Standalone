@@ -11,11 +11,12 @@ def render_launcher_watchdog_agent(
     repo_root = repo_root.resolve()
     stdout_path = repo_root / ".cache" / "launchd-launcher-watchdog.log"
     stderr_path = repo_root / ".cache" / "launchd-launcher-watchdog.err.log"
-    shell_bin = "/bin/zsh"
+    shell_bin = "/bin/bash"
     wrapper = repo_root / "scripts" / "run_launchd_repo_python.sh"
     path_value = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
     # RU: wrapper убирает зависимость watchdog от launchd PATH/HOME и фиксирует repo-local python.
+    # RU: LaunchAgent должен звать wrapper через bash, а не через zsh, потому что repo script contract versioned именно под bash-shell.
     # RU: Launcher watchdog обязан смотреть именно в versioned standalone repo и поднимать тот же Start_Platform.command,
     # а не случайный внешний shell script из пользовательского окружения.
     return f"""<?xml version="1.0" encoding="UTF-8"?>

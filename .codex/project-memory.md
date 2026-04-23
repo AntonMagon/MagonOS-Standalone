@@ -78,15 +78,114 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-23 05:15 +07`
+- Updated at: `2026-04-23 14:36 +07`
 - Branch: `codex/foundation-admin-config-cleanup`
-- Current focus: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
+- Current focus: Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.
+- Last verified workflow status: PASS `env -i HOME="/Users/anton" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status.
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-23 14:36 +07 | codex/foundation-admin-config-cleanup
+- Summary: Stabilize the active standalone automation layer by fixing the launchd repo wrapper shell contract, aligning recurring skills and prompts with the foundation runtime, and verifying the live runtime plus canonical workflow on the current branch.
+- Changed:
+  - scripts/run_launchd_repo_python.sh
+  - src/magon_standalone/launchd_launcher_watchdog.py
+  - src/magon_standalone/launchd_periodic_checks.py
+  - skills/automation-context-guard/SKILL.md
+  - skills/operate-platform/SKILL.md
+  - skills/operate-standalone-intelligence/SKILL.md
+  - skills/web-regression-pass/SKILL.md
+  - apps/web/README.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/ru/code-map.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `env -i HOME="/Users/anton" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`
+  - PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+  - PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `./.venv/bin/python -m unittest tests.test_scenario_router`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status.
+### 2026-04-23 12:45 +07 | codex/foundation-admin-config-cleanup
+- Summary: Fix the live supplier parser so JS-heavy supplier-owned sites truly route through a browser-aware company-site scenario, reusing one browser session across internal pages instead of falling back to the old requests-only company-site executor.
+- Changed:
+  - src/magon_standalone/supplier_intelligence/contracts.py
+  - src/magon_standalone/supplier_intelligence/scenario_router.py
+  - src/magon_standalone/supplier_intelligence/browser_runtime.py
+  - src/magon_standalone/supplier_intelligence/scenario_registry.py
+  - tests/test_scenario_router.py
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `./.venv/bin/python -m py_compile src/magon_standalone/supplier_intelligence/contracts.py src/magon_standalone/supplier_intelligence/scenario_router.py src/magon_standalone/supplier_intelligence/browser_runtime.py src/magon_standalone/supplier_intelligence/scenario_registry.py tests/test_scenario_router.py`
+  - PASS `./.venv/bin/python -m unittest tests.test_scenario_router`
+- Risk:
+  - The live parser now really opens and analyzes JS-heavy supplier-owned sites through a browser-aware executor, but seed discovery is still narrow because it starts from the current YellowPages-driven provider rather than from a broader multi-source search network.
+### 2026-04-23 12:29 +07 | codex/foundation-admin-config-cleanup
+- Summary: Close the parser UX gap by turning /suppliers into the real operational control surface for source enablement, schedule, interval, and classification mode instead of splitting routine parser management between suppliers and admin-config.
+- Changed:
+  - apps/web/app/suppliers/page.tsx
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `cd apps/web && npm run typecheck`
+  - PASS `curl -s -o /dev/null -w 'suppliers:%{http_code} total=%{time_total}\n' http://127.0.0.1:3000/suppliers`
+- Risk:
+  - The parser contour is now much more explainable and directly manageable from the supplier workbench, but deep adapter-specific JSON settings still intentionally stay in /admin-config so the ops screen does not turn into a raw configuration dump.
+### 2026-04-23 06:03 +07 | codex/foundation-admin-config-cleanup
+- Summary: Replace the misleading server deploy path with a compose-first foundation wrapper, collapse the old unified legacy launcher into an alias, and document one honest VPS/runtime contract for the standalone platform.
+- Changed:
+  - scripts/run_deploy.sh
+  - scripts/run_unified_platform.sh
+  - .env.prod.example
+  - docs/deployment.md
+  - README.md
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+- Verified:
+  - PASS `bash -n scripts/run_deploy.sh scripts/run_unified_platform.sh`
+  - PASS `./scripts/run_deploy.sh help`
+  - PASS `./scripts/run_deploy.sh config --env-file .env.prod.example`
+  - PASS `./scripts/run_unified_platform.sh --help`
+- Risk:
+  - The VPS/server path is now truthful and aligned with the active compose runtime, but a real production rollout still requires a hand-edited .env.prod with non-placeholder secrets before the first up/restart.
+### 2026-04-23 05:47 +07 | codex/foundation-admin-config-cleanup
+- Summary: Optimize the standalone runtime end-to-end by switching launcher web startup to production-by-default with build reuse, adding bounded public-shell revalidation, and hardening every foundation smoke/demo script against fixed-port hangs so canonical verify stays fast and deterministic.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_foundation_unified.sh
+  - scripts/ensure_web_build.sh
+  - apps/web/lib/standalone-api.ts
+  - apps/web/app/page.tsx
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - The main remaining performance ceiling is bundle weight and shared first-load JS; launcher/dev-mode churn and hanging smoke scripts are no longer the dominant bottlenecks.
 ### 2026-04-23 05:15 +07 | codex/foundation-admin-config-cleanup
 - Summary: Rebuild the standalone web shell around the managed-service product language, clean public/operator/admin copy and layout, remove login debug noise, stabilize logged-in hydration through `useFoundationSession()`, reseed demo names, and verify the result through build, browser pass, and canonical workflow checks.
 - Changed:
@@ -126,12 +225,33 @@ It exists so the project context survives across sessions instead of being re-ex
   - docs/implementation-log-wave1-foundation.md
   - .codex/project-memory.md
 - Verified:
+  - PASS `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - PASS `./scripts/verify_workflow.sh --with-web`
   - PASS `cd apps/web && npm run build`
   - PASS browser pass on `/`, `/marketing`, `/request-workbench`, `/orders`, `/suppliers`, `/admin-config`
   - PASS `bash scripts/run_playwright_cli.sh -s=default console --raw`
 - Risk:
   - The main shell is verified and clean, but secondary routes can still regress if new seed/demo labels or raw backend status names are introduced without the same product-first copy discipline.
+### 2026-04-23 06:35 +07 | codex/foundation-admin-config-cleanup
+- Summary: Optimize the default standalone startup path by switching launcher/unified web boot to production mode, reusing the current Next build when web sources did not change, and replacing the home-page `no-store` path with short revalidation, and making the messages/dashboards smoke probe fail fast instead of hanging on a dead temp API.
+- Changed:
+  - Start_Platform.command
+  - scripts/run_foundation_unified.sh
+  - scripts/ensure_web_build.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - apps/web/lib/standalone-api.ts
+  - apps/web/app/page.tsx
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_foundation_unified.sh scripts/ensure_web_build.sh`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS timed curl check on `/`, `/marketing`, `/catalog`, `/request-workbench`, `/orders`, `/suppliers`
+- Risk:
+  - The everyday launcher path is much faster now, but the first restart after real web-source edits still has to rebuild the production bundle once; bundle-size drift remains the main remaining performance risk.
 ### 2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup
 - Summary: Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.
 - Changed:
@@ -1637,3 +1757,39 @@ It exists so the project context survives across sessions instead of being re-ex
   - PASS `gh api repos/AntonMagon/MagonOS-Standalone/branches/develop/protection`
 - Risk:
   - branch topology is now logically aligned, but the working branch still needs its ancestry synced with `main` before the cleanup PR can be merged and the extra remote branches deleted
+### 2026-04-23 05:46 +07 | codex/foundation-admin-config-cleanup
+- Summary: switched launcher/unified web startup to production by default, reused existing Next builds, and hardened all foundation smoke/demo scripts so verify no longer hangs on fixed-port temp API collisions
+- Changed:
+  - Start_Platform.command
+  - scripts/run_foundation_unified.sh
+  - scripts/ensure_web_build.sh
+  - apps/web/lib/standalone-api.ts
+  - apps/web/app/page.tsx
+  - scripts/foundation_catalog_smoke_check.sh
+  - scripts/foundation_request_smoke_check.sh
+  - scripts/foundation_offer_smoke_check.sh
+  - scripts/foundation_order_smoke_check.sh
+  - scripts/foundation_files_documents_smoke_check.sh
+  - scripts/foundation_supplier_smoke_check.sh
+  - scripts/foundation_messages_dashboards_smoke_check.sh
+  - scripts/foundation_wave1_demo_smoke_check.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+  - docs/implementation-log-wave1-foundation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `bash -n Start_Platform.command scripts/run_foundation_unified.sh scripts/ensure_web_build.sh scripts/foundation_catalog_smoke_check.sh scripts/foundation_request_smoke_check.sh scripts/foundation_offer_smoke_check.sh scripts/foundation_order_smoke_check.sh scripts/foundation_files_documents_smoke_check.sh scripts/foundation_supplier_smoke_check.sh scripts/foundation_messages_dashboards_smoke_check.sh scripts/foundation_wave1_demo_smoke_check.sh scripts/verify_workflow.sh`
+  - PASS `bash ./scripts/foundation_messages_dashboards_smoke_check.sh`
+  - PASS `bash ./scripts/foundation_wave1_demo_smoke_check.sh`
+  - PASS `./scripts/verify_workflow.sh --with-web`
+  - PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`
+  - PASS warmed detached timings:
+    - `/` `0.043s`
+    - `/marketing` `0.021s`
+    - `/catalog` `0.012s`
+    - `/request-workbench` `0.010s`
+    - `/orders` `0.009s`
+    - `/suppliers` `0.009s`
+    - `/health/ready` `0.012s`
+- Risk:
+  - the biggest remaining performance cost is bundle weight (`First Load JS shared by all` around `175 kB`), not launcher/dev-mode churn or hanging smoke scripts

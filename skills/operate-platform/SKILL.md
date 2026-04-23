@@ -27,6 +27,7 @@ Start and verify the active standalone MagonOS platform through its canonical st
   - `MAGON_FOUNDATION_LEGACY_ENABLED=true ./scripts/run_foundation_unified.sh --fresh`
   - `./scripts/run_unified_platform.sh --fresh`
   - `./scripts/run_platform.sh --fresh --port 8091`
+  - RU: Эти compatibility entrypoints нельзя использовать как канонический путь для recurring automation, smoke или daily operator checks.
 
 ## Runtime ownership
 - `scripts/run_foundation_unified.sh` is the canonical full local startup path for wave1.

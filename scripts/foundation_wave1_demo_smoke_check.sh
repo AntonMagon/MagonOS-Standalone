@@ -8,9 +8,7 @@ TMPDIR="$(mktemp -d)"
 STORAGE_DIR="$TMPDIR/storage"
 FILE_V1="$TMPDIR/wave1-demo-v1.txt"
 FILE_V2="$TMPDIR/wave1-demo-v2.txt"
-PORT="${MAGON_FOUNDATION_PORT:-18198}"
 HOST="${MAGON_FOUNDATION_HOST:-127.0.0.1}"
-BASE_URL="http://$HOST:$PORT"
 PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
 
 if [[ ! -x "$PYTHON_BIN" ]]; then
@@ -24,6 +22,16 @@ fi
 
 run_alembic() {
   "$PYTHON_BIN" -m alembic "$@"
+}
+
+reserve_free_port() {
+  "$PYTHON_BIN" - <<'PY'
+import socket
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
 }
 
 cleanup() {
@@ -48,9 +56,12 @@ export MAGON_FOUNDATION_CELERY_BROKER_URL="memory://"
 export MAGON_FOUNDATION_CELERY_RESULT_BACKEND="cache+memory://"
 export MAGON_FOUNDATION_STORAGE_BACKEND="local"
 export MAGON_FOUNDATION_STORAGE_LOCAL_ROOT="$STORAGE_DIR"
+PORT="${MAGON_FOUNDATION_PORT:-$(reserve_free_port)}"
 export MAGON_FOUNDATION_PORT="$PORT"
 export MAGON_FOUNDATION_HOST="$HOST"
+BASE_URL="http://$HOST:$PORT"
 # RU: Единый wave1 demo smoke проверяет весь сквозной поток на одной временной Postgres БД без разрыва между шагами.
+# RU: Demo smoke обязан сам выбирать свободный порт и падать быстро, иначе весь acceptance-path висит из-за случайного занятого temp listener.
 
 printf 'wave1-demo-v1' >"$FILE_V1"
 printf 'wave1-demo-v2' >"$FILE_V2"
@@ -61,11 +72,20 @@ run_alembic upgrade head >/dev/null
 API_PID=$!
 
 for _ in $(seq 1 30); do
-  if curl -fsS "$BASE_URL/health/live" >/dev/null 2>&1; then
+  if ! kill -0 "$API_PID" >/dev/null 2>&1; then
+    echo "[wave1-demo] foundation API exited before health/live became ready. See /tmp/magon-foundation-wave1-demo-api.log" >&2
+    exit 1
+  fi
+  if curl -fsS --max-time 5 "$BASE_URL/health/live" >/dev/null 2>&1; then
     break
   fi
   sleep 1
 done
+
+if ! curl -fsS --max-time 5 "$BASE_URL/health/live" >/dev/null 2>&1; then
+  echo "[wave1-demo] foundation API failed to become ready on $BASE_URL/health/live. See /tmp/magon-foundation-wave1-demo-api.log" >&2
+  exit 1
+fi
 
 json_get() {
   local expr="$1"

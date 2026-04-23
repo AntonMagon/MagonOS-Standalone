@@ -156,10 +156,22 @@ def _build_payload() -> dict[str, object]:
 
 def _write_ru_markdown(payload: dict[str, object]) -> None:
     RU_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    ru_payload = {
+        "generated_at": payload["generated_at"],
+        "repo": payload["repo"],
+        "validated_contour": payload["validated_contour_ru"],
+        "owned_capabilities": payload["owned_capabilities_ru"],
+        "danger_overlap": payload["danger_overlap_ru"],
+        "out_of_scope": payload["out_of_scope_ru"],
+        "автоматические_контуры": payload["automations"],
+        "навыки_проекта": payload["skills"],
+    }
+
     # RU: Русская карта должна показывать не англоязычные доменные ярлыки, а нормальные операторские названия тех же контуров и стадий.
+    # RU: В ru-выход намеренно не тащим сырой active_context/recent_worklog из project-memory, потому что там могут жить английские тех-summary для commit/history слоя.
     md = f"""# Визуальная карта проекта
 
-Обновлено: `{payload["generated_at"]}`
+Обновлено: `{ru_payload["generated_at"]}`
 
 ## Контур движения
 
@@ -188,22 +200,16 @@ flowchart LR
 
 {chr(10).join(f"- {item}" for item in payload["out_of_scope_ru"])}
 
-## Активный контекст
-
-- Текущий фокус: {payload["active_context"].get("current_focus", "—")}
-- Последний подтверждённый статус workflow: {payload["active_context"].get("last_verified_workflow_status", "—")}
-- Главный операционный риск: {payload["active_context"].get("biggest_operational_risk", "—")}
-
 ## Автоматические контуры контроля
 
-{chr(10).join(f"- {item}" for item in payload["automations"])}
+{chr(10).join(f"- {item}" for item in ru_payload["автоматические_контуры"])}
 
 ## Активные project skills
 
-{chr(10).join(f"- {item}" for item in payload["skills"])}
+{chr(10).join(f"- {item}" for item in ru_payload["навыки_проекта"])}
 """
     (RU_OUTPUT_DIR / "project-map.md").write_text(md, encoding="utf-8")
-    (RU_OUTPUT_DIR / "project-map.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    (RU_OUTPUT_DIR / "project-map.json").write_text(json.dumps(ru_payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _write_en_markdown(payload: dict[str, object]) -> None:

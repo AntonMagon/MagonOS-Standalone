@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-23 05:15 +07`",
+  "generated_at": "`2026-04-23 14:36 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -25,6 +25,7 @@
   "owned_capabilities_en": [
     "company/supplier/site registry contour with raw -> normalized -> confirmed layering",
     "supplier intelligence pipeline",
+    "scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path",
     "supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer",
     "operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI",
     "env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime",
@@ -49,6 +50,7 @@
   "owned_capabilities_ru": [
     "контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`",
     "конвейер проверки и обогащения поставщиков",
+    "scenario-driven live parsing теперь различает статические каталоги, рендеренные каталоги, обычные сайты компаний и JS-heavy сайты компаний; supplier-owned сайты с `browser_required` обязаны идти через browser-aware executor с реальным браузерным обходом, а не через старый requests-only path",
     "реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery",
     "операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура",
     "env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии",
@@ -98,26 +100,26 @@
     "рост функциональности source-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-23 05:15 +07`",
+    "updated_at": "`2026-04-23 14:36 +07`",
     "branch": "`codex/foundation-admin-config-cleanup`",
-    "current_focus": "Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI."
+    "current_focus": "Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.",
+    "last_verified_workflow_status": "PASS `env -i HOME=\"/Users/anton\" PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`",
+    "biggest_operational_risk": "The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status."
   },
   "recent_worklog": [
     {
-      "heading": "2026-04-23 05:15 +07 | codex/foundation-admin-config-cleanup",
-      "summary": "Rebuild the standalone web shell around the managed-service product language, clean public/operator/admin copy and layout, remove login debug noise, stabilize logged-in hydration through `useFoundationSession()`, reseed demo names, and verify the result through build, browser pass, and canonical workflow checks.",
+      "heading": "2026-04-23 14:36 +07 | codex/foundation-admin-config-cleanup",
+      "summary": "Stabilize the active standalone automation layer by fixing the launchd repo wrapper shell contract, aligning recurring skills and prompts with the foundation runtime, and verifying the live runtime plus canonical workflow on the current branch.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup",
-      "summary": "Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.",
+      "heading": "2026-04-23 12:45 +07 | codex/foundation-admin-config-cleanup",
+      "summary": "Fix the live supplier parser so JS-heavy supplier-owned sites truly route through a browser-aware company-site scenario, reusing one browser session across internal pages instead of falling back to the old requests-only company-site executor.",
       "risk": "See worklog entry"
     },
     {
-      "heading": "2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment",
-      "summary": "Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.",
+      "heading": "2026-04-23 12:29 +07 | codex/foundation-admin-config-cleanup",
+      "summary": "Close the parser UX gap by turning /suppliers into the real operational control surface for source enablement, schedule, interval, and classification mode instead of splitting routine parser management between suppliers and admin-config.",
       "risk": "See worklog entry"
     }
   ],

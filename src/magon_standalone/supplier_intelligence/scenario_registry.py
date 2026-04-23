@@ -254,6 +254,67 @@ class CompanySiteExecutor(BaseScenarioExecutor):
         )
 
 
+class JsCompanySiteExecutor(BaseScenarioExecutor):
+    """Render supplier-owned sites in the browser before extracting company facts."""
+
+    def execute(self, seed: PageSeed, route: ScenarioRouteDecision, initial_html: str | None = None) -> ScenarioExecutionResult:
+        override = self._config.domain_override(seed.get("source_domain", ""))
+        allow_paths = override.get("allow_paths", ["/", "/about", "/about-us", "/contact", "/contact-us", "/services", "/products"])
+        deny_paths = set(override.get("deny_paths", []))
+        # RU: Dynamic supplier sites должны обходиться тем же browser-session с внутренними страницами about/contact/services, иначе теряем реальные телефоны, адреса и capability blocks.
+        target_urls: list[str] = [seed["url"]]
+        for path in allow_paths[: self._settings.max_follow_up_company_pages]:
+            if path in deny_paths:
+                continue
+            target_url = urljoin(seed["url"], path)
+            if target_url not in target_urls:
+                target_urls.append(target_url)
+        screenshot_prefix = f"{seed.get('source_domain', 'company-site')}-company"
+        snapshots = self._browser.fetch_many(
+            target_urls,
+            timeout_ms=self._settings.browser_timeout_ms,
+            popup_controller=self._popup_controller,
+            scroll_steps=min(self._settings.max_scroll_steps, 2),
+            screenshot_prefix=screenshot_prefix,
+        )
+        pages = [(snapshot.final_url, snapshot.html) for snapshot in snapshots if snapshot.html]
+        if not pages:
+            return ScenarioExecutionResult(
+                records=[],
+                follow_up_seeds=[],
+                pages_visited=len(snapshots),
+                escalation_count=0,
+                low_confidence_count=0,
+                block_detected=any(snapshot.event_log and "timeout" not in snapshot.event_log and snapshot.challenge_detected for snapshot in snapshots),
+            )
+        records = self._extract.extract_company_site(pages, source_url=seed["url"], route=route)
+        for item in records:
+            for snapshot in snapshots:
+                if snapshot.screenshot_ref:
+                    item.setdefault("raw_evidence_refs", []).append(snapshot.screenshot_ref)
+                    item.setdefault("evidence_payloads", []).append(
+                        {
+                            "evidence_ref": snapshot.screenshot_ref,
+                            "source_url": snapshot.final_url,
+                            "scenario_key": route["scenario_key"],
+                            "evidence_type": "screenshot",
+                            "content": "",
+                            "metadata": {"title": snapshot.title, "event_log": snapshot.event_log},
+                        }
+                    )
+        low_confidence = sum(
+            1 for item in records if float(item.get("extraction_confidence") or 0.0) < self._settings.low_confidence_threshold
+        )
+        return ScenarioExecutionResult(
+            records=records,
+            follow_up_seeds=[],
+            pages_visited=len(pages),
+            escalation_count=0,
+            low_confidence_count=low_confidence,
+            block_detected=any(snapshot.challenge_detected for snapshot in snapshots),
+        )
+
+
 class HardDynamicExecutor(BaseScenarioExecutor):
     """Use full browser execution for challenged or highly dynamic pages."""
 
@@ -320,6 +381,7 @@ class ScenarioRegistry:
             "SIMPLE_DIRECTORY": SimpleDirectoryExecutor(config, extraction),
             "JS_DIRECTORY": JsDirectoryExecutor(config, extraction),
             "COMPANY_SITE": CompanySiteExecutor(config, extraction),
+            "JS_COMPANY_SITE": JsCompanySiteExecutor(config, extraction),
             "HARD_DYNAMIC_OR_BLOCKED": HardDynamicExecutor(config, extraction),
             "AI_ASSISTED_EXTRACTION": AiAssistedExtractionExecutor(config, extraction),
         }

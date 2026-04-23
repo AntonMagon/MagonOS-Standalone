@@ -93,3 +93,81 @@ class PlaywrightBrowserRuntime:
             finally:
                 page.close()
                 browser.close()
+
+    def fetch_many(
+        self,
+        urls: list[str],
+        *,
+        timeout_ms: int,
+        wait_for_selector: str | None = None,
+        popup_controller=None,
+        scroll_steps: int = 0,
+        screenshot_prefix: str | None = None,
+    ) -> list[BrowserPageSnapshot]:
+        snapshots: list[BrowserPageSnapshot] = []
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page()
+            try:
+                for index, target_url in enumerate(urls):
+                    # RU: Один browser-session на обход company-site дешевле и стабильнее, чем поднимать новый Chromium на каждую внутреннюю страницу.
+                    event_log: list[str] = []
+                    screenshot_ref = None
+                    try:
+                        page.goto(target_url, wait_until="domcontentloaded", timeout=timeout_ms)
+                        event_log.append(f"goto:{page.url}")
+                        if popup_controller:
+                            event_log.extend(popup_controller.handle(page))
+                        if wait_for_selector:
+                            try:
+                                page.wait_for_selector(wait_for_selector, timeout=min(timeout_ms, 10_000))
+                                event_log.append(f"wait_for_selector:{wait_for_selector}")
+                            except PlaywrightTimeoutError:
+                                event_log.append(f"wait_for_selector_timeout:{wait_for_selector}")
+                        for _step in range(max(scroll_steps, 0)):
+                            page.mouse.wheel(0, 3000)
+                            page.wait_for_timeout(350)
+                        html = page.content()
+                        if screenshot_prefix:
+                            target_dir = Path(self._config.crawl4ai_base_directory()) / "screenshots"
+                            target_dir.mkdir(parents=True, exist_ok=True)
+                            screenshot_path = target_dir / f"{screenshot_prefix}-{index + 1}.png"
+                            page.screenshot(path=str(screenshot_path), full_page=True)
+                            screenshot_ref = str(screenshot_path)
+                        challenge_detected = any(
+                            marker in html.lower()
+                            for marker in (
+                                "verify you are human",
+                                "cf-challenge",
+                                "captcha",
+                                "access denied",
+                                "attention required",
+                            )
+                        )
+                        snapshots.append(
+                            BrowserPageSnapshot(
+                                url=target_url,
+                                final_url=page.url,
+                                html=html,
+                                title=page.title(),
+                                screenshot_ref=screenshot_ref,
+                                challenge_detected=challenge_detected,
+                                event_log=event_log,
+                            )
+                        )
+                    except PlaywrightTimeoutError:
+                        snapshots.append(
+                            BrowserPageSnapshot(
+                                url=target_url,
+                                final_url=target_url,
+                                html="",
+                                title="",
+                                screenshot_ref=None,
+                                challenge_detected=False,
+                                event_log=event_log + ["timeout"],
+                            )
+                        )
+            finally:
+                page.close()
+                browser.close()
+        return snapshots

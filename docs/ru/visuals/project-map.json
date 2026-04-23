@@ -1,19 +1,10 @@
 {
-  "generated_at": "`2026-04-23 05:15 +07`",
+  "generated_at": "`2026-04-23 14:36 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
   },
-  "validated_contour_en": [
-    "company",
-    "request draft / intake boundary",
-    "commercial/customer context",
-    "opportunity",
-    "quote intent / RFQ boundary",
-    "production handoff",
-    "production board"
-  ],
-  "validated_contour_ru": [
+  "validated_contour": [
     "компания",
     "граница черновика запроса / intake-заявки",
     "коммерческий контекст клиента",
@@ -22,33 +13,10 @@
     "передача в производство",
     "производственная доска"
   ],
-  "owned_capabilities_en": [
-    "company/supplier/site registry contour with raw -> normalized -> confirmed layering",
-    "supplier intelligence pipeline",
-    "supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer",
-    "operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI",
-    "env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime",
-    "repo-aware periodic supplier scheduler for live parsing/classification; fixture source stays manual-only while `scenario_live` can be enqueued continuously on a launchd cadence",
-    "normalization / enrichment / dedup / scoring",
-    "lightweight marketing/conversion layer over showcase + RFQ + guest draft entry",
-    "limited catalog / showcase contour with guest draft + RFQ entry",
-    "product-first public shell over `/`, `/marketing`, `/catalog`, and `/rfq` with managed-service copy instead of architecture jargon",
-    "draft autosave / abandoned / archive-ready intake layer",
-    "central request review queue with blocker/clarification flow",
-    "request draft -> request submit flow with required-field gating",
-    "versioned offer layer with compare, confirmation reset, accept/decline/expire, and separate order conversion",
-    "order layer with `OrderLine`, internal payment skeleton, ledger trail, and operator workbench",
-    "managed files/documents contour with storage abstraction, versioning, checks, templates, and role-based download flow",
-    "admin configuration contour for reason codes, rules, rule versions, notification rules, and supplier source settings through API/UI instead of seed-only edits",
-    "session-driven operator/admin screens now read one stable foundation-session snapshot through `useFoundationSession()`, so logged-in routes do not flash the guest gate or hit hydration mismatches after localStorage boot",
-    "foundation FastAPI skeleton with separate draft/request/offer/order entities",
-    "routing / qualification decisions",
-    "feedback ledger / projection",
-    "workforce estimation"
-  ],
-  "owned_capabilities_ru": [
+  "owned_capabilities": [
     "контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`",
     "конвейер проверки и обогащения поставщиков",
+    "scenario-driven live parsing теперь различает статические каталоги, рендеренные каталоги, обычные сайты компаний и JS-heavy сайты компаний; supplier-owned сайты с `browser_required` обязаны идти через browser-aware executor с реальным браузерным обходом, а не через старый requests-only path",
     "реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery",
     "операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура",
     "env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии",
@@ -71,25 +39,12 @@
     "журнал обратной связи / проекция",
     "оценка трудозатрат"
   ],
-  "danger_overlap_en": [
-    "customer/account identity",
-    "opportunity/lead ownership",
-    "RFQ / quote boundary"
-  ],
-  "danger_overlap_ru": [
+  "danger_overlap": [
     "идентичность клиента / аккаунта",
     "владение сделкой / лидом",
     "граница RFQ / расчёта"
   ],
-  "out_of_scope_en": [
-    "accounting",
-    "invoice / payment",
-    "full ERP order management",
-    "giant generic CRM",
-    "broad legacy entity mirroring",
-    "source repo feature growth"
-  ],
-  "out_of_scope_ru": [
+  "out_of_scope": [
     "бухгалтерия",
     "счета / оплаты",
     "полное ERP-управление заказами",
@@ -97,31 +52,15 @@
     "широкое зеркалирование legacy-сущностей",
     "рост функциональности source-репозитория"
   ],
-  "active_context": {
-    "updated_at": "`2026-04-23 05:15 +07`",
-    "branch": "`codex/foundation-admin-config-cleanup`",
-    "current_focus": "Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.",
-    "last_verified_workflow_status": "PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI."
-  },
-  "recent_worklog": [
-    {
-      "heading": "2026-04-23 05:15 +07 | codex/foundation-admin-config-cleanup",
-      "summary": "Rebuild the standalone web shell around the managed-service product language, clean public/operator/admin copy and layout, remove login debug noise, stabilize logged-in hydration through `useFoundationSession()`, reseed demo names, and verify the result through build, browser pass, and canonical workflow checks.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-23 02:21 +07 | codex/foundation-admin-config-cleanup",
-      "summary": "Fix the standalone planning canon to use the full gpt_doc package, record the managed-service product truth, and add a concrete execution plan for rebuilding public, operator, supplier, and admin UX against that canon.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-23 01:32 +07 | codex/full-audit-runtime-alignment",
-      "summary": "Remove active legacy drift from the standalone foundation contour, add real admin configuration surfaces for wave1 business settings, and keep verification centered on one Postgres-first runtime.",
-      "risk": "See worklog entry"
-    }
+  "автоматические_контуры": [
+    "Hourly Repo Guard",
+    "Hourly Platform Smoke",
+    "RU Locale Guard",
+    "Hourly Visual Map",
+    "Weekly Release Gate",
+    "Launchd Periodic Checks"
   ],
-  "skills": [
+  "навыки_проекта": [
     "audit-docs-vs-runtime",
     "automation-context-guard",
     "ci-watch-fix",
@@ -135,13 +74,5 @@
     "skill-pattern-scan",
     "verify-implementation",
     "web-regression-pass"
-  ],
-  "automations": [
-    "Hourly Repo Guard",
-    "Hourly Platform Smoke",
-    "RU Locale Guard",
-    "Hourly Visual Map",
-    "Weekly Release Gate",
-    "Launchd Periodic Checks"
   ]
 }

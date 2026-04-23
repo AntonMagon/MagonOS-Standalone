@@ -77,12 +77,17 @@ pip install -e .[live]
 ## Production/deploy start
 ```bash
 cd /Users/anton/Desktop/MagonOS-Standalone
-PORT=8091 ./scripts/run_deploy.sh
+cp .env.prod.example .env.prod
+# replace placeholder passwords in .env.prod first
+./scripts/run_deploy.sh
 ```
 
-Optional staging bootstrap from fixture:
+Useful deploy helpers:
 ```bash
-MAGON_STANDALONE_BOOTSTRAP_FIXTURE=tests/fixtures/vn_suppliers_raw.json PORT=8091 ./scripts/run_deploy.sh
+./scripts/run_deploy.sh status
+./scripts/run_deploy.sh logs --follow api web
+./scripts/run_deploy.sh restart --build api web worker
+./scripts/run_deploy.sh down
 ```
 
 ## Local URLs
@@ -145,10 +150,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-23 05:15 +07`
-- Current focus: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
+- Auto-synced at: `2026-04-23 14:36 +07`
+- Current focus: Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.
+- Last verified workflow status: PASS `env -i HOME="/Users/anton" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status.
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -160,6 +165,7 @@ Detailed workflow: `docs/repo-workflow.md`
 - Standalone-owned capabilities:
   - company/supplier/site registry contour with raw -> normalized -> confirmed layering
   - supplier intelligence pipeline
+  - scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
   - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
   - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
   - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
@@ -194,7 +200,22 @@ Detailed workflow: `docs/repo-workflow.md`
   - Weekly Release Gate
 - Runtime surfaces:
   - public shell: `http://127.0.0.1:3000/`
+  - public shell now runs from the production Next bundle by default; the home/status path must stay on short revalidation instead of permanent `no-store`
   - public shell, marketing, catalog, RFQ, request, order, supplier, and admin pages were rechecked in the browser after the latest product-copy/layout pass; the live shell must stay free of raw technical dumps, split-language UI drift, and hydration mismatch errors
+  - measured local timings after the production-web switch:
+  - `/` about `0.40s` instead of `~2.60s` on the old `next dev` path
+  - `/marketing` about `0.37s` instead of `~0.85s`
+  - `/catalog` about `0.06s` instead of `~0.66s`
+  - `/request-workbench` about `0.04s` instead of `~0.59s`
+  - `/orders` about `0.12s` instead of `~0.37s`
+  - warmed detached production shell is now even faster in steady state:
+  - `/` about `0.04s`
+  - `/marketing` about `0.02s`
+  - `/catalog` about `0.01s`
+  - `/request-workbench` about `0.01s`
+  - `/orders` about `0.01s`
+  - `/suppliers` about `0.01s`
+  - backend `/health/ready` about `0.01s`
   - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
   - public marketing layer: `http://127.0.0.1:3000/marketing`
   - public showcase: `http://127.0.0.1:3000/catalog`
@@ -214,6 +235,7 @@ Detailed workflow: `docs/repo-workflow.md`
   - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
   - supplier workbench: `http://127.0.0.1:3000/suppliers`
   - supplier workbench now acts as the operator console for source adapters: health, latest success/failure, queued ingest visibility, retry, and force-rerun live there instead of a hidden API-only path
+  - for admin users the same `/suppliers` surface now also exposes inline operational source controls (`enabled`, schedule on/off, interval, classification mode) so routine parser management no longer requires a second trip to `/admin-config`
   - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
   - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
   - supplier raw ingest detail now shows explainable async state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) and exposes retry / rerun actions
@@ -227,7 +249,7 @@ Detailed workflow: `docs/repo-workflow.md`
 - This repo is the official product runtime.
 - Active runtime contract is the standalone foundation contour only.
 - The historical source repo is no longer the official startup path.
-- `scripts/run_deploy.sh` is the deploy/runtime entrypoint.
+- `scripts/run_deploy.sh` is the VPS/server deploy entrypoint and now wraps the same foundation `docker compose` contour that already acts as the production-like runtime.
 - `Procfile` points at the production entrypoint.
 - The app is independent from any old bridge runtime.
 - Foundation wave1 skeleton is the forward runtime base and is already running on the target stack through PostgreSQL + Redis + Alembic + Docker Compose.

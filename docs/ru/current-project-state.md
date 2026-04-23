@@ -58,6 +58,7 @@
 
 - контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
+- scenario-driven live parsing теперь различает статические каталоги, рендеренные каталоги, обычные сайты компаний и JS-heavy сайты компаний; supplier-owned сайты с `browser_required` обязаны идти через browser-aware executor с реальным браузерным обходом, а не через старый requests-only path
 - реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
 - операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
 - env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии
@@ -105,14 +106,24 @@
 - поднять unified foundation локально:
   - `./scripts/run_foundation_unified.sh --fresh`
   - local launcher/unified path теперь сам поднимает `db + redis` через `docker compose`/`colima` ещё до миграций и старта backend/web
+  - launcher/unified web runtime теперь по умолчанию идёт через production `next start`; `MAGON_WEB_RUNTIME=dev` оставлен только как явный debug fallback
+  - `scripts/ensure_web_build.sh` переиспользует текущий `.next` bundle, если web-исходники не менялись, поэтому обычный локальный рестарт не должен собирать всё заново без причины
 - desktop launcher для того же локального контура:
   - `./Start_Platform.command`
   - `./Start_Platform.command --detach --no-open --keep-db --no-seed`
   - detach-режим теперь опирается на локальный double-fork helper `scripts/run_detached_command.py`, поэтому backend/web обязаны оставаться живыми и после завершения launcher shell, а не зависеть от родительского терминала
   - detached path подтверждён живой проверкой: backend `/health/ready` и web `/login` остаются на `200` после выхода launcher shell
+  - detached launcher тоже должен поднимать production web через `scripts/ensure_web_build.sh`, если ты явно не просишь `MAGON_WEB_RUNTIME=dev`
+- VPS/server deploy contour:
+  - `cp .env.prod.example .env.prod`
+  - `./scripts/run_deploy.sh`
+  - `./scripts/run_deploy.sh status`
+  - `./scripts/run_deploy.sh logs --follow api web`
+  - `scripts/run_deploy.sh` теперь оборачивает активный foundation `docker compose` runtime; старый gunicorn/WSGI/SQLite deploy path больше не является production-правдой
 - hourly self-heal watchdog для launcher:
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
+  - launchd repo-wrapper теперь shell-safe и под `bash`, и под bootstrap самого launchd, поэтому watchdog и periodic checks больше не зависят от bash-only `BASH_SOURCE`, если агент вызван через другой shell
 - hourly scheduler для постоянного parser/classifier:
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
@@ -153,6 +164,7 @@
   - `./scripts/foundation_files_documents_smoke_check.sh`
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - канонический `./scripts/verify_workflow.sh` теперь реально исполняет эти foundation smoke-скрипты на временных PostgreSQL БД, а не держит их как manual-only хвост
+  - foundation smoke/demo-скрипты теперь сами выбирают свободный localhost-порт и используют bounded health-probe, поэтому старый зависший temp listener должен падать быстро, а не вешать весь verify
 - если менялся web:
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
@@ -169,7 +181,22 @@
 ## Локальные поверхности
 
 - public shell: `http://127.0.0.1:3000/`
+- public shell теперь по умолчанию идёт из production Next bundle; главная больше не должна жить на постоянном `no-store` и dev-компиляции при каждом заходе
 - public shell, marketing, каталог, RFQ, заявки, заказы, поставщики и admin-config повторно проверены в браузере после product/UI cleanup; регрессиями считаются технические дампы, RU/EN-смесь и hydration mismatch в авторизованном shell
+- локально после оптимизации подтверждены такие времена detached production shell:
+  - `/` около `0.40s` вместо прежних `~2.60s` на старом `next dev` path
+  - `/marketing` около `0.37s` вместо `~0.85s`
+  - `/catalog` около `0.06s` вместо `~0.66s`
+  - `/request-workbench` около `0.04s` вместо `~0.59s`
+  - `/orders` около `0.12s` вместо `~0.37s`
+  - после прогрева production bundle steady-state ещё быстрее:
+    - `/` около `0.04s`
+    - `/marketing` около `0.02s`
+    - `/catalog` около `0.01s`
+    - `/request-workbench` около `0.01s`
+    - `/orders` около `0.01s`
+    - `/suppliers` около `0.01s`
+    - backend `/health/ready` около `0.01s`
 - встроенная справка по сущностям и зависимостям: `http://127.0.0.1:3000/reference`
 - header public shell теперь держит только ключевые рабочие разделы в верхней строке, а вторичные разделы и переключатели складывает в `Ещё`; возвращать перегруженную шапку нельзя.
 - public shell и `/dashboard` должны определять online-state через foundation `GET /health` и `GET /api/v1/public/companies`; legacy `GET /status` нельзя считать каноническим контрактом при выключенном bridge
@@ -196,6 +223,7 @@
 - managed order files/documents: `http://127.0.0.1:3000/orders/{orderCode}`
 - supplier workbench: `http://127.0.0.1:3000/suppliers`
 - `supplier workbench` теперь является операторской консолью источников: health, последний ingest-результат, queued runs, retry и повторный запуск живут здесь, а не только в скрытых API-вызовах
+- для администратора тот же `/suppliers` теперь даёт inline-управление operational-настройками source: включение, расписание, интервал и режим классификации больше не требуют отдельного похода в `/admin-config` для рутинного parser-контроля
 - supplier site card: `http://127.0.0.1:3000/supplier-sites/{siteCode}`
 - supplier raw ingest: `http://127.0.0.1:3000/supplier-ingests/{ingestCode}`
 - страница `supplier raw ingest` теперь показывает explainable async-state (`queued/running/failed/completed`, task id, trigger mode, retry history, failure detail) и даёт оператору retry / повторный запуск источника
@@ -225,3 +253,17 @@
   - `foundation-smoke`
   - `web-quality`
 - Старые protection contexts вроде `python-tests`, `smoke-runtime` и `web-build` считаются drift и не должны больше висеть в настройках репозитория.
+
+## Истина по automation-layer
+
+- Все repo-local recurring автоматизации обязаны восстанавливать контекст через `skills/automation-context-guard/SKILL.md`.
+- Все recurring автоматизации обязаны читать только активный foundation contour из этого файла и `docs/current-project-state.md`.
+- Повторяющиеся platform/browser проверки должны ходить только по живым поверхностям:
+  - `/`
+  - `/login`
+  - `/dashboard`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- Recurring автоматизации нельзя молча отправлять в удалённые или compatibility-only поверхности вроде `/ops-workbench`, `/ui/companies`, `./scripts/run_platform.sh` или `./scripts/run_unified_platform.sh --fresh`, если задача не состоит именно в фиксации drift.

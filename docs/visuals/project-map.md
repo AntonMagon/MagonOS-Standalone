@@ -1,6 +1,6 @@
 # Project Visual Map
 
-Updated: ``2026-04-23 05:15 +07``
+Updated: ``2026-04-23 14:36 +07``
 
 ## Flow contour
 
@@ -17,6 +17,7 @@ flowchart LR
 
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
+- scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
 - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
 - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime

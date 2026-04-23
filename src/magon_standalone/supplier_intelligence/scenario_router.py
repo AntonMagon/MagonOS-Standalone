@@ -37,6 +37,12 @@ class ScenarioDecisionRouter:
         elif float(profile.get("anti_bot_likelihood") or 0.0) >= self._config.settings().anti_bot_threshold:
             scenario_key = "HARD_DYNAMIC_OR_BLOCKED"
             reasons.append("anti-bot or challenge signals exceed threshold")
+        elif profile.get("page_type") == "company_site" and (
+            profile.get("browser_required") or execution_flags["force_render"]
+        ):
+            # RU: Если supplier-owned сайт уже профилируется как JS-heavy, его нельзя гнать через plain requests-only executor — иначе теряем рендеренные contact/about blocks.
+            scenario_key = "JS_COMPANY_SITE"
+            reasons.append("company site requires rendered execution")
         elif profile.get("page_type") == "company_site":
             scenario_key = "COMPANY_SITE"
             reasons.append("page profile classified supplier-owned website")
@@ -53,7 +59,7 @@ class ScenarioDecisionRouter:
             reasons.append("fallback route from mixed/unknown profile")
 
         escalation_policy = []
-        if scenario_key in {"SIMPLE_DIRECTORY", "JS_DIRECTORY", "COMPANY_SITE"}:
+        if scenario_key in {"SIMPLE_DIRECTORY", "JS_DIRECTORY", "COMPANY_SITE", "JS_COMPANY_SITE"}:
             escalation_policy.append("AI_ASSISTED_EXTRACTION")
         if scenario_key != "HARD_DYNAMIC_OR_BLOCKED" and profile.get("browser_required"):
             escalation_policy.append("HARD_DYNAMIC_OR_BLOCKED")

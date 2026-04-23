@@ -14,6 +14,7 @@ WEB_HOST="127.0.0.1"
 WEB_PORT="3000"
 FRESH="0"
 SEED="1"
+WEB_RUNTIME="${MAGON_WEB_RUNTIME:-production}"
 
 ensure_port_free() {
   local host="$1"
@@ -157,11 +158,19 @@ fi
 echo "[magon-foundation] backend healthy"
 cd "$WEB_DIR"
 echo "[magon-foundation] starting web shell on http://$WEB_HOST:$WEB_PORT"
-
-MAGON_WEB_DIST_DIR=".next-dev" \
-WATCHPACK_POLLING=true \
-WATCHPACK_POLLING_INTERVAL=1000 \
-npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT" &
+if [[ "$WEB_RUNTIME" == "production" ]]; then
+  "$REPO_ROOT/scripts/ensure_web_build.sh"
+  # RU: Unified path по умолчанию идёт через production bundle, чтобы повседневный локальный shell открывался быстро и без dev-компиляции на каждый заход.
+  MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" \
+  npm run start -- --hostname "$WEB_HOST" --port "$WEB_PORT" &
+else
+  # RU: Dev runtime оставляем доступным только как явный режим разработки, когда действительно нужен live reload.
+  MAGON_WEB_DIST_DIR=".next-dev" \
+  WATCHPACK_POLLING=true \
+  WATCHPACK_POLLING_INTERVAL=1000 \
+  MAGON_API_BASE_URL="http://$BACKEND_HOST:$BACKEND_PORT" \
+  npm run dev -- --hostname "$WEB_HOST" --port "$WEB_PORT" &
+fi
 WEB_PID=$!
 
 cleanup_web() {

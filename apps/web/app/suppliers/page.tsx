@@ -29,6 +29,7 @@ type SourcePayload = {
     code: string;
     label: string;
     adapter_key: string;
+    enabled: boolean;
     config_json?: Record<string, unknown>;
     last_success_at?: string | null;
     health: {
@@ -106,6 +107,7 @@ export default function SuppliersPage() {
   // RU: Берём session через useSyncExternalStore-обёртку, чтобы server/client первый render не расходился из-за localStorage.
   const session = useFoundationSession();
   const [actionCode, setActionCode] = useState<string | null>(null);
+  const canManageSources = session?.role_code === "admin";
 
   const load = useCallback(async () => {
     if (!session?.token) {
@@ -228,6 +230,44 @@ export default function SuppliersPage() {
     }
   }
 
+  async function updateSourceSettings(
+    sourceCode: string,
+    nextSettings: {
+      enabled: boolean;
+      scheduleEnabled: boolean;
+      scheduleIntervalMinutes: number;
+      classificationMode: "deterministic_only" | "ai_assisted_fallback";
+    }
+  ) {
+    if (!session?.token || !canManageSources) {
+      return;
+    }
+    const interval = Number.isFinite(nextSettings.scheduleIntervalMinutes) && nextSettings.scheduleIntervalMinutes >= 5
+      ? Math.round(nextSettings.scheduleIntervalMinutes)
+      : 60;
+    const busyCode = `settings:${sourceCode}`;
+    setActionCode(busyCode);
+    setError(null);
+    try {
+      // RU: Базовые operational настройки source редактируем прямо на рабочем экране, чтобы парсер не выглядел "черным ящиком" между suppliers и admin-config.
+      await fetchFoundationJson(`/api/v1/admin/supplier-sources/${sourceCode}`, {
+        method: "PATCH",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify({
+          enabled: nextSettings.enabled,
+          schedule_enabled: nextSettings.scheduleEnabled,
+          schedule_interval_minutes: interval,
+          classification_mode: nextSettings.classificationMode
+        })
+      }, session.token);
+      await load();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "supplier_source_update_failed");
+    } finally {
+      setActionCode(null);
+    }
+  }
+
   async function resolveCandidate(candidateCode: string, decision: "merge" | "reject") {
     if (!session?.token) {
       return;
@@ -331,8 +371,13 @@ export default function SuppliersPage() {
                     <div className="font-medium">{displaySourceLabel(item)}</div>
                     <div className="mt-1 text-muted-foreground">{item.code} · {displayAdapterKey(item.adapter_key)}</div>
                   </div>
-                  <div className={`rounded-full border px-3 py-1 text-xs font-medium ${item.health.ok ? "border-emerald-300/60 bg-emerald-100/80 text-emerald-800" : "border-red-300/70 bg-red-100/90 text-red-800"}`}>
-                    {item.health.ok ? "Адаптер готов" : "Адаптер недоступен"}
+                  <div className="flex flex-wrap gap-2">
+                    <div className={`rounded-full border px-3 py-1 text-xs font-medium ${item.enabled ? "border-foreground/15 bg-black/5 text-foreground" : "border-slate-300/70 bg-slate-200/80 text-slate-700"}`}>
+                      {item.enabled ? "Источник включён" : "Источник выключен"}
+                    </div>
+                    <div className={`rounded-full border px-3 py-1 text-xs font-medium ${item.health.ok ? "border-emerald-300/60 bg-emerald-100/80 text-emerald-800" : "border-red-300/70 bg-red-100/90 text-red-800"}`}>
+                      {item.health.ok ? "Адаптер готов" : "Адаптер недоступен"}
+                    </div>
                   </div>
                 </div>
                 <div className="mt-2 text-muted-foreground">
@@ -345,6 +390,9 @@ export default function SuppliersPage() {
                   <div>Последний успешный запуск: {formatFoundationDate(item.last_success_at, "Ещё не было")}</div>
                   <div>
                     Постоянный режим: {item.schedule?.enabled ? `включён, каждые ${item.schedule.interval_minutes} мин.` : "выключен"}
+                  </div>
+                  <div>
+                    Текущее окно: {displayScheduleState(item)}
                   </div>
                   <div>
                     Следующее окно: {formatFoundationDate(item.schedule?.next_run_at, item.schedule?.enabled ? "Запустится при первом свободном окне" : "Не планируется")}
@@ -374,11 +422,70 @@ export default function SuppliersPage() {
                 ) : (
                   <div className="mt-3 text-xs text-muted-foreground">По этому источнику импорт ещё не запускался.</div>
                 )}
+                {canManageSources ? (
+                  <form
+                    className="mt-4 rounded-[1.1rem] border border-border/70 bg-background/55 p-3"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const formData = new FormData(event.currentTarget);
+                      void updateSourceSettings(item.code, {
+                        enabled: formData.get("enabled") === "on",
+                        scheduleEnabled: formData.get("schedule_enabled") === "on",
+                        scheduleIntervalMinutes: Number(formData.get("schedule_interval_minutes") || 60),
+                        classificationMode: String(formData.get("classification_mode") || "deterministic_only") as "deterministic_only" | "ai_assisted_fallback"
+                      });
+                    }}
+                  >
+                    {/* RU: На suppliers даём только operational control; глубокий JSON-конфиг остаётся в admin-config, чтобы не превращать рабочую страницу в сырой редактор. */}
+                    <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Управление источником</div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <label className="flex items-center gap-2 text-xs text-foreground/80">
+                        <input type="checkbox" name="enabled" defaultChecked={item.enabled} />
+                        Источник включён
+                      </label>
+                      <label className="flex items-center gap-2 text-xs text-foreground/80">
+                        <input type="checkbox" name="schedule_enabled" defaultChecked={item.schedule?.enabled} />
+                        Запуск по расписанию
+                      </label>
+                    </div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
+                      <label className="flex flex-col gap-2 text-xs text-muted-foreground">
+                        <span>Интервал, минут</span>
+                        <input
+                          name="schedule_interval_minutes"
+                          type="number"
+                          min={5}
+                          defaultValue={item.schedule?.interval_minutes ?? 60}
+                          className="h-10 rounded-xl border border-border bg-white/80 px-3 text-sm text-foreground outline-none transition focus:border-foreground/25"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2 text-xs text-muted-foreground">
+                        <span>Режим разбора</span>
+                        <select
+                          name="classification_mode"
+                          defaultValue={item.classification?.mode ?? "deterministic_only"}
+                          className="h-10 rounded-xl border border-border bg-white/80 px-3 text-sm text-foreground outline-none transition focus:border-foreground/25"
+                        >
+                          <option value="deterministic_only">только строгие правила</option>
+                          <option value="ai_assisted_fallback">строгие правила + ИИ-подсказка</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" type="submit" variant="secondary" disabled={loading || actionCode === `settings:${item.code}`}>
+                        {actionCode === `settings:${item.code}` ? "Сохраняю..." : "Сохранить режим"}
+                      </Button>
+                      <Link href="/admin-config">
+                        <Button size="sm" type="button" variant="ghost">Подробные настройки</Button>
+                      </Link>
+                    </div>
+                  </form>
+                ) : null}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => void enqueueSourceRun(item.code, "ui_supplier_ingest_enqueue")} disabled={loading || actionCode === item.code}>
+                  <Button size="sm" variant="secondary" onClick={() => void enqueueSourceRun(item.code, "ui_supplier_ingest_enqueue")} disabled={loading || !item.enabled || actionCode === item.code}>
                     Запустить сейчас
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => void enqueueSourceRun(item.code, "ui_force_rerun_supplier_ingest")} disabled={loading || actionCode === item.code}>
+                  <Button size="sm" variant="outline" onClick={() => void enqueueSourceRun(item.code, "ui_force_rerun_supplier_ingest")} disabled={loading || !item.enabled || actionCode === item.code}>
                     Повторить запуск
                   </Button>
                   {item.latest_ingest?.ingest_status === "failed" ? (
@@ -517,4 +624,23 @@ function displayClassificationMode(value?: string | null): string {
     return "только строгие правила";
   }
   return displayReasonCode(value);
+}
+
+function displayScheduleState(item: SourcePayload["items"][number]): string {
+  if (!item.enabled) {
+    return "источник выключен";
+  }
+  if (!item.schedule?.enabled) {
+    return "расписание выключено";
+  }
+  if (item.schedule.active) {
+    return "идёт активный запуск";
+  }
+  if (item.schedule.due_now) {
+    return "можно ставить в очередь сейчас";
+  }
+  if (item.schedule.skip_reason === "interval_not_elapsed") {
+    return "ждём следующее окно";
+  }
+  return displayReasonCode(item.schedule.skip_reason);
 }

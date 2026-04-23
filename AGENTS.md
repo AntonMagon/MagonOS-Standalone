@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-23 05:15 +07`
-- Current focus: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
-- Last verified workflow status: PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
+- Auto-synced at: `2026-04-23 14:36 +07`
+- Current focus: Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.
+- Last verified workflow status: PASS `env -i HOME="/Users/anton" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`
+- Biggest operational risk: The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status.
 - Validated contour:
   - company
   - request draft / intake boundary

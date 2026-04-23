@@ -1,6 +1,6 @@
 # Визуальная карта проекта
 
-Обновлено: ``2026-04-23 05:15 +07``
+Обновлено: ``2026-04-23 14:36 +07``
 
 ## Контур движения
 
@@ -17,6 +17,7 @@ flowchart LR
 
 - контур реестра компаний / поставщиков / площадок со слоями `raw -> normalized -> confirmed`
 - конвейер проверки и обогащения поставщиков
+- scenario-driven live parsing теперь различает статические каталоги, рендеренные каталоги, обычные сайты компаний и JS-heavy сайты компаний; supplier-owned сайты с `browser_required` обязаны идти через browser-aware executor с реальным браузерным обходом, а не через старый requests-only path
 - реестр источников поставщиков с двумя режимами первой волны: повторяемый fixture-ingest для demo/тестов и выбираемый live parsing ingest поверх существующего supplier-intelligence discovery
 - операторский контроль источников поставщиков: health адаптера, последний успех/сбой, queued parsing jobs, retry и повторный запуск прямо из UI standalone-контура
 - env-gated LLM-подключение для `ai_assisted` fallback внутри supplier parsing с явным operator status/test path вместо скрытой чёрной магии
@@ -63,12 +64,6 @@ flowchart LR
 - огромная универсальная CRM
 - широкое зеркалирование legacy-сущностей
 - рост функциональности source-репозитория
-
-## Активный контекст
-
-- Текущий фокус: Keep the standalone web in one product-first language: clear managed-service entry on the public shell, readable operator/admin screens, and one stable session hydration path on logged-in routes.
-- Последний подтверждённый статус workflow: PASS `./scripts/verify_workflow.sh --with-web`
-- Главный операционный риск: The verified shell is now much cleaner, but a full product pass over every secondary operator/admin route is still an ongoing quality risk whenever new seed/demo fields or raw backend labels leak back into the UI.
 
 ## Автоматические контуры контроля
 
