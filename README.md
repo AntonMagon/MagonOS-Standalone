@@ -150,10 +150,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-23 14:36 +07`
-- Current focus: Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.
-- Last verified workflow status: PASS `env -i HOME="/Users/anton" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`
-- Biggest operational risk: The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status.
+- Auto-synced at: `2026-04-23 15:01 +07`
+- Current focus: Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.
+- Last verified workflow status: PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`
+- Biggest operational risk: Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone.
 - Validated contour:
   - company
   - request draft / intake boundary

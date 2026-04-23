@@ -379,8 +379,56 @@
 - `./.venv/bin/python -m unittest tests.test_launchd_periodic_checks tests.test_launchd_launcher_watchdog`
 - `./scripts/verify_workflow.sh --with-web`
 
-### Оставшийся риск
-- Product/runtime contour зелёный, но macOS `launchctl print` для `com.magonos.periodic-checks` и `com.magonos.launcher-watchdog` всё ещё может держать `last exit code = 78: EX_CONFIG`, даже когда ручной runner и cached status уже зелёные. Это сейчас отдельный OS-level launchd anomaly, а не подтверждённый дефект foundation runtime.
+### Итог после повторной проверки
+- Этот риск был не cosmetic launchd anomaly, а незакрытый execution-path defect:
+  - LaunchAgents всё ещё стартовали из repo-path на Desktop;
+  - `WorkingDirectory`, stdout и stderr оставались завязаны на TCC-защищённую директорию;
+  - runtime locale guard всё ещё обходил снятые маршруты `/ops-workbench` и `/project-map`, из-за чего `periodic-checks` мог падать уже после успешного bootstrap.
+
+## 2026-04-23 — Launchd contour закрыт до реального `exit code = 0`
+
+### Что было найдено
+- После shell-safe wrapper фикса launchd всё ещё не был честно закрыт:
+  - `launchctl print` продолжал держать `EX_CONFIG`;
+  - старые repo log-файлы под Desktop почти не обновлялись;
+  - broad macOS logs показывали упор в Desktop/TCC path, а не просто в "кэш launchctl".
+- Отдельно `periodic-checks` продолжал падать уже по содержательной причине:
+  - runtime locale guard в `src/magon_standalone/locale_integrity.py` всё ещё обходил legacy surfaces `/ops-workbench` и `/project-map`;
+  - из-за этого launchd-env run реально получал HTTP 500 на снятых страницах даже при живом foundation runtime.
+
+### Что изменено
+- `src/magon_standalone/launchd_launcher_watchdog.py` и `src/magon_standalone/launchd_periodic_checks.py` теперь рендерят plist так, чтобы LaunchAgent жил из `~/.codex/launchd-support/<label>`, а не из repo-path на Desktop.
+- `scripts/render_launchd_launcher_watchdog.py` и `scripts/render_launchd_periodic_checks.py` получили явные `--launchd-root` и `--program` аргументы.
+- `scripts/install_launchd_launcher_watchdog.sh` и `scripts/install_launchd_periodic_checks.sh` теперь:
+  - создают home-directory support path;
+  - пишут repo-aware helper `run-agent.sh`;
+  - отдают stdout/stderr и `WorkingDirectory` вне Desktop.
+- `scripts/launchd_launcher_watchdog_status.sh` и `scripts/launchd_periodic_checks_status.sh` теперь показывают support-path и живые log locations, а не только plist state.
+- `src/magon_standalone/locale_integrity.py` переведён на живые standalone routes:
+  - `/`
+  - `/dashboard`
+  - `/request-workbench`
+  - `/orders`
+  - `/suppliers`
+  - `/admin-config`
+- RU: Смысл фикса не в обходе launchd, а в том, чтобы agent запускался из домашней support-директории без TCC-зависимости от Desktop и проверял только живые runtime surfaces.
+
+### Что подтверждено
+- `bash -n scripts/install_launchd_launcher_watchdog.sh scripts/install_launchd_periodic_checks.sh scripts/launchd_launcher_watchdog_status.sh scripts/launchd_periodic_checks_status.sh`
+- `./.venv/bin/python -m py_compile scripts/render_launchd_launcher_watchdog.py scripts/render_launchd_periodic_checks.py src/magon_standalone/launchd_launcher_watchdog.py src/magon_standalone/launchd_periodic_checks.py`
+- `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
+- `./scripts/install_launchd_periodic_checks.sh --interval 1800`
+- `./scripts/launchd_launcher_watchdog_status.sh`
+- `./scripts/launchd_periodic_checks_status.sh`
+- `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`
+- `env -i PATH='/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' PYTHONDONTWRITEBYTECODE=1 XPC_SERVICE_NAME=com.magonos.periodic-checks HOME=\"$HOME\" /bin/bash ~/.codex/launchd-support/com.magonos.periodic-checks/run-agent.sh scripts/run_periodic_checks.py --mode launchd`
+- `launchctl kickstart -k gui/$(id -u)/com.magonos.periodic-checks`
+- `launchctl kickstart -k gui/$(id -u)/com.magonos.launcher-watchdog`
+
+### Итог
+- `com.magonos.launcher-watchdog` теперь подтверждён с `last exit code = 0`.
+- `com.magonos.periodic-checks` теперь тоже подтверждён с `last exit code = 0`.
+- Старый тезис про "cached EX_CONFIG" больше не актуален: реальный launchd execution path закрыт.
 
 ## 2026-04-18 — Supplier source operator contour and async parsing acceptance pass
 

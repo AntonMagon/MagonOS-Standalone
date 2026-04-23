@@ -124,10 +124,13 @@
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
   - launchd repo-wrapper теперь shell-safe и под `bash`, и под bootstrap самого launchd, поэтому watchdog и periodic checks больше не зависят от bash-only `BASH_SOURCE`, если агент вызван через другой shell
+  - bootstrap LaunchAgent теперь уходит в `~/.codex/launchd-support/<label>`, а не в repo-path на Desktop, поэтому `WorkingDirectory`, stdout и stderr больше не упираются в TCC-защищённую директорию репозитория
+  - `com.magonos.launcher-watchdog` и `com.magonos.periodic-checks` теперь подтверждены через `launchctl print` с `last exit code = 0`; старый хвост про якобы «cached EX_CONFIG» больше не считается активным риском
 - hourly scheduler для постоянного parser/classifier:
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
   - `./.venv/bin/python scripts/run_supplier_scheduler.py`
+  - supplier-scheduler остаётся зелёным эталонным LaunchAgent, а watchdog и periodic checks теперь переведены на тот же домашний launchd-support pattern вместо зависимости от repo-path на Desktop
 - perf smoke/load/stress:
   - `./scripts/run_perf_suite.sh smoke`
   - `./scripts/run_perf_suite.sh load`

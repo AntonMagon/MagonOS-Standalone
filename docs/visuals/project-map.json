@@ -1,5 +1,5 @@
 {
-  "generated_at": "`2026-04-23 14:36 +07`",
+  "generated_at": "`2026-04-23 15:01 +07`",
   "repo": {
     "active_repo": "/Users/anton/Desktop/MagonOS-Standalone",
     "donor_repo": "/Users/anton/Desktop/MagonOS/MagonOS"
@@ -100,13 +100,18 @@
     "рост функциональности source-репозитория"
   ],
   "active_context": {
-    "updated_at": "`2026-04-23 14:36 +07`",
+    "updated_at": "`2026-04-23 15:01 +07`",
     "branch": "`codex/foundation-admin-config-cleanup`",
-    "current_focus": "Keep one truthful standalone foundation contour for runtime, automation, parser operations, and deploy paths so recurring checks stop drifting into removed routes and compatibility wrappers.",
-    "last_verified_workflow_status": "PASS `env -i HOME=\"/Users/anton\" PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /bin/zsh ./scripts/run_launchd_repo_python.sh scripts/run_launcher_watchdog.py`, PASS `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`, PASS `./scripts/install_launchd_periodic_checks.sh --interval 1800`, PASS `./Start_Platform.command --detach --no-open --keep-db --no-seed`, PASS `cd apps/web && npm run typecheck`, PASS `./.venv/bin/python -m unittest tests.test_scenario_router`, PASS `./scripts/verify_workflow.sh --with-web`",
-    "biggest_operational_risk": "The live runtime, parser path, and recurring automation context are aligned, but macOS launchctl can still display a stale EX_CONFIG in launchctl print even after fresh successful runs; stdout/log evidence is the trustworthy source until macOS refreshes that cached status."
+    "current_focus": "Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.",
+    "last_verified_workflow_status": "PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`",
+    "biggest_operational_risk": "Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone."
   },
   "recent_worklog": [
+    {
+      "heading": "2026-04-23 15:01 +07 | codex/foundation-admin-config-cleanup",
+      "summary": "Fix the real macOS launchd contour by moving watchdog and periodic agents to a home-directory launchd support root, updating locale integrity to active standalone routes, and verifying both LaunchAgents exit cleanly through launchctl.",
+      "risk": "See worklog entry"
+    },
     {
       "heading": "2026-04-23 14:36 +07 | codex/foundation-admin-config-cleanup",
       "summary": "Stabilize the active standalone automation layer by fixing the launchd repo wrapper shell contract, aligning recurring skills and prompts with the foundation runtime, and verifying the live runtime plus canonical workflow on the current branch.",
@@ -115,11 +120,6 @@
     {
       "heading": "2026-04-23 12:45 +07 | codex/foundation-admin-config-cleanup",
       "summary": "Fix the live supplier parser so JS-heavy supplier-owned sites truly route through a browser-aware company-site scenario, reusing one browser session across internal pages instead of falling back to the old requests-only company-site executor.",
-      "risk": "See worklog entry"
-    },
-    {
-      "heading": "2026-04-23 12:29 +07 | codex/foundation-admin-config-cleanup",
-      "summary": "Close the parser UX gap by turning /suppliers into the real operational control surface for source enablement, schedule, interval, and classification mode instead of splitting routine parser management between suppliers and admin-config.",
       "risk": "See worklog entry"
     }
   ],

@@ -5,6 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LABEL="com.magonos.periodic-checks"
 INTERVAL="1800"
 PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
+SUPPORT_ROOT="$HOME/.codex/launchd-support/$LABEL"
+HELPER_PATH="$SUPPORT_ROOT/run-agent.sh"
 
 usage() {
   cat <<USAGE
@@ -26,6 +28,8 @@ while [[ $# -gt 0 ]]; do
     --label)
       LABEL="$2"
       PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
+      SUPPORT_ROOT="$HOME/.codex/launchd-support/$LABEL"
+      HELPER_PATH="$SUPPORT_ROOT/run-agent.sh"
       shift 2 ;;
     --help|-h)
       usage; exit 0 ;;
@@ -36,12 +40,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$HOME/Library/LaunchAgents" "$REPO_ROOT/.cache"
+mkdir -p "$HOME/Library/LaunchAgents" "$REPO_ROOT/.cache" "$SUPPORT_ROOT"
+
+cat >"$HELPER_PATH" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$REPO_ROOT"
+SCRIPT_PATH="\$1"
+shift || true
+
+# RU: launchd helper держим в home-support path, чтобы periodic agent не падал ещё до старта на Desktop-protected working directory.
+# RU: Repo-local python/script вызываем напрямую, иначе periodic checks начнут зависеть от пользовательского shell alias/path drift.
+PYTHON_BIN="\$REPO_ROOT/.venv/bin/python"
+if [[ ! -x "\$PYTHON_BIN" ]]; then
+  PYTHON_BIN="\$(command -v python3)"
+fi
+if [[ -z "\$PYTHON_BIN" ]]; then
+  echo "Missing python runtime for launchd helper" >&2
+  exit 78
+fi
+
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="\$REPO_ROOT/src\${PYTHONPATH:+:\$PYTHONPATH}"
+exec "\$PYTHON_BIN" "\$REPO_ROOT/\$SCRIPT_PATH" "\$@"
+EOF
+chmod +x "$HELPER_PATH"
 
 # RU: Plist рендерим из versioned repo-template, чтобы launchd не жил отдельно от текущего standalone contract.
 "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/render_launchd_periodic_checks.py" \
   --interval "$INTERVAL" \
   --label "$LABEL" \
+  --launchd-root "$SUPPORT_ROOT" \
+  --program "$HELPER_PATH" \
   --output "$PLIST_PATH"
 
 launchctl bootout "gui/$(id -u)" "$PLIST_PATH" >/dev/null 2>&1 || true

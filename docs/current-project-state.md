@@ -113,10 +113,13 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/install_launchd_launcher_watchdog.sh --interval 3600`
   - `./scripts/launchd_launcher_watchdog_status.sh`
   - the launchd repo-wrapper is now shell-safe under both bash and launchd bootstrap, so watchdog and periodic checks no longer depend on a bash-only `BASH_SOURCE` contract while being invoked through another shell
+  - launchd bootstrap now runs from `~/.codex/launchd-support/<label>` instead of the repo path on Desktop, so `WorkingDirectory`, stdout, and stderr no longer depend on a TCC-protected repo location
+  - `com.magonos.launcher-watchdog` and `com.magonos.periodic-checks` are now verified through `launchctl print` with `last exit code = 0`; the remaining launchd risk is no longer a stale cached `EX_CONFIG`
 - hourly supplier parser/classifier scheduler:
   - `./scripts/install_launchd_supplier_scheduler.sh --interval 3600`
   - `./scripts/launchd_supplier_scheduler_status.sh`
   - `./.venv/bin/python scripts/run_supplier_scheduler.py`
+  - the supplier scheduler remains the green reference LaunchAgent; the watchdog and periodic agents now use the same home-directory launchd support pattern instead of relying on the Desktop repo path
 - perf smoke/load/stress:
   - `./scripts/run_perf_suite.sh smoke`
   - `./scripts/run_perf_suite.sh load`

@@ -17,8 +17,11 @@ RU_SOURCE_FILES = (
 RU_RUNTIME_ROUTES = (
     "/",
     "/dashboard",
-    "/ops-workbench",
-    "/project-map",
+    # RU: Runtime locale guard проверяет только живые standalone surfaces, иначе периодический agent будет падать на снятых legacy-роутах вместо реальной языковой ошибки.
+    "/request-workbench",
+    "/orders",
+    "/suppliers",
+    "/admin-config",
 )
 
 FORBIDDEN_RU_LEAKS = (
