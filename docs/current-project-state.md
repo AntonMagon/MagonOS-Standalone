@@ -53,6 +53,11 @@ Also already standalone-owned:
 - company/supplier/site registry contour with raw -> normalized -> confirmed layering
 - supplier intelligence pipeline
 - scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
+- live parsing runtime readiness is now executable rather than paper-only: `scenario_live` health proves config + Playwright import + real browser launch before claiming `live_parsing_ready`
+- supplier parsing now has a repo-owned live evaluation contour under `evaluation/supplier_parsing/vn_wave1/manifest.json` with 30 live Vietnam samples refreshed against current directory cards and official supplier contact/about pages
+- supplier parsing quality is now acceptance-gated by `./scripts/verify_supplier_parsing_quality.sh` instead of smoke-only confidence
+- measured parsing truth as of `2026-04-23` gate run: overall extraction success `1.0000`, directory `1.0000`, JS-heavy company sites `1.0000`, simple company sites `1.0000`; field exacts `website 1.0000`, `phone 1.0000`, `email 0.9630`, `supplier_name 1.0000`, `address 0.9333`, `city_region 0.9655`
+- current parsing acceptance status is `ACCEPTED FOR WAVE1 WITH LIMITS`: remaining non-gated weakness is uneven `category/capabilities` extraction plus a few ambiguous live company-site truths (`site-in-tem-nhan-thang-loi-long`, `site-in-an-binh-duong-cong-ty-tnhh-design-akay`)
 - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
 - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
 - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
@@ -134,8 +139,21 @@ Do not pretend full CRM/quote parity exists.
   - blank `MAGON_FOUNDATION_REDIS_URL` in test/smoke and CI is now treated as an explicit Redis disable signal instead of silently falling back to `redis://127.0.0.1:6379/0`
 - supplier demo pipeline:
   - `./.venv/bin/python scripts/run_supplier_demo_pipeline.py --source-code SRC-00001 --idempotency-key demo-suppliers-001`
+- supplier live runtime bootstrap:
+  - `./scripts/ensure_supplier_live_runtime.sh`
 - fixture pipeline:
   - `./.venv/bin/python scripts/run_pipeline.py --fixture tests/fixtures/vn_suppliers_raw.json`
+- live supplier parsing pipeline:
+  - `./.venv/bin/python scripts/run_pipeline.py --db-path /tmp/magon-live-check.sqlite3 --query 'printing packaging vietnam' --country VN --fixture ''`
+- supplier parsing evaluation dataset:
+  - `./.venv/bin/python scripts/build_vn_supplier_eval_dataset.py`
+  - dataset path: `evaluation/supplier_parsing/vn_wave1/manifest.json`
+- supplier parsing evaluation:
+  - `./.venv/bin/python scripts/evaluate_supplier_parsing.py --dataset evaluation/supplier_parsing/vn_wave1/manifest.json --output .cache/supplier-eval/vn-wave1-report.json --evidence-dir .cache/supplier-eval/vn-wave1-samples`
+  - JS-heavy proof run: `./.venv/bin/python scripts/evaluate_supplier_parsing.py --dataset evaluation/supplier_parsing/vn_wave1/manifest.json --sample-ids js-cong-ty-co-phan-tap-oan-bao-bi-sai-gon,js-in-quang-cao-gia-thinh-cong-ty-tnhh-thiet-ke-in-gia-thinh,js-nhan-mac-hoang-hieu-cong-ty-tnhh-san-xuat-nhan-mac-hoang-hieu --output .cache/supplier-eval/vn-wave1-js-report.json --evidence-dir .cache/supplier-eval/vn-wave1-js-samples`
+- supplier parsing acceptance gate:
+  - `./scripts/verify_supplier_parsing_quality.sh`
+  - gate outputs: `.cache/supplier-eval/acceptance/latest-report.json`, `.cache/supplier-eval/acceptance/thresholds.json`, `.cache/supplier-eval/acceptance/samples/`
 - backend verification:
   - `./.venv/bin/python -m unittest tests.test_persistence tests.test_api tests.test_operations`
 - foundation verification:
@@ -157,6 +175,9 @@ Do not pretend full CRM/quote parity exists.
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - the canonical `./scripts/verify_workflow.sh` path now executes the foundation smoke scripts above on temporary PostgreSQL databases instead of treating them as optional manual-only checks
   - the foundation smoke/demo scripts now reserve a free localhost port per run and use bounded health probes, so stale temp listeners must fail fast instead of hanging the whole verify path
+- web runtime smoke:
+  - `./scripts/platform_smoke_check.sh`
+  - `platform_smoke_check.sh` must probe the live `/project-map` route together with `/`, `/login`, `/marketing`, `/request-workbench`, `/orders`, and `/suppliers`, because the project visual map is part of the active operator shell rather than a docs-only artifact
 - web typecheck when web code changed:
   - `cd apps/web && npm run typecheck`
 
@@ -186,6 +207,8 @@ Do not pretend full CRM/quote parity exists.
     - `/suppliers` about `0.01s`
     - backend `/health/ready` about `0.01s`
 - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+- project visual map: `http://127.0.0.1:3000/project-map`
+- the project visual map now reads the canonical repo visual payload first and falls back to the RU visual map only as a compatibility path; a `500` on `/project-map` is a live shell regression, not an acceptable docs mismatch
 - public marketing layer: `http://127.0.0.1:3000/marketing`
 - public showcase: `http://127.0.0.1:3000/catalog`
 - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`

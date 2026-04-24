@@ -150,10 +150,10 @@ Detailed workflow: `docs/repo-workflow.md`
 
 ## Auto-synced operating status
 <!-- AUTO-SYNC:README:START -->
-- Auto-synced at: `2026-04-23 15:01 +07`
-- Current focus: Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.
-- Last verified workflow status: PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`
-- Biggest operational risk: Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone.
+- Auto-synced at: `2026-04-25 05:26 +07`
+- Current focus: Проверен текущий standalone tree, supplier parsing/runtime изменения зафиксированы перед GitHub push
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: no additional risk recorded
 - Validated contour:
   - company
   - request draft / intake boundary
@@ -166,6 +166,11 @@ Detailed workflow: `docs/repo-workflow.md`
   - company/supplier/site registry contour with raw -> normalized -> confirmed layering
   - supplier intelligence pipeline
   - scenario-driven live parsing now distinguishes static directories, rendered directories, plain company sites, and JS-heavy company sites; supplier-owned sites flagged as browser-required must route through a browser-aware company-site executor instead of the old requests-only path
+  - live parsing runtime readiness is now executable rather than paper-only: `scenario_live` health proves config + Playwright import + real browser launch before claiming `live_parsing_ready`
+  - supplier parsing now has a repo-owned live evaluation contour under `evaluation/supplier_parsing/vn_wave1/manifest.json` with 30 live Vietnam samples refreshed against current directory cards and official supplier contact/about pages
+  - supplier parsing quality is now acceptance-gated by `./scripts/verify_supplier_parsing_quality.sh` instead of smoke-only confidence
+  - measured parsing truth as of `2026-04-23` gate run: overall extraction success `1.0000`, directory `1.0000`, JS-heavy company sites `1.0000`, simple company sites `1.0000`; field exacts `website 1.0000`, `phone 1.0000`, `email 0.9630`, `supplier_name 1.0000`, `address 0.9333`, `city_region 0.9655`
+  - current parsing acceptance status is `ACCEPTED FOR WAVE1 WITH LIMITS`: remaining non-gated weakness is uneven `category/capabilities` extraction plus a few ambiguous live company-site truths (`site-in-tem-nhan-thang-loi-long`, `site-in-an-binh-duong-cong-ty-tnhh-design-akay`)
   - supplier source registry with both repeatable fixture ingest and selectable live parsing ingest over the existing supplier-intelligence discovery layer
   - operator source control with adapter health, latest ingest outcome, queued parsing runs, retry, and force-rerun actions directly from the standalone UI
   - env-gated LLM connection for `ai_assisted` supplier extraction fallback with explicit operator status/test path instead of a hidden black-box runtime
@@ -217,6 +222,8 @@ Detailed workflow: `docs/repo-workflow.md`
   - `/suppliers` about `0.01s`
   - backend `/health/ready` about `0.01s`
   - embedded entity/dependency reference: `http://127.0.0.1:3000/reference`
+  - project visual map: `http://127.0.0.1:3000/project-map`
+  - the project visual map now reads the canonical repo visual payload first and falls back to the RU visual map only as a compatibility path; a `500` on `/project-map` is a live shell regression, not an acceptable docs mismatch
   - public marketing layer: `http://127.0.0.1:3000/marketing`
   - public showcase: `http://127.0.0.1:3000/catalog`
   - public catalog detail: `http://127.0.0.1:3000/catalog/{itemCode}`

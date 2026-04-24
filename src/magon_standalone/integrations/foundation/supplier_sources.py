@@ -16,8 +16,14 @@ def _run_live_discovery(config: dict | None = None) -> list[dict]:
     country = str(actual_config.get("country") or "VN")
     from magon_standalone.supplier_intelligence.scenario_config import ScenarioConfig
     from magon_standalone.supplier_intelligence.scenario_discovery_service import ScenarioDrivenDiscoveryService
+    from magon_standalone.supplier_intelligence.live_runtime import probe_live_runtime
 
-    discovery = ScenarioDrivenDiscoveryService(ScenarioConfig.load())
+    scenario_config = ScenarioConfig.load()
+    # RU: Live adapter не должен притворяться готовым только по конфигу; readiness обязана проверять реальный browser/runtime before discovery.
+    readiness = probe_live_runtime(scenario_config, force_refresh=True)
+    if not readiness.ok:
+        raise RuntimeError(f"live_runtime_not_ready:{readiness.detail}")
+    discovery = ScenarioDrivenDiscoveryService(scenario_config)
     return list(discovery.discover(query=query, country_code=country))
 
 
@@ -52,8 +58,11 @@ class LiveParsingSupplierSourceAdapter(SupplierSourceAdapter):
     def health(self) -> IntegrationResult:
         try:
             from magon_standalone.supplier_intelligence.scenario_config import ScenarioConfig
+            from magon_standalone.supplier_intelligence.live_runtime import probe_live_runtime
 
             config = ScenarioConfig.load()
+            # RU: Health surface должен отражать исполнимость live parsing path, а не просто наличие source adapter registration.
+            readiness = probe_live_runtime(config, force_refresh=True)
         except Exception as exc:
             return IntegrationResult(
                 ok=False,
@@ -62,10 +71,13 @@ class LiveParsingSupplierSourceAdapter(SupplierSourceAdapter):
                 payload={"error": str(exc)[:500]},
             )
         return IntegrationResult(
-            ok=True,
+            ok=readiness.ok,
             adapter=self.adapter_name,
-            detail="live_parsing_ready",
-            payload={"low_confidence_threshold": config.settings().low_confidence_threshold},
+            detail=readiness.detail,
+            payload={
+                "low_confidence_threshold": config.settings().low_confidence_threshold,
+                **(readiness.payload or {}),
+            },
         )
 
     def pull(self, config: dict | None = None) -> SupplierSourcePullResult:

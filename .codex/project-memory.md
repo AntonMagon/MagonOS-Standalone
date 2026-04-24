@@ -78,15 +78,104 @@ It exists so the project context survives across sessions instead of being re-ex
 
 ## Active Context
 <!-- ACTIVE:START -->
-- Updated at: `2026-04-23 15:01 +07`
+- Updated at: `2026-04-25 05:26 +07`
 - Branch: `codex/foundation-admin-config-cleanup`
-- Current focus: Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.
-- Last verified workflow status: PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`
-- Biggest operational risk: Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone.
+- Current focus: Проверен текущий standalone tree, supplier parsing/runtime изменения зафиксированы перед GitHub push
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: no additional risk recorded
 <!-- ACTIVE:END -->
 
 ## Recent Worklog
 <!-- WORKLOG:START -->
+### 2026-04-25 05:26 +07 | codex/foundation-admin-config-cleanup
+- Summary: Проверен текущий standalone tree, supplier parsing/runtime изменения зафиксированы перед GitHub push
+- Changed:
+  - apps/web/app/project-map/page.tsx,apps/web/lib/project-visual-map.ts,docs/current-project-state.md,docs/ru/current-project-state.md,docs/ru/repo-workflow.md,docs/ru/project-audit-2026-04-23.md,docs/ru/supplier-parsing-evaluation.md,docs/visuals/project-map.json,docs/visuals/project-map.md,docs/ru/visuals/project-map.json,docs/ru/visuals/project-map.md,scripts/install_project_skills.sh,scripts/platform_smoke_check.sh,scripts/build_vn_supplier_eval_dataset.py,scripts/ensure_supplier_live_runtime.sh,scripts/evaluate_supplier_parsing.py,scripts/verify_supplier_parsing_quality.sh,src/magon_standalone/integrations/foundation/__init__.py,src/magon_standalone/integrations/foundation/supplier_sources.py,src/magon_standalone/supplier_intelligence/browser_runtime.py,src/magon_standalone/supplier_intelligence/extraction_engine.py,src/magon_standalone/supplier_intelligence/scenario_registry.py,src/magon_standalone/supplier_intelligence/evaluation.py,src/magon_standalone/supplier_intelligence/live_runtime.py,evaluation/supplier_parsing/vn_wave1/manifest.json,tests/test_browser_runtime.py,tests/test_supplier_evaluation.py
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-24 00:32 +07 | codex/foundation-admin-config-cleanup
+- Summary: Wave1 supplier parsing acceptance gate passed with live runtime, refreshed dataset truth, and canonical quality verify
+- Changed:
+  - src/magon_standalone/supplier_intelligence/extraction_engine.py,src/magon_standalone/supplier_intelligence/evaluation.py,evaluation/supplier_parsing/vn_wave1/manifest.json,scripts/verify_supplier_parsing_quality.sh,tests/test_supplier_evaluation.py,docs/current-project-state.md,docs/ru/supplier-parsing-evaluation.md,.codex/project-memory.md
+- Verified:
+  - PASS `./scripts/verify_supplier_parsing_quality.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-24 00:31 +07 | codex/foundation-admin-config-cleanup
+- Summary: Closed the wave1 supplier parsing acceptance gate with a live runtime probe, stricter evaluation output, refreshed Vietnam benchmark labels, and a canonical quality verify script.
+- Changed:
+  - src/magon_standalone/supplier_intelligence/extraction_engine.py
+  - src/magon_standalone/supplier_intelligence/evaluation.py
+  - evaluation/supplier_parsing/vn_wave1/manifest.json
+  - scripts/verify_supplier_parsing_quality.sh
+  - tests/test_supplier_evaluation.py
+  - docs/current-project-state.md
+  - docs/ru/supplier-parsing-evaluation.md
+  - .codex/project-memory.md
+- Verified:
+  - PASS `./scripts/ensure_supplier_live_runtime.sh`
+  - PASS `./.venv/bin/python -m unittest tests.test_supplier_evaluation tests.test_browser_runtime tests.test_foundation_suppliers tests.test_supplier_scheduler`
+  - PASS `./.venv/bin/python scripts/evaluate_supplier_parsing.py --dataset evaluation/supplier_parsing/vn_wave1/manifest.json --output .cache/supplier-eval/wave1-gate-report.json --evidence-dir .cache/supplier-eval/wave1-gate-samples`
+  - PASS `./scripts/verify_supplier_parsing_quality.sh`
+- Risk:
+  - Wave1 acceptance is green, but category/capability extraction and a few ambiguous company-site truths remain weaker than contact extraction.
+### 2026-04-23 21:33 +07 | codex/foundation-admin-config-cleanup
+- Summary: Поставлен измеримый live supplier parsing contour с runtime readiness, evaluation dataset и quality reports
+- Changed:
+  - src/magon_standalone/integrations/foundation/__init__.py
+  - src/magon_standalone/integrations/foundation/supplier_sources.py
+  - src/magon_standalone/supplier_intelligence/live_runtime.py
+  - src/magon_standalone/supplier_intelligence/browser_runtime.py
+  - src/magon_standalone/supplier_intelligence/scenario_registry.py
+  - src/magon_standalone/supplier_intelligence/evaluation.py
+  - scripts/ensure_supplier_live_runtime.sh
+  - scripts/build_vn_supplier_eval_dataset.py
+  - scripts/evaluate_supplier_parsing.py
+  - evaluation/supplier_parsing/vn_wave1/manifest.json
+  - tests/test_browser_runtime.py
+  - tests/test_supplier_evaluation.py
+  - docs/current-project-state.md
+  - docs/ru/supplier-parsing-evaluation.md
+- Verified:
+  - PASS `./scripts/ensure_supplier_live_runtime.sh`
+  - PASS `./.venv/bin/python -m unittest tests.test_pipeline tests.test_operations tests.test_scenario_router tests.test_browser_runtime tests.test_supplier_evaluation tests.test_foundation_suppliers tests.test_supplier_scheduler`
+  - PASS `./.venv/bin/python scripts/run_pipeline.py --db-path /tmp/magon-live-check.sqlite3 --query 'printing packaging vietnam' --country VN --fixture ''`
+  - PASS `./.venv/bin/python scripts/evaluate_supplier_parsing.py --dataset evaluation/supplier_parsing/vn_wave1/manifest.json --output .cache/supplier-eval/vn-wave1-report.json --evidence-dir .cache/supplier-eval/vn-wave1-samples`
+  - PASS `./.venv/bin/python scripts/evaluate_supplier_parsing.py --dataset evaluation/supplier_parsing/vn_wave1/manifest.json --sample-ids js-cong-ty-co-phan-tap-oan-bao-bi-sai-gon,js-in-quang-cao-gia-thinh-cong-ty-tnhh-thiet-ke-in-gia-thinh,js-nhan-mac-hoang-hieu-cong-ty-tnhh-san-xuat-nhan-mac-hoang-hieu --output .cache/supplier-eval/vn-wave1-js-report.json --evidence-dir .cache/supplier-eval/vn-wave1-js-samples`
+- Risk:
+  - Simple supplier-site extraction remains weak: extraction_success_rate 0.1667 and address/city extraction are still poor.
+### 2026-04-23 20:59 +07 | codex/foundation-admin-config-cleanup
+- Summary: Fixed the live /project-map route, restored visual-map payload compatibility, and added project-map to the canonical web smoke path.
+- Changed:
+  - apps/web/lib/project-visual-map.ts
+  - apps/web/app/project-map/page.tsx
+  - scripts/platform_smoke_check.sh
+  - docs/current-project-state.md
+  - docs/ru/current-project-state.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh --with-web`
+- Risk:
+  - no additional risk recorded
+### 2026-04-23 16:49 +07 | codex/foundation-admin-config-cleanup
+- Summary: Добавлен полный аудит проекта с бизнес, архитектурным, кодовым и GTM-разбором
+- Changed:
+  - docs/ru/project-audit-2026-04-23.md
+- Verified:
+  - PASS `./scripts/verify_workflow.sh`
+- Risk:
+  - no additional risk recorded
+### 2026-04-23 16:00 +07 | codex/foundation-admin-config-cleanup
+- Summary: Fix the only concrete repo permission drift by restoring the executable bit on `scripts/install_project_skills.sh` and documenting that the installer stays repo-scoped to `~/.codex/skills`.
+- Changed:
+  - scripts/install_project_skills.sh
+  - docs/ru/repo-workflow.md
+- Verified:
+  - PASS `bash ./scripts/install_project_skills.sh`
+  - PASS `./scripts/install_project_skills.sh`
+- Risk:
+  - The installer is now directly executable, but it still only links project skills into `~/.codex/skills`; it does not grant any broader filesystem access.
 ### 2026-04-23 15:01 +07 | codex/foundation-admin-config-cleanup
 - Summary: Fix the real macOS launchd contour by moving watchdog and periodic agents to a home-directory launchd support root, updating locale integrity to active standalone routes, and verifying both LaunchAgents exit cleanly through launchctl.
 - Changed:

@@ -91,14 +91,19 @@ export default async function ProjectMapPage() {
   const locale = await getLocale();
   const t = await getTranslations('projectMap');
   const payload = await getProjectVisualMap();
+  // RU: Локальные alias страхуют страницу от неполного project-map payload и убирают дублирование optional chaining ниже.
+  const activeContext = payload?.active_context ?? {};
+  const recentWorklog = payload?.recent_worklog ?? [];
+  const skillsCount = payload?.skills.length ?? 0;
+  const automationsCount = payload?.automations.length ?? 0;
 
   // RU: Визуальная карта берёт уже сгенерированные locale-срезы, чтобы shell не пересобирал project state на каждый запрос.
   const contour = locale === 'en' ? payload?.validated_contour_en ?? [] : payload?.validated_contour_ru ?? [];
   const owned = locale === 'en' ? payload?.owned_capabilities_en ?? [] : payload?.owned_capabilities_ru ?? [];
   const overlap = locale === 'en' ? payload?.danger_overlap_en ?? [] : payload?.danger_overlap_ru ?? [];
   const scope = locale === 'en' ? payload?.out_of_scope_en ?? [] : payload?.out_of_scope_ru ?? [];
-  const focus = localizedProjectString(locale, payload?.active_context.current_focus, t('fallbackFocus'));
-  const risk = localizedProjectString(locale, payload?.active_context.biggest_operational_risk, t('fallbackRisk'));
+  const focus = localizedProjectString(locale, activeContext.current_focus, t('fallbackFocus'));
+  const risk = localizedProjectString(locale, activeContext.biggest_operational_risk, t('fallbackRisk'));
   const automations = (payload?.automations || []).map((item) => localizedAutomationName(locale, item));
 
   return (
@@ -119,7 +124,7 @@ export default async function ProjectMapPage() {
                 <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow">
                   {t('openRuntime')}
                 </Link>
-                <Link href="/ops-workbench" className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-foreground">
+                <Link href="/request-workbench" className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-foreground">
                   {t('openOps')}
                 </Link>
               </div>
@@ -224,12 +229,12 @@ export default async function ProjectMapPage() {
             <h2 className="text-2xl leading-tight">{t('recentTitle')}</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            <MetricCard title={t('metrics.skills')} value={String(payload?.skills.length || 0)} detail={t('metrics.skillsDetail')} />
-            <MetricCard title={t('metrics.automations')} value={String(payload?.automations.length || 0)} detail={t('metrics.automationsDetail')} tone="accent" />
-            <MetricCard title={t('metrics.worklog')} value={String(payload?.recent_worklog.length || 0)} detail={t('metrics.worklogDetail')} />
+            <MetricCard title={t('metrics.skills')} value={String(skillsCount)} detail={t('metrics.skillsDetail')} />
+            <MetricCard title={t('metrics.automations')} value={String(automationsCount)} detail={t('metrics.automationsDetail')} tone="accent" />
+            <MetricCard title={t('metrics.worklog')} value={String(recentWorklog.length)} detail={t('metrics.worklogDetail')} />
           </div>
           <div className="mt-4 grid gap-3">
-            {(payload?.recent_worklog || []).map((entry) => (
+            {recentWorklog.map((entry) => (
               <div key={entry.heading} className="rounded-[1.2rem] border border-white/8 bg-black/10 p-4">
                 <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{entry.heading}</div>
                 <div className="mt-2 text-sm font-semibold leading-6">{localizedWorklogSummary(locale, entry.summary)}</div>

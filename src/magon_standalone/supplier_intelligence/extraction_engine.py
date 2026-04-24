@@ -12,6 +12,7 @@ import asyncio
 import hashlib
 import os
 import re
+import unicodedata
 from datetime import datetime, timezone
 from html import unescape
 from typing import Any
@@ -38,6 +39,25 @@ def _domain(url: str) -> str:
 
 def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+
+def _ascii_text(value: str | None) -> str:
+    normalized = unicodedata.normalize("NFKD", (value or "").replace("đ", "d").replace("Đ", "D"))
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
+
+
+def _normalize_lookup(value: str | None) -> str:
+    lowered = _ascii_text(_text(value)).lower()
+    return re.sub(r"[^a-z0-9]+", " ", lowered).strip()
+
+
+def _dedupe_texts(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    for item in values:
+        cleaned = _text(item)
+        if cleaned and cleaned not in deduped:
+            deduped.append(cleaned)
+    return deduped
 
 
 def _capability_labels(blob: str) -> list[str]:
@@ -97,6 +117,22 @@ def _messengers_from_links(links: list[str], blob: str) -> list[str]:
         if token in lowered or any(token in link.lower() for link in links):
             values.append(token)
     return list(dict.fromkeys(values))
+
+
+_LOCATION_REPLACEMENTS = (
+    (r"\btp\.?\s*hcm\b", "ho chi minh city"),
+    (r"\btp\.?\s*ho\s*chi\s*minh\b", "ho chi minh city"),
+    (r"\btphcm\b", "ho chi minh city"),
+    (r"\bho\s*chi\s*minh\b", "ho chi minh city"),
+    (r"\btp\.?\s*ha\s*noi\b", "ha noi"),
+    (r"\bha\s*noi\b", "ha noi"),
+    (r"\btp\.?\s*da\s*nang\b", "da nang"),
+    (r"\bda\s*nang\b", "da nang"),
+    (r"\bbien\s*hoa\b", "bien hoa"),
+    (r"\bbinh\s*duong\b", "binh duong"),
+    (r"\bdong\s*nai\b", "dong nai"),
+    (r"\bthu\s*dau\s*mot\b", "thu dau mot"),
+)
 
 
 class SupplierSchemaValidator:
@@ -182,32 +218,29 @@ class ScenarioExtractionEngine:
         route: ScenarioRouteDecision,
     ) -> list[RawCompanyRecord]:
         collected_blob = []
-        best_name = ""
         website = ""
-        address = ""
-        city = ""
-        region = ""
         services: list[str] = []
         products: list[str] = []
         contact_persons: list[str] = []
         evidence_payloads: list[RawEvidencePayload] = []
+        legal_name_candidates: list[str] = []
+        brand_candidates: list[str] = []
+        address_candidates: list[str] = []
+        city_candidates: list[str] = []
 
         for page_url, html in pages:
             soup = BeautifulSoup(html, "html.parser")
             text_blob = _text(soup.get_text(" ", strip=True))
+            page_lines = self._page_lines(soup)
+            context_sections = self._context_sections(soup)
             collected_blob.append(text_blob)
-            best_name = best_name or _text(
-                (soup.select_one("h1") or soup.select_one("title") or {}).get_text(" ", strip=True)  # type: ignore[union-attr]
-                if (soup.select_one("h1") or soup.select_one("title"))
-                else ""
-            )
             website = website or f"https://{_domain(page_url)}"
-            if not address:
-                address = self._first_address_like(text_blob)
-            if not city:
-                city = self._guess_city(text_blob)
-            if not region:
-                region = city
+            legal_name_candidates.extend(self._company_name_candidates(soup, page_lines, context_sections))
+            brand_candidates.extend(self._brand_candidates(soup, page_lines, source_url=page_url))
+            address_candidates.extend(self._address_candidates(page_lines, context_sections))
+            city_candidates.extend(
+                item for item in (self._guess_city("\n".join(page_lines)), self._guess_city("\n".join(context_sections))) if item
+            )
             services.extend(self._bullet_candidates(soup, keywords=("service", "services", "dịch vụ", "printing", "packaging")))
             products.extend(self._bullet_candidates(soup, keywords=("product", "products", "sản phẩm", "label", "box", "packaging")))
             contact_persons.extend(re.findall(r"(?:Mr|Ms|Mrs|Anh|Chị)\.?\s+[A-ZÀ-ỹ][A-Za-zÀ-ỹ\s]{2,30}", text_blob))
@@ -223,11 +256,16 @@ class ScenarioExtractionEngine:
             )
 
         blob = "\n".join(collected_blob)
+        legal_name = self._pick_best_company_name(legal_name_candidates)
+        brand_name = self._pick_best_brand_name(brand_candidates, legal_name, source_url=source_url)
+        address = self._pick_best_address(address_candidates)
+        city = self._pick_best_city(city_candidates, address, blob)
+        region = city
         record: RawCompanyRecord = {
             "source_type": "company_site",
             "source_url": source_url,
             "source_page_type": "company_site",
-            "company_name": best_name or _domain(source_url).split(".")[0].replace("-", " ").title(),
+            "company_name": self._compose_company_name(brand_name, legal_name, source_url=source_url),
             "website": website,
             "domain": _domain(website or source_url),
             "address_text": address,
@@ -244,17 +282,22 @@ class ScenarioExtractionEngine:
             "contact_persons": list(dict.fromkeys(contact_persons))[:5],
             "social_links": _social_links(BeautifulSoup(pages[0][1], "html.parser"), source_url) if pages else [],
             "messengers": _messengers_from_links(_social_links(BeautifulSoup(pages[0][1], "html.parser"), source_url) if pages else [], blob),
-            "parser_confidence": 0.76 if best_name else 0.58,
+            "parser_confidence": 0.82 if legal_name else 0.64,
             "source_confidence": 0.72,
             "extraction_method": "deterministic",
-            "extraction_confidence": 0.76 if best_name else 0.58,
+            "extraction_confidence": 0.82 if legal_name else 0.64,
             "scenario_key": route["scenario_key"],
             "execution_reasons": list(route.get("reasons") or []),
             "execution_flags": dict(route.get("execution_flags") or {}),
             "raw_evidence_refs": [item["evidence_ref"] for item in evidence_payloads],
             "evidence_payloads": evidence_payloads,
             "capabilities_text": "; ".join(_capability_labels(blob)),
-            "raw_payload": {"page_urls": [url for url, _html in pages]},
+            "raw_payload": {
+                "page_urls": [url for url, _html in pages],
+                "legal_name_candidates": _dedupe_texts(legal_name_candidates)[:8],
+                "brand_candidates": _dedupe_texts(brand_candidates)[:8],
+                "address_candidates": _dedupe_texts(address_candidates)[:8],
+            },
         }
         return [SupplierSchemaValidator.ensure(record)]
 
@@ -345,7 +388,17 @@ class ScenarioExtractionEngine:
             return []
         rows: list[RawCompanyRecord] = []
         for card in cards:
-            title = card.select_one("div.fs-5.fw-semibold a[href]")
+            title = None
+            for selector in (
+                "div.fs-5.fw-semibold a[href*='/lgs/']",
+                "div.fs-5.fw-semibold a[href]",
+                "a[href*='/lgs/']",
+                "h2 a[href*='/lgs/']",
+                "h2 a[href]",
+            ):
+                title = card.select_one(selector)
+                if title:
+                    break
             if not title:
                 continue
             company_url = urljoin(page_url, title.get("href", "").strip())
@@ -356,6 +409,13 @@ class ScenarioExtractionEngine:
             website = website_node.get("href", "").strip() if website_node else ""
             capability_node = card.select_one("span.yp_nganh_text")
             capability_text = _text(capability_node.get_text(" ", strip=True) if capability_node else "")
+            address_nodes = [
+                _text(node.get_text(" ", strip=True))
+                for node in card.select("i.fa-location-arrow + small, i.fa-location-arrow ~ small, .yp_diachi_logo p small, .yp_diachi_logo p")
+            ]
+            address_candidates = [self._extract_labeled_address(item) or self._extract_plain_address(item) for item in address_nodes + [text_blob]]
+            address = self._pick_best_address(address_candidates)
+            city = self._guess_city(address or text_blob)
             evidence_ref = f"card:{hashlib.sha1(company_url.encode('utf-8')).hexdigest()[:12]}"
             row: RawCompanyRecord = {
                 "source_type": "directory",
@@ -365,8 +425,8 @@ class ScenarioExtractionEngine:
                 "company_name": _text(title.get_text(" ", strip=True)),
                 "website": website,
                 "domain": _domain(website or company_url),
-                "address_text": self._first_address_like(text_blob),
-                "city": self._guess_city(text_blob),
+                "address_text": address,
+                "city": city,
                 "country": "Vietnam",
                 "country_code": "VN",
                 "phones": phones,
@@ -499,23 +559,405 @@ class ScenarioExtractionEngine:
             return ""
 
     @staticmethod
-    def _guess_city(blob: str) -> str:
-        lowered = blob.lower()
-        if "ho chi minh" in lowered or "tp ho chi minh" in lowered:
-            return "Ho Chi Minh City"
-        if "ha noi" in lowered:
-            return "Ha Noi"
-        if "da nang" in lowered:
-            return "Da Nang"
-        return ""
+    def _page_lines(soup: BeautifulSoup) -> list[str]:
+        lines = [_text(item) for item in soup.stripped_strings]
+        return [item for item in _dedupe_texts(lines) if item]
 
     @staticmethod
-    def _first_address_like(blob: str) -> str:
-        for segment in re.split(r"[|;]", blob):
-            cleaned = _text(segment)
-            if any(token in cleaned.lower() for token in ("district", "quan", "ward", "street", "industrial", "city", "kcn", "park")):
-                return cleaned
+    def _context_sections(soup: BeautifulSoup) -> list[str]:
+        selectors = (
+            "address",
+            "[class*='contact']",
+            "[id*='contact']",
+            "[class*='footer']",
+            "[id*='footer']",
+            "[class*='address']",
+            "[id*='address']",
+            "[class*='info']",
+            "[id*='info']",
+            "[itemtype*='Organization']",
+            "[itemtype*='LocalBusiness']",
+        )
+        values: list[str] = []
+        for selector in selectors:
+            for node in soup.select(selector):
+                text = _text(node.get_text(" ", strip=True))
+                if text:
+                    values.append(text)
+        return _dedupe_texts(values)
+
+    @staticmethod
+    def _looks_like_company_name(candidate: str) -> bool:
+        lookup = _normalize_lookup(candidate)
+        if not lookup or len(lookup) < 10:
+            return False
+        if not any(token in lookup for token in ("cong ty", "company", "co ltd", "tnhh", "trach nhiem huu han", "co phan", "jsc", "mtv")):
+            return False
+        if any(
+            phrase in lookup
+            for phrase in (
+                "cong ty chung toi",
+                "cong ty chuyen",
+                "cong ty in gia re",
+                "cong ty quang cao dep chuyen",
+                "profile cong ty",
+            )
+        ):
+            return False
+        return True
+
+    @staticmethod
+    def _clean_company_candidate(candidate: str) -> str:
+        cleaned = _text(candidate)
+        cleaned = re.sub(
+            r"^(?:liên hệ(?: footer)?|giới thiệu|trụ sở chính|chi nhánh(?:\s+\w+)?|kính chào quý khách!?|sản phẩm|về)\s*-\s*",
+            "",
+            cleaned,
+            flags=re.I,
+        )
+        company_hits = [match.start() for match in re.finditer(r"\bcông ty\b|\bcompany\b", cleaned, flags=re.I)]
+        if len(company_hits) > 1:
+            cleaned = cleaned[company_hits[-1] :]
+        cleaned = re.sub(r"^(?:liên hệ ngay:|copyright.*?về|©\s*bản quyền thuộc về)\s*", "", cleaned, flags=re.I)
+        cleaned = re.split(
+            r"\b(?:địa chỉ|hotline|email|website|mst|mã số thuế|điện thoại|phone|gpkd|văn phòng|vp|xưởng sản xuất|xưởng|tuyển dụng)\b\s*[:\-]?",
+            cleaned,
+            maxsplit=1,
+            flags=re.I,
+        )[0]
+        cleaned = re.split(
+            r"\b(?:là đơn vị|được thành lập|đã được thành lập|cam kết|tối ưu hóa|với sức mạnh|bạn cần trợ giúp)\b",
+            cleaned,
+            maxsplit=1,
+            flags=re.I,
+        )[0]
+        if re.match(r"(?i)^công ty\s*,", cleaned):
+            return ""
+        address_start = re.search(
+            r"\b(?:số\s+)?\d{1,5}[/-]?[A-Za-z0-9]*\b(?=.*(?:phường|p\.|quận|q\.|tp\b|thành phố|district|ward|city))",
+            cleaned,
+            flags=re.I,
+        )
+        if address_start:
+            cleaned = cleaned[: address_start.start()]
+        cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" -|,:")
+        return cleaned
+
+    def _company_name_candidates(self, soup: BeautifulSoup, page_lines: list[str], context_sections: list[str]) -> list[str]:
+        values: list[str] = []
+        for selector in ("[itemprop='name']", "meta[property='og:site_name']", "meta[property='og:title']"):
+            for node in soup.select(selector):
+                text = _text(node.get("content") if node.name == "meta" else node.get_text(" ", strip=True))
+                if text and self._looks_like_company_name(text):
+                    values.append(text)
+        for source in context_sections + page_lines:
+            for match in re.findall(r"(?:CÔNG TY|Công Ty|công ty|Company)[^.\n]{0,180}", source):
+                cleaned = self._clean_company_candidate(match)
+                if self._looks_like_company_name(cleaned):
+                    values.append(cleaned)
+        return _dedupe_texts(values)
+
+    @staticmethod
+    def _company_name_score(candidate: str) -> tuple[int, int]:
+        lookup = _normalize_lookup(candidate)
+        score = 0
+        if any(token in lookup for token in ("tnhh", "trach nhiem huu han", "co phan", "jsc", "mtv")):
+            score += 6
+        if "sx tm" in lookup or "san xuat" in lookup:
+            score += 2
+        if "&" in candidate or "-" in candidate:
+            score += 1
+        if any(token in lookup for token in ("dia chi", "hotline", "email", "website")):
+            score -= 4
+        return score, len(lookup)
+
+    def _pick_best_company_name(self, candidates: list[str]) -> str:
+        cleaned = [self._clean_company_candidate(item) for item in candidates if self._clean_company_candidate(item)]
+        valid = [item for item in _dedupe_texts(cleaned) if self._looks_like_company_name(item)]
+        if not valid:
+            return ""
+        return max(valid, key=self._company_name_score)
+
+    @staticmethod
+    def _clean_brand_candidate(candidate: str) -> str:
+        cleaned = _text(candidate)
+        if " - " in cleaned:
+            cleaned = cleaned.split(" - ", 1)[0]
+        cleaned = re.split(r"\b(?:địa chỉ|sđt|hotline|email|website)\b\s*[:\-]?", cleaned, maxsplit=1, flags=re.I)[0]
+        return cleaned.strip(" -|,:")
+
+    def _brand_candidates(self, soup: BeautifulSoup, page_lines: list[str], *, source_url: str) -> list[str]:
+        values: list[str] = []
+        for selector in ("h1", "title", "meta[property='og:site_name']", "meta[property='og:title']"):
+            for node in soup.select(selector):
+                text = _text(node.get("content") if node.name == "meta" else node.get_text(" ", strip=True))
+                if text:
+                    values.append(text)
+        values.append(_domain(source_url).split(".")[0].replace("-", " "))
+        candidates: list[str] = []
+        for item in values:
+            cleaned = self._clean_brand_candidate(item)
+            lookup = _normalize_lookup(cleaned)
+            if not cleaned or any(
+                phrase in lookup
+                for phrase in (
+                    "trang vang",
+                    "danh muc san pham",
+                    "san pham dich vu",
+                    "lich tet",
+                    "trang chu",
+                    "page not found",
+                    "gia re tai xuong",
+                    "dich vu",
+                    "lay ngay",
+                    "lien he",
+                    "gioi thieu",
+                    "thong tin lien he",
+                    "chuyen cung cap",
+                    "dam bao chat luong",
+                    "don vi san xuat",
+                    "uy tin",
+                    "so 1",
+                )
+            ):
+                continue
+            if len(cleaned) > 48:
+                continue
+            if lookup in {_normalize_lookup(_domain(source_url)), _normalize_lookup(_domain(source_url).split(".")[0])} and "." in cleaned:
+                continue
+            candidates.append(cleaned)
+        return _dedupe_texts(candidates)
+
+    @staticmethod
+    def _pick_best_brand_name(candidates: list[str], legal_name: str, *, source_url: str) -> str:
+        valid: list[str] = []
+        legal_lookup = _normalize_lookup(legal_name)
+        for item in candidates:
+            lookup = _normalize_lookup(item)
+            if not lookup or lookup == legal_lookup:
+                continue
+            if lookup in {_normalize_lookup(_domain(source_url)), _normalize_lookup(_domain(source_url).split(".")[0])}:
+                continue
+            if len(item) > 48:
+                continue
+            valid.append(item)
+        if not valid:
+            return ""
+        return min(valid, key=len)
+
+    @staticmethod
+    def _compose_company_name(brand_name: str, legal_name: str, *, source_url: str) -> str:
+        if legal_name:
+            return legal_name
+        if brand_name:
+            return brand_name
+        return _domain(source_url).split(".")[0].replace("-", " ").title()
+
+    def _address_candidates(self, page_lines: list[str], context_sections: list[str]) -> list[str]:
+        labeled_entries: list[tuple[int, int, str]] = []
+        plain_values: list[str] = []
+        for source in context_sections + page_lines:
+            if not source:
+                continue
+            labeled_entries.extend(self._extract_labeled_address_entries(source))
+            plain = self._extract_plain_address(source)
+            if plain:
+                plain_values.append(plain)
+        # RU: если на странице есть явно размеченный адрес, берем только его ветку,
+        # иначе project/news контент снова начинает побеждать реальный контактный блок.
+        if labeled_entries:
+            ordered_candidates: list[str] = []
+            for _priority, _index, candidate in sorted(labeled_entries, key=lambda value: (value[0], value[1])):
+                if candidate not in ordered_candidates:
+                    ordered_candidates.append(candidate)
+            return ordered_candidates
+        return _dedupe_texts(plain_values)
+
+    def _pick_best_address(self, candidates: list[str]) -> str:
+        valid = [item for item in candidates if self._address_score(item) > 0]
+        if not valid:
+            return ""
+        indexed = list(enumerate(valid))
+        return max(indexed, key=lambda pair: (self._address_score(pair[1]), -pair[0]))[1]
+
+    def _pick_best_city(self, candidates: list[str], address: str, blob: str) -> str:
+        address_city = self._guess_city(address)
+        if address_city:
+            return address_city
+        for item in candidates:
+            if item:
+                return item
+        return self._guess_city(address or blob)
+
+    def _address_score(self, candidate: str) -> int:
+        lookup = _normalize_lookup(candidate)
+        if not lookup:
+            return 0
+        if len(candidate) < 12:
+            return 0
+        if re.search(r"\b[a-z0-9-]+\.(?:vn|com|net|org)\b", candidate, flags=re.I):
+            return 0
+        if any(
+            phrase in lookup
+            for phrase in (
+                "gio hang",
+                "dat in",
+                "gia xuong",
+                "noi bat",
+                "xem chi tiet",
+                "du an",
+                "khuyen mai",
+                "chinh sach",
+                "lien ket",
+                "ban quyen",
+                "quy trinh",
+                "trang chu",
+                "danh muc",
+                "san pham",
+                "dich vu",
+                "bar",
+                "karaoke",
+                "spa",
+                "bao li xi",
+                "lich tet",
+                "poster",
+                "catalogue",
+                "menu",
+                "media",
+                "copyright",
+                "all rights reserved",
+                "tuyen dung",
+            )
+        ):
+            return 0
+        street_tokens = ("duong", "street", "road", "ngo", "hem", "alley", "kcn", "khu ", "khu pho", "kp", "phuong", "p ", "p.", "ward", "so ", "lo ", "ap ")
+        region_tokens = (
+            "quan",
+            "district",
+            "q ",
+            "q.",
+            "tp",
+            "city",
+            "ho chi minh",
+            "ha noi",
+            "da nang",
+            "binh duong",
+            "dong nai",
+            "bien hoa",
+            "thu dau mot",
+        )
+        has_number = bool(re.search(r"\d", candidate))
+        has_street = any(token in lookup for token in street_tokens)
+        has_region = any(token in lookup for token in region_tokens)
+        has_commas = candidate.count(",") >= 2
+        if not ((has_number and has_street) or (has_number and has_region and has_commas)):
+            return 0
+        score = 0
+        if has_number:
+            score += 4
+        if has_street:
+            score += 4
+        if has_region:
+            score += 2
+        if has_commas:
+            score += 2
+        score += min(
+            3,
+            sum(1 for token in ("thu dau mot", "binh duong", "dong nai", "da nang", "ha noi", "ho chi minh", "bien hoa") if token in lookup),
+        )
+        if any(token in lookup for token in ("email", "website", "hotline", "zalo", "fanpage", "gpkd", "mst", "ma so thue")):
+            score -= 6
+        if len(candidate) > 220:
+            score -= 3
+        return score
+
+    def _extract_labeled_address_entries(self, source: str) -> list[tuple[int, int, str]]:
+        cleaned = _text(source)
+        if not cleaned:
+            return []
+        label_pattern = re.compile(
+            r"(?:địa chỉ(?:\s*cửa hàng)?|address|trụ sở|văn phòng|vp|office|chi nhánh(?:\s*-\s*xưởng sản xuất)?|xưởng sản xuất|xưởng)\s*[:\-]?\s*",
+            flags=re.I,
+        )
+        matches = list(label_pattern.finditer(cleaned))
+        weighted_results: list[tuple[int, int, str]] = []
+        for index, match in enumerate(matches):
+            start = match.end()
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(cleaned)
+            tail = cleaned[start:end]
+            tail = re.split(
+                r"\b(?:hotline|email|website|mst|mã số thuế|liên hệ|zalo|fanpage|đt|điện thoại|phone|gpkd)\b",
+                tail,
+                maxsplit=1,
+                flags=re.I,
+            )[0]
+            candidate = self._extract_plain_address(tail)
+            if candidate:
+                label_lookup = _normalize_lookup(match.group(0))
+                priority = 2 if any(token in label_lookup for token in ("cua hang", "xuong", "chi nhanh")) else 1
+                if any(token in label_lookup for token in ("tru so", "van phong", "vp")):
+                    priority = 0
+                elif "dia chi" in label_lookup:
+                    priority = min(priority, 1)
+                weighted_results.append((priority, index, candidate))
+        return weighted_results
+
+    def _extract_labeled_addresses(self, source: str) -> list[str]:
+        weighted_results = self._extract_labeled_address_entries(source)
+        ordered = [item for _priority, _index, item in sorted(weighted_results, key=lambda value: (value[0], value[1]))]
+        return _dedupe_texts(ordered)
+
+    def _extract_labeled_address(self, source: str) -> str:
+        return next(iter(self._extract_labeled_addresses(source)), "")
+
+    def _extract_plain_address(self, source: str) -> str:
+        cleaned = _text(source)
+        if not cleaned:
+            return ""
+        if any(token in _normalize_lookup(cleaned) for token in ("email", "website")) and len(cleaned) > 220:
+            return ""
+        match = re.search(
+            r"((?:số|lô|a\d|b\d|\d{1,5}|kp\.?\s*\d+|khu phố\s*\d+|đường|duong|road|street|ấp|kcn)[^|]{8,220})",
+            cleaned,
+            flags=re.I,
+        )
+        if match:
+            candidate = match.group(1)
+        else:
+            candidate = cleaned
+        candidate = re.split(
+            r"\b(?:hotline|email|website|mst|mã số thuế|zalo|fanpage|giỏ hàng|mua thêm|thanh toán|đt|điện thoại|phone|gpkd|liên hệ|lh|gửi|copyright|all rights reserved)\b",
+            candidate,
+            maxsplit=1,
+            flags=re.I,
+        )[0]
+        candidate = re.split(r"\.\s*(?:công ty|company)\b", candidate, maxsplit=1, flags=re.I)[0]
+        candidate = candidate.strip(" -|,:")
+        return candidate if self._address_score(candidate) > 0 else ""
+
+    @staticmethod
+    def _guess_city(blob: str) -> str:
+        lookup = _normalize_lookup(blob)
+        for pattern, replacement in _LOCATION_REPLACEMENTS:
+            if re.search(pattern, lookup):
+                if replacement == "ho chi minh city":
+                    return "Ho Chi Minh City"
+                if replacement == "ha noi":
+                    return "Ha Noi"
+                if replacement == "da nang":
+                    return "Da Nang"
+                if replacement == "binh duong":
+                    return "Binh Duong"
+                if replacement == "dong nai":
+                    return "Dong Nai"
+                if replacement == "bien hoa":
+                    return "Bien Hoa"
+                if replacement == "thu dau mot":
+                    return "Thu Dau Mot"
         return ""
+
+    def _first_address_like(self, blob: str) -> str:
+        return self._pick_best_address([self._extract_labeled_address(blob), self._extract_plain_address(blob)])
 
     @staticmethod
     def _bullet_candidates(soup: BeautifulSoup, keywords: tuple[str, ...]) -> list[str]:

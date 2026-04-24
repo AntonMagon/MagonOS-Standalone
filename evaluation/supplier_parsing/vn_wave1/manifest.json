@@ -1,0 +1,672 @@
+{
+  "dataset_name": "vn_supplier_parsing_wave1",
+  "dataset_version": "2026-04-23-wave1-gate",
+  "source_note": "Live-labeled Vietnam supplier samples refreshed against current directory cards and official supplier contact/about pages for wave1 acceptance gating.",
+  "sample_count": 30,
+  "samples": [
+    {
+      "sample_id": "dir-nhan-mac-sai-gon-cong-ty-tnhh-san-xuat-phu-lieu-sai-gon",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=printing&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Nhãn Mác Sài Gòn - Công Ty TNHH Sản Xuất Phụ Liệu Sài Gòn",
+        "website": "http://nhanmacsaigon.com",
+        "phone": "+842862658489",
+        "email": "dunglabel@gmail.com",
+        "address": "Số 269/34/5 Phan Huy Ích, Phường 14, Quận Gò Vấp, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187769291/nhan-mac-sai-gon-cong-ty-tnhh-san-xuat-phu-lieu-sai-gon.html"
+      }
+    },
+    {
+      "sample_id": "dir-nhan-mac-vi-cuong-cong-ty-tnhh-vi-cuong",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=printing&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Nhãn Mác Vĩ Cường - Công Ty TNHH Vĩ Cường",
+        "website": "http://nhanmacvicuong.bizz.vn",
+        "phone": "+842743882025",
+        "email": "vicuong.co.ltd@gmail.com",
+        "address": "113/3 Đường ĐX 82 , Khu 2, P. Định Hòa, TP. Thủ Dầu Một, Bình Dương",
+        "city_region": "Binh Duong",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/119322207/nhan-mac-vi-cuong-cong-ty-tnhh-vi-cuong.html"
+      }
+    },
+    {
+      "sample_id": "dir-cong-ty-co-phan-tap-oan-bao-bi-sai-gon",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=printing&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty Cổ Phần Tập Đoàn Bao Bì Sài Gòn",
+        "website": "http://sgpg.com.vn",
+        "phone": "+842837545609",
+        "email": "kd@minhphucco.com",
+        "address": "A34/I - A35/I Đường 2D, KCN Vĩnh Lộc, P. Bình Hưng Hòa B, Q. Bình Tân, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/708831/cong-ty-co-phan-tap-doan-bao-bi-sai-gon.html"
+      }
+    },
+    {
+      "sample_id": "dir-cong-ty-tnhh-mtv-thiet-ke-quang-cao-ep",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=printing&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH MTV Thiết Kế Quảng Cáo Đẹp",
+        "website": "http://kiennguyendecor.com",
+        "phone": "+84979658285",
+        "email": "kiennguyendecor102@gmail.com",
+        "address": "634 Lạc Long Quân, P. 9, Q. Tân Bình, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187953548/cong-ty-tnhh-mtv-thiet-ke-quang-cao-dep.html",
+        "label_revision_reason": "Removed YellowPages badge/category text from address label."
+      }
+    },
+    {
+      "sample_id": "dir-cong-ty-tnhh-in-credible",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=printing&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH IN-CREDIBLE",
+        "website": "http://in-credible.digital",
+        "phone": "+84775018503",
+        "email": "info@in-credible.digital",
+        "address": "22 Nguyễn Thái Học, Phường Tân Sơn Nhì, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1188017652/cong-ty-tnhh-in-credible.html",
+        "label_revision_reason": "Removed verification badge text from YellowPages address label."
+      }
+    },
+    {
+      "sample_id": "dir-van-phong-ai-dien-cong-ty-macrolite",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=packaging&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Văn Phòng Đại Diện - Công Ty Macrolite",
+        "website": "http://macroliteasia.com",
+        "phone": "+842862908724",
+        "email": "davidlee.macrolite@gmail.com",
+        "address": "9, Số 70, Đường Phạm Ngọc Thạch, P. 6, Q. 3, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/692994/van-phong-dai-dien-cong-ty-macrolite.html",
+        "label_revision_reason": "Aligned benchmark with current directory card payload including office prefix."
+      }
+    },
+    {
+      "sample_id": "dir-in-an-hpdc-cong-ty-trach-nhiem-huu-han-hpdc",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=sticker&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In ấn HPDC - Công Ty Trách Nhiệm Hữu Hạn HPDC",
+        "website": "http://inangiarebinhduong.vn",
+        "phone": "+84937365749",
+        "email": "hpdcvn@gmail.com",
+        "address": "Số 2106/4/33, Tổ 3, Khu 9, Đường Mỹ Phước Tân Vạn, Phường Phú Hòa, Thành Phố Thủ Dầu Một, Bình Dương",
+        "city_region": "Binh Duong",
+        "category": "PRINT_OFFSET",
+        "capabilities": [
+          "PRINT_OFFSET",
+          "PRINT_FLEXO"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187814513/in-an-hpdc-cong-ty-trach-nhiem-huu-han-hpdc.html"
+      }
+    },
+    {
+      "sample_id": "dir-quang-cao-ha-long-cong-ty-co-phan-noi-that-quang-cao-ha-long",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=sticker&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Quảng Cáo Hạ Long - Công Ty Cổ Phần Nội Thất Quảng Cáo Hạ Long",
+        "website": "http://quangcaovien.com",
+        "phone": "+84973108233",
+        "email": "qc.mrvien@gmail.com",
+        "address": "Số 06 Phố Suối Mơ, Tổ 3, Khu Phố 4, P. Bãi Cháy, TP. Hạ Long, Quảng Ninh",
+        "city_region": "",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187939541/quang-cao-ha-long--cong-ty-co-phan-noi-that-quang-cao-ha-long.html"
+      }
+    },
+    {
+      "sample_id": "dir-in-quang-cao-gia-thinh-cong-ty-tnhh-thiet-ke-in-gia-thinh",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=sticker&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In Quảng Cáo Gia Thịnh - Công Ty TNHH Thiết Kế - In Gia Thịnh",
+        "website": "http://inquangcaogiathinh.com.vn",
+        "phone": "+842437332812",
+        "email": "longgiathinh@gmail.com",
+        "address": "98 Nguyễn Thái Học, Phường Ba Đình, Hà Nội",
+        "city_region": "Ha Noi",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187713218/in-quang-cao-gia-thinh-cong-ty-tnhh-thiet-ke-in-gia-thinh.html"
+      }
+    },
+    {
+      "sample_id": "dir-nhan-mac-saigon-labels-cong-ty-tnhh-saigon-labels",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=sticker&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Nhãn Mác Saigon Labels - Công Ty TNHH Saigon Labels",
+        "website": "http://saigonlabels.com",
+        "phone": "+84359729783",
+        "email": "saigonlabels@gmail.com",
+        "address": "229/32/6 Bùi Thị Xuân, P. 1, Q. Tân Bình, TP. Hồ Chí Minh",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187751555/nhan-mac-saigon-labels-cong-ty-tnhh-saigon-labels.html",
+        "label_revision_reason": "Directory benchmark now expects one canonical address instead of concatenated HQ+factory blob."
+      }
+    },
+    {
+      "sample_id": "dir-in-tem-nhan-thang-loi-long-cong-ty-tnhh-san-xuat-thuong-mai-thang-loi-long",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/search.asp?keyword=sticker&where=",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In Tem Nhãn Thắng Lợi Long - Công Ty TNHH Sản Xuất Thương Mại Thắng Lợi Long",
+        "website": "http://thangloilong.com",
+        "phone": "+842862968810",
+        "email": "thangloilongco@gmail.com",
+        "address": "78/29 Cống Lở, Phường 15, Quận Tân Bình, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187739405/in-tem-nhan-thang-loi-long-cong-ty-tnhh-san-xuat-thuong-mai-thang-loi-long.html"
+      }
+    },
+    {
+      "sample_id": "site-nhan-mac-sai-gon-cong-ty-tnhh-san-xuat-phu-lieu-sai-gon",
+      "source_class": "simple_supplier_site",
+      "url": "http://nhanmacsaigon.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH SẢN XUẤT PHỤ LIỆU SÀI GÒN",
+        "website": "http://nhanmacsaigon.com",
+        "phone": "+842862658489",
+        "email": "sale01@nhanmacsaigon.com",
+        "address": "31/5 Nguyễn Văn Bứa, Xã Xuân Thới Sơn, Huyện Hóc Môn, Thành Phố Hồ Chí Minh.",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://nhanmacsaigon.com/lien-he",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Official site contact block moved away from old YellowPages HQ data."
+      }
+    },
+    {
+      "sample_id": "site-cong-ty-tnhh-mtv-thiet-ke-quang-cao-ep",
+      "source_class": "simple_supplier_site",
+      "url": "http://kiennguyendecor.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH MTV THIẾT KẾ QUẢNG CÁO KIẾN NGUYỄN DECOR",
+        "website": "http://kiennguyendecor.com",
+        "phone": "+84979658285",
+        "email": "kiennguyendecor102@gmail.com",
+        "address": "634 Lạc Long Quân, P.9, Q.Tân Bình, TP. HCM",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "http://kiennguyendecor.com/thong-tin-lien-he/",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Benchmark refreshed against current supplier-owned contact page."
+      }
+    },
+    {
+      "sample_id": "site-cong-ty-tnhh-sx-tm-dv-sao-ong-phuong",
+      "source_class": "simple_supplier_site",
+      "url": "http://saodongphuong.vn",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH SX TM DV IN Sao Đông Phương",
+        "website": "http://saodongphuong.vn",
+        "phone": "+842835974240",
+        "email": "saodongphuong@saodongphuong.vn",
+        "address": "468/17-19,Đường Tân Thới Hiệp 2, KP3, P. Tân Thới Hiệp, Q. 12, TP HCM",
+        "city_region": "Ho Chi Minh City",
+        "category": "PRINT_OFFSET",
+        "capabilities": [
+          "PRINT_OFFSET",
+          "PRINT_FLEXO"
+        ]
+      },
+      "notes": {
+        "label_source": "http://saodongphuong.vn/lien-he/",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Official site contact page superseded stale directory-derived contact data."
+      }
+    },
+    {
+      "sample_id": "site-in-an-hpdc-cong-ty-trach-nhiem-huu-han-hpdc",
+      "source_class": "simple_supplier_site",
+      "url": "http://inangiarebinhduong.vn",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In ấn HPDC - Công Ty Trách Nhiệm Hữu Hạn HPDC",
+        "website": "http://inangiarebinhduong.vn",
+        "phone": "+84937365749",
+        "email": "hpdcvn@gmail.com",
+        "address": "số 2106/4/33, khu 9, Đ. Tân Vạn - Mỹ Phước, Phú Hoà, Thủ Dầu Một, Bình Dương",
+        "city_region": "Binh Duong",
+        "category": "PRINT_OFFSET",
+        "capabilities": [
+          "PRINT_OFFSET",
+          "PRINT_FLEXO"
+        ]
+      },
+      "notes": {
+        "label_source": "http://inangiarebinhduong.vn/",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Official site exposes multiple addresses; benchmark now uses the primary contact block on the live site."
+      }
+    },
+    {
+      "sample_id": "site-nhan-mac-saigon-labels-cong-ty-tnhh-saigon-labels",
+      "source_class": "simple_supplier_site",
+      "url": "http://saigonlabels.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH SAIGON LABELS",
+        "website": "http://saigonlabels.com",
+        "phone": "+84862746639",
+        "email": "",
+        "address": "173/9A5 Trường Chinh, Phường Tân Hưng Thuận , Quận 12, TP. HCM",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://saigonlabels.com/contact",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Current contact page exposes factory address and landline only; old Gmail label was removed."
+      }
+    },
+    {
+      "sample_id": "site-in-tem-nhan-thang-loi-long-cong-ty-tnhh-san-xuat-thuong-mai-thang-loi-long",
+      "source_class": "simple_supplier_site",
+      "url": "http://thangloilong.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In Tem Nhãn Thắng Lợi Long - Công Ty TNHH Sản Xuất Thương Mại Thắng Lợi Long",
+        "website": "http://thangloilong.com",
+        "phone": "+842862968810",
+        "email": "thangloilongco@gmail.com",
+        "address": "78/29 Cống Lở, Phường 15, Quận Tân Bình, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187739405/in-tem-nhan-thang-loi-long-cong-ty-tnhh-san-xuat-thuong-mai-thang-loi-long.html",
+        "route_scenario": "COMPANY_SITE"
+      }
+    },
+    {
+      "sample_id": "site-ap-labels-cong-ty-tnhh-giai-phap-nhan-ap",
+      "source_class": "simple_supplier_site",
+      "url": "http://temnhan247.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH GIẢI PHÁP NHÃN AP - AP Labels",
+        "website": "http://temnhan247.com",
+        "phone": "+842871001700",
+        "email": "info@temnhan247.com",
+        "address": "Số 211, Đường Số 9, Phường Phước Bình, Quận 9, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "http://temnhan247.com/lien-he-1",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Official site contact block uses current company email instead of legacy Gmail."
+      }
+    },
+    {
+      "sample_id": "site-nhan-mac-may-mac-kim-phat-cong-ty-tnhh-in-an-kim-phat",
+      "source_class": "simple_supplier_site",
+      "url": "http://kimphatlabel.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH IN ẤN KIM PHÁT",
+        "website": "http://kimphatlabel.com",
+        "phone": "+84978157356",
+        "email": "",
+        "address": "Số 57, đường Nguyễn Văn Tiết, Phường Hiệp Thành, TP. Thủ Dầu Một, Tỉnh Bình Dương",
+        "city_region": "Binh Duong",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "https://kimphatlabel.com/lien-he.html",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Removed directory noise blob; live site exposes address but not a stable plain-text email."
+      }
+    },
+    {
+      "sample_id": "site-in-decal-cong-ty-tnhh-khang-thanh-viet",
+      "source_class": "simple_supplier_site",
+      "url": "http://inanrenhat.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In ấn rẻ nhất",
+        "website": "http://inanrenhat.com",
+        "phone": "+84901675900",
+        "email": "ingiaredongnai@gmail.com",
+        "address": "1675 (số cũ 226), Đường Nguyễn Ái Quốc, KP. 4, P. Tân Tiến, Biên Hòa, Đồng Nai",
+        "city_region": "Bien Hoa",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "http://inanrenhat.com/lien-he.html",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Current domain content no longer matches the original directory company identity; benchmark updated to live site truth."
+      }
+    },
+    {
+      "sample_id": "site-in-bien-hoa-cong-ty-tnhh-khang-thanh-viet",
+      "source_class": "simple_supplier_site",
+      "url": "http://inbienhoa.net",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH BẢO KHANG PHÁT - IN ẤN BIÊN HÒA",
+        "website": "http://inbienhoa.net",
+        "phone": "+84938336444",
+        "email": "",
+        "address": "226, Nguyễn Ái Quốc, Khu Phố 4, Phường Tân Tiến, TP. Biên Hòa, Đồng Nai",
+        "city_region": "Bien Hoa",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://inbienhoa.net/lien-he.html",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Current contact page belongs to Bảo Khang Phát, not the legacy YellowPages company label."
+      }
+    },
+    {
+      "sample_id": "site-in-an-binh-duong-cong-ty-tnhh-design-akay",
+      "source_class": "simple_supplier_site",
+      "url": "http://inanbinhduong.vn",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "In ấn Bình Dương - Công Ty TNHH DESIGN AKAY",
+        "website": "http://inanbinhduong.vn",
+        "phone": "+84901775778",
+        "email": "sale@inanbinhduong.vn",
+        "address": "144 Lê Hồng Phong, P. Phú Lợi, Tp. Thủ Dầu Một, Bình Dương",
+        "city_region": "Binh Duong",
+        "category": "PRINT_OFFSET",
+        "capabilities": [
+          "PRINT_OFFSET",
+          "PRINT_FLEXO"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187899620/in-an-binh-duong-cong-ty-tnhh-design-akay.html",
+        "route_scenario": "COMPANY_SITE"
+      }
+    },
+    {
+      "sample_id": "site-nhan-mac-khai-hoang-cong-ty-tnhh-tm-dv-khai-hoang",
+      "source_class": "simple_supplier_site",
+      "url": "http://intemnhandanang.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Nhãn Mác Khải Hoàng - Công Ty TNHH TM&DV Khải Hoàng",
+        "website": "http://intemnhandanang.com",
+        "phone": "+84905797725",
+        "email": "dntnkhaihoang@gmail.com",
+        "address": "Lô 5, Khu B2-37, P. Hòa Quý, Q. Ngũ Hành Sơn, TP. Đà Nẵng",
+        "city_region": "Da Nang",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/lgs/1187878446/nhan-mac-khai-hoang-cong-ty-tnhh-tm-dv-khai-hoang.html",
+        "route_scenario": "COMPANY_SITE",
+        "label_revision_reason": "Canonical address now matches the live site wording."
+      }
+    },
+    {
+      "sample_id": "js-cong-ty-co-phan-tap-oan-bao-bi-sai-gon",
+      "source_class": "js_heavy_supplier_site",
+      "url": "http://sgpg.com.vn",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY CỔ PHẦN TẬP ĐOÀN BAO BÌ SÀI GÒN",
+        "website": "http://sgpg.com.vn",
+        "phone": "+84837545608",
+        "email": "tapdoanbaobisaigon@gmail.com",
+        "address": "Lô A34/I – A35/I Đường D2, Khu Công Nghiệp Vĩnh Lộc, Phường Bình Tân, TP Hồ Chí Minh",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://sgpg.com.vn/chi-nhanh-thanh-pho-ho-chi-minh/",
+        "route_scenario": "JS_COMPANY_SITE",
+        "label_revision_reason": "JS contact branch page exposes current HCMC branch data and Gmail inbox, not old YellowPages listing data."
+      }
+    },
+    {
+      "sample_id": "js-in-quang-cao-gia-thinh-cong-ty-tnhh-thiet-ke-in-gia-thinh",
+      "source_class": "js_heavy_supplier_site",
+      "url": "http://inquangcaogiathinh.com.vn",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH THIẾT KẾ IN GIA THỊNH",
+        "website": "http://inquangcaogiathinh.com.vn",
+        "phone": "+84913513294",
+        "email": "longgiathinh@gmail.com",
+        "address": "98 Nguyễn Thái Học, Ba Đình, Hà Nội",
+        "city_region": "Ha Noi",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://inquangcaogiathinh.com.vn/contacts/",
+        "route_scenario": "JS_COMPANY_SITE",
+        "label_revision_reason": "JS contact page currently exposes mobile hotlines instead of the old directory landline."
+      }
+    },
+    {
+      "sample_id": "js-nhan-mac-hoang-hieu-cong-ty-tnhh-san-xuat-nhan-mac-hoang-hieu",
+      "source_class": "js_heavy_supplier_site",
+      "url": "http://hoanghieulabel.com",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "CÔNG TY TNHH SX NHÃN MÁC HOÀNG HIẾU",
+        "website": "http://hoanghieulabel.com",
+        "phone": "+842866839548",
+        "email": "hoanghieulabel@gmail.com",
+        "address": "15/4A, Đường HT13, Khu Phố 3, P.Hiệp Thành, Quận 12, TP.HCM",
+        "city_region": "Ho Chi Minh City",
+        "category": "LABEL_SELF_ADHESIVE",
+        "capabilities": [
+          "LABEL_SELF_ADHESIVE"
+        ]
+      },
+      "notes": {
+        "label_source": "http://hoanghieulabel.com/lien-he.html",
+        "route_scenario": "JS_COMPANY_SITE",
+        "label_revision_reason": "JS benchmark refreshed against the live contact page."
+      }
+    },
+    {
+      "sample_id": "dir-bao-bi-nhua-thuan-phuong",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/class/490633/bao-t%E1%BA%A3i-d%E1%BB%A9a-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH Bao Bì Nhựa Thuận Phương",
+        "website": "http://www.baobithuanphuong.com",
+        "phone": "+84903824833",
+        "email": "baobinhuathuanphuong@gmail.com",
+        "address": "2734 Đường Phạm Thế Hiển, P. 7, Q. 8, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "PRINT_FLEXO",
+        "capabilities": [
+          "PRINT_FLEXO"
+        ]
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/class/490633/bao-t%E1%BA%A3i-d%E1%BB%A9a-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html"
+      }
+    },
+    {
+      "sample_id": "dir-bao-bi-hoa-phat-hung-thinh",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/class/490633/bao-t%E1%BA%A3i-d%E1%BB%A9a-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH Thương Mại Sản Xuất Bao Bì Hòa Phát Hưng Thịnh",
+        "website": "http://www.hoaphathungthinh.com",
+        "phone": "+84974506556",
+        "email": "baobihoaphathungthinh@gmail.com",
+        "address": "305 Phan Văn Hớn, P. Tân Thới Nhất, Q. 12, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/class/490633/bao-t%E1%BA%A3i-d%E1%BB%A9a-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html"
+      }
+    },
+    {
+      "sample_id": "dir-bao-bi-jumbo-minh-tan",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/class/487438/bao-container%2C-bao-jumbo%2C-bao-bigbag-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Bao Bì Jumbo Minh Tân - Công Ty Cổ Phần Bao Bì Jumbo Minh Tân",
+        "website": "http://www.mtpc.vn",
+        "phone": "+84903089138",
+        "email": "cvhau@mtpc.vn",
+        "address": "Tổ 6, Khu Phố Bến Đình, Phường Phú Mỹ, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/class/487438/bao-container%2C-bao-jumbo%2C-bao-bigbag-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html"
+      }
+    },
+    {
+      "sample_id": "dir-vat-tu-cong-nghiep-mien-dong",
+      "source_class": "directory_listing",
+      "url": "https://www.yellowpages.vn/class/487438/bao-container%2C-bao-jumbo%2C-bao-bigbag-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html",
+      "query": "printing packaging vietnam",
+      "country_code": "VN",
+      "expected": {
+        "supplier_name": "Công Ty TNHH Thương Mại Vật Tư Công Nghiệp Miền Đông",
+        "website": "http://www.bao50kg.com",
+        "phone": "+84837976989",
+        "email": "info@bao50kg.com",
+        "address": "Số 18/2/7 Hoàng Hữu Nam, KP. Mỹ Thành, P. Long Thạnh Mỹ, TP. Thủ Đức, TP. Hồ Chí Minh (TPHCM)",
+        "city_region": "Ho Chi Minh City",
+        "category": "",
+        "capabilities": []
+      },
+      "notes": {
+        "label_source": "https://www.yellowpages.vn/class/487438/bao-container%2C-bao-jumbo%2C-bao-bigbag-%E1%BB%9F_tp.-h%E1%BB%93-ch%C3%AD-minh-%28tphcm%29.html"
+      }
+    }
+  ]
+}

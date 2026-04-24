@@ -15,10 +15,12 @@ from typing import Any
 from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
+from bs4 import BeautifulSoup
 
 from .browser_runtime import PlaywrightBrowserRuntime
 from .contracts import PageSeed, RawCompanyRecord, ScenarioRouteDecision
 from .extraction_engine import ScenarioExtractionEngine
+from .live_runtime import launch_browser, load_playwright_sync_api
 from .pagination_controller import PaginationController
 from .popup_controller import PopupOverlayController
 from .scenario_config import ScenarioConfig
@@ -127,6 +129,59 @@ class BaseScenarioExecutor:
             )
         return seeds[: self._settings.max_follow_up_company_pages]
 
+    def _company_follow_up_urls(
+        self,
+        *,
+        source_url: str,
+        initial_html: str,
+        allow_paths: list[str],
+        deny_paths: set[str],
+    ) -> list[str]:
+        root_domain = urlparse(source_url).netloc.replace("www.", "").lower()
+        discovered_urls: list[tuple[int, str]] = []
+        if initial_html:
+            # RU: Follow-up URL discovery вытаскивает реальные contact/about links из живой страницы, чтобы company-site extraction не зависел только от жёсткого path-list.
+            soup = BeautifulSoup(initial_html, "html.parser")
+            for node in soup.select("a[href]"):
+                href = (node.get("href") or "").strip()
+                if not href or href.startswith(("mailto:", "tel:", "javascript:", "#")):
+                    continue
+                full_url = urljoin(source_url, href).split("#", 1)[0]
+                parsed = urlparse(full_url)
+                if parsed.scheme not in {"http", "https"}:
+                    continue
+                if parsed.netloc.replace("www.", "").lower() != root_domain:
+                    continue
+                signal = f"{href.lower()} {node.get_text(' ', strip=True).lower()}"
+                if not any(
+                    keyword in signal
+                    for keyword in ("contact", "contacts", "lien-he", "lien he", "about", "gioi-thieu", "gioi thieu", "tru-so", "tru so", "chi-nhanh", "chi nhanh")
+                ):
+                    continue
+                priority = 3
+                if any(keyword in signal for keyword in ("contact", "contacts", "lien-he", "lien he")):
+                    priority = 0
+                elif any(keyword in signal for keyword in ("chi-nhanh-thanh-pho-ho-chi-minh", "chi nhanh tp ho chi minh", "chi nhánh tp hồ chí minh")):
+                    priority = 1
+                elif any(keyword in signal for keyword in ("tru-so", "tru so", "chi-nhanh", "chi nhanh")):
+                    priority = 2
+                elif any(keyword in signal for keyword in ("gioi-thieu", "gioi thieu", "about")):
+                    priority = 4
+                if full_url not in [item[1] for item in discovered_urls]:
+                    discovered_urls.append((priority, full_url))
+
+        target_urls: list[str] = [source_url]
+        for _priority, candidate in sorted(discovered_urls, key=lambda item: (item[0], item[1])):
+            if candidate not in target_urls:
+                target_urls.append(candidate)
+        for path in allow_paths[: self._settings.max_follow_up_company_pages]:
+            if path in deny_paths:
+                continue
+            candidate = urljoin(source_url, path)
+            if candidate not in target_urls:
+                target_urls.append(candidate)
+        return target_urls[: self._settings.max_follow_up_company_pages + 1]
+
 
 class SimpleDirectoryExecutor(BaseScenarioExecutor):
     """Parse static listing pages without a browser and follow plain pagination."""
@@ -231,10 +286,12 @@ class CompanySiteExecutor(BaseScenarioExecutor):
         allow_paths = override.get("allow_paths", ["/", "/about", "/about-us", "/contact", "/contact-us", "/services", "/products"])
         deny_paths = set(override.get("deny_paths", []))
         pages: list[tuple[str, str]] = [(seed["url"], initial_html)]
-        for path in allow_paths[: self._settings.max_follow_up_company_pages]:
-            if path in deny_paths:
-                continue
-            target_url = urljoin(seed["url"], path)
+        for target_url in self._company_follow_up_urls(
+            source_url=seed["url"],
+            initial_html=initial_html,
+            allow_paths=allow_paths,
+            deny_paths=deny_paths,
+        ):
             if target_url == seed["url"]:
                 continue
             try:
@@ -262,13 +319,12 @@ class JsCompanySiteExecutor(BaseScenarioExecutor):
         allow_paths = override.get("allow_paths", ["/", "/about", "/about-us", "/contact", "/contact-us", "/services", "/products"])
         deny_paths = set(override.get("deny_paths", []))
         # RU: Dynamic supplier sites должны обходиться тем же browser-session с внутренними страницами about/contact/services, иначе теряем реальные телефоны, адреса и capability blocks.
-        target_urls: list[str] = [seed["url"]]
-        for path in allow_paths[: self._settings.max_follow_up_company_pages]:
-            if path in deny_paths:
-                continue
-            target_url = urljoin(seed["url"], path)
-            if target_url not in target_urls:
-                target_urls.append(target_url)
+        target_urls = self._company_follow_up_urls(
+            source_url=seed["url"],
+            initial_html=initial_html or "",
+            allow_paths=allow_paths,
+            deny_paths=deny_paths,
+        )
         screenshot_prefix = f"{seed.get('source_domain', 'company-site')}-company"
         snapshots = self._browser.fetch_many(
             target_urls,
@@ -398,10 +454,9 @@ class sync_page:
         self.snapshot = snapshot
 
     def __enter__(self):
-        from playwright.sync_api import sync_playwright
-
+        sync_playwright, _playwright_timeout_error = load_playwright_sync_api()
         self._playwright = sync_playwright().start()
-        self._browser = self._playwright.chromium.launch(headless=True)
+        self._browser, self._launch_mode = launch_browser(self._playwright)
         self._page = self._browser.new_page()
         self._page.goto(self.snapshot.final_url, wait_until="domcontentloaded", timeout=30_000)
         return {"page": self._page}

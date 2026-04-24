@@ -168,6 +168,9 @@
   - `./scripts/foundation_messages_dashboards_smoke_check.sh`
   - канонический `./scripts/verify_workflow.sh` теперь реально исполняет эти foundation smoke-скрипты на временных PostgreSQL БД, а не держит их как manual-only хвост
   - foundation smoke/demo-скрипты теперь сами выбирают свободный localhost-порт и используют bounded health-probe, поэтому старый зависший temp listener должен падать быстро, а не вешать весь verify
+- проверить web runtime smoke:
+  - `./scripts/platform_smoke_check.sh`
+  - `platform_smoke_check.sh` теперь обязан проверять живой `/project-map` вместе с `/`, `/login`, `/marketing`, `/request-workbench`, `/orders` и `/suppliers`, потому что визуальная карта проекта является частью рабочего shell, а не «просто документацией»
 - если менялся web:
   - `./scripts/verify_workflow.sh --with-web`
   - `cd apps/web && npm run build`
@@ -201,6 +204,8 @@
     - `/suppliers` около `0.01s`
     - backend `/health/ready` около `0.01s`
 - встроенная справка по сущностям и зависимостям: `http://127.0.0.1:3000/reference`
+- visual map проекта: `http://127.0.0.1:3000/project-map`
+- `/project-map` теперь сначала читает канонический repo visual payload и использует RU-JSON только как совместимый fallback; `500` на этом маршруте считается живой shell-регрессией, а не допустимым расхождением документации
 - header public shell теперь держит только ключевые рабочие разделы в верхней строке, а вторичные разделы и переключатели складывает в `Ещё`; возвращать перегруженную шапку нельзя.
 - public shell и `/dashboard` должны определять online-state через foundation `GET /health` и `GET /api/v1/public/companies`; legacy `GET /status` нельзя считать каноническим контрактом при выключенном bridge
 - marketing/conversion layer: `http://127.0.0.1:3000/marketing`

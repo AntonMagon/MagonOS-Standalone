@@ -109,10 +109,10 @@ A task is done only when:
 
 ## Auto-Synced Repo State
 <!-- AUTO-SYNC:AGENTS:START -->
-- Auto-synced at: `2026-04-23 15:01 +07`
-- Current focus: Keep the local automation layer truthful and launchd-stable on top of the active foundation runtime.
-- Last verified workflow status: PASS `./scripts/launchd_launcher_watchdog_status.sh >/tmp/magon-launcher-watchdog-status.txt`, PASS `./scripts/launchd_periodic_checks_status.sh >/tmp/magon-periodic-checks-status.txt`, PASS `./.venv/bin/python scripts/check_russian_locale_integrity.py --web-url http://127.0.0.1:3000`, PASS `./.venv/bin/python -m unittest tests.test_launchd_launcher_watchdog tests.test_launchd_periodic_checks`
-- Biggest operational risk: Repo launchd automation is now green on this Mac, but the user-level ~/.codex/automations state remains machine-local and is not propagated by a repo push alone.
+- Auto-synced at: `2026-04-25 05:26 +07`
+- Current focus: Проверен текущий standalone tree, supplier parsing/runtime изменения зафиксированы перед GitHub push
+- Last verified workflow status: PASS `./scripts/verify_workflow.sh`
+- Biggest operational risk: no additional risk recorded
 - Validated contour:
   - company
   - request draft / intake boundary

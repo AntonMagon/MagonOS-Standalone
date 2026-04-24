@@ -12,9 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from playwright.sync_api import sync_playwright
-
+from .live_runtime import launch_browser, load_playwright_sync_api
 from .scenario_config import ScenarioConfig
 
 
@@ -45,51 +43,77 @@ class PlaywrightBrowserRuntime:
         scroll_steps: int = 0,
         screenshot_name: str | None = None,
     ) -> BrowserPageSnapshot:
+        sync_playwright, PlaywrightTimeoutError = load_playwright_sync_api()
         event_log: list[str] = []
         screenshot_ref = None
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser, launch_mode = launch_browser(playwright)
             page = browser.new_page()
             try:
-                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-                event_log.append(f"goto:{page.url}")
-                if popup_controller:
-                    event_log.extend(popup_controller.handle(page))
-                if wait_for_selector:
-                    try:
-                        page.wait_for_selector(wait_for_selector, timeout=min(timeout_ms, 10_000))
-                        event_log.append(f"wait_for_selector:{wait_for_selector}")
-                    except PlaywrightTimeoutError:
-                        event_log.append(f"wait_for_selector_timeout:{wait_for_selector}")
-                for _step in range(max(scroll_steps, 0)):
-                    page.mouse.wheel(0, 3000)
-                    page.wait_for_timeout(350)
-                html = page.content()
-                if screenshot_name:
-                    target_dir = Path(self._config.crawl4ai_base_directory()) / "screenshots"
-                    target_dir.mkdir(parents=True, exist_ok=True)
-                    screenshot_path = target_dir / screenshot_name
-                    page.screenshot(path=str(screenshot_path), full_page=True)
-                    screenshot_ref = str(screenshot_path)
-                challenge_detected = any(
-                    marker in html.lower()
-                    for marker in (
-                        "verify you are human",
-                        "cf-challenge",
-                        "captcha",
-                        "access denied",
-                        "attention required",
+                try:
+                    event_log.append(f"browser_launch:{launch_mode}")
+                    page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+                    event_log.append(f"goto:{page.url}")
+                    if popup_controller:
+                        event_log.extend(popup_controller.handle(page))
+                    if wait_for_selector:
+                        try:
+                            page.wait_for_selector(wait_for_selector, timeout=min(timeout_ms, 10_000))
+                            event_log.append(f"wait_for_selector:{wait_for_selector}")
+                        except PlaywrightTimeoutError:
+                            event_log.append(f"wait_for_selector_timeout:{wait_for_selector}")
+                    for _step in range(max(scroll_steps, 0)):
+                        page.mouse.wheel(0, 3000)
+                        page.wait_for_timeout(350)
+                    html = page.content()
+                    if screenshot_name:
+                        target_dir = Path(self._config.crawl4ai_base_directory()) / "screenshots"
+                        target_dir.mkdir(parents=True, exist_ok=True)
+                        screenshot_path = target_dir / screenshot_name
+                        page.screenshot(path=str(screenshot_path), full_page=True)
+                        screenshot_ref = str(screenshot_path)
+                    challenge_detected = any(
+                        marker in html.lower()
+                        for marker in (
+                            "verify you are human",
+                            "cf-challenge",
+                            "captcha",
+                            "access denied",
+                            "attention required",
+                        )
                     )
-                )
-                return BrowserPageSnapshot(
-                    url=url,
-                    final_url=page.url,
-                    html=html,
-                    title=page.title(),
-                    screenshot_ref=screenshot_ref,
-                    challenge_detected=challenge_detected,
-                    event_log=event_log,
-                )
+                    return BrowserPageSnapshot(
+                        url=url,
+                        final_url=page.url,
+                        html=html,
+                        title=page.title(),
+                        screenshot_ref=screenshot_ref,
+                        challenge_detected=challenge_detected,
+                        event_log=event_log,
+                    )
+                except PlaywrightTimeoutError:
+                    event_log.append("timeout")
+                    return BrowserPageSnapshot(
+                        url=url,
+                        final_url=url,
+                        html="",
+                        title="",
+                        screenshot_ref=None,
+                        challenge_detected=False,
+                        event_log=event_log,
+                    )
+                except Exception as exc:
+                    # RU: Browser-aware parsing не должен ронять ingest на одном битом supplier URL; фиксируем browser error в event_log и отдаём пустой snapshot.
+                    event_log.append(f"error:{type(exc).__name__}:{str(exc)[:180]}")
+                    return BrowserPageSnapshot(
+                        url=url,
+                        final_url=url,
+                        html="",
+                        title="",
+                        screenshot_ref=None,
+                        challenge_detected=False,
+                        event_log=event_log,
+                    )
             finally:
                 page.close()
                 browser.close()
@@ -104,9 +128,10 @@ class PlaywrightBrowserRuntime:
         scroll_steps: int = 0,
         screenshot_prefix: str | None = None,
     ) -> list[BrowserPageSnapshot]:
+        sync_playwright, PlaywrightTimeoutError = load_playwright_sync_api()
         snapshots: list[BrowserPageSnapshot] = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser, launch_mode = launch_browser(playwright)
             page = browser.new_page()
             try:
                 for index, target_url in enumerate(urls):
@@ -114,6 +139,7 @@ class PlaywrightBrowserRuntime:
                     event_log: list[str] = []
                     screenshot_ref = None
                     try:
+                        event_log.append(f"browser_launch:{launch_mode}")
                         page.goto(target_url, wait_until="domcontentloaded", timeout=timeout_ms)
                         event_log.append(f"goto:{page.url}")
                         if popup_controller:
@@ -165,6 +191,18 @@ class PlaywrightBrowserRuntime:
                                 screenshot_ref=None,
                                 challenge_detected=False,
                                 event_log=event_log + ["timeout"],
+                            )
+                        )
+                    except Exception as exc:
+                        snapshots.append(
+                            BrowserPageSnapshot(
+                                url=target_url,
+                                final_url=target_url,
+                                html="",
+                                title="",
+                                screenshot_ref=None,
+                                challenge_detected=False,
+                                event_log=event_log + [f"error:{type(exc).__name__}:{str(exc)[:180]}"],
                             )
                         )
             finally:

@@ -29,6 +29,8 @@ probe backend-system-mode "$BACKEND_URL/api/v1/meta/system-mode"
 probe web-home "$WEB_URL/" 3 20
 probe web-login "$WEB_URL/login" 3 20
 probe web-marketing "$WEB_URL/marketing" 3 20
+# RU: Project map теперь часть канонического shell surface, поэтому проверяем его тем же smoke-контуром, что и рабочие operator страницы.
+probe web-project-map "$WEB_URL/project-map" 3 20
 probe web-request-workbench "$WEB_URL/request-workbench" 3 20
 probe web-orders "$WEB_URL/orders" 3 20
 probe web-suppliers "$WEB_URL/suppliers" 3 20

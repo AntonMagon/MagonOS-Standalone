@@ -68,6 +68,7 @@
 ```bash
 ./scripts/install_repo_automation.sh
 ./scripts/repo_automation_status.sh
+./scripts/install_project_skills.sh
 task autosync:watch
 ```
 
@@ -75,6 +76,7 @@ task autosync:watch
 - этот слой не заменяет commit/push
 - этот слой не даёт настоящего event-driven запуска skills внутри Codex
 - он автоматизирует именно repo-native действия поверх сохранения файлов
+- `scripts/install_project_skills.sh` должен запускаться напрямую как исполняемый файл и линковать project skills только в `~/.codex/skills`, а не трогать остальную систему
 
 ## Периодический локальный контур
 
